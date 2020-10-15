@@ -1,0 +1,10 @@
+{
+    "serviceNo": "0808",
+    "eqpId": "JL10001",
+    "warnTime": "1563959742538",
+    "warnLevel": "2",
+    "warnType": "存款机",
+    "warnCode": "ckj0010",
+    "warnName": "该用户不存在",
+    "remarks": ""
+}

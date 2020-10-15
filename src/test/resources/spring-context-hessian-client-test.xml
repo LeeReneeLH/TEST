@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.2.xsd">
+  <!-- 测试用 -->
+  <bean id="infoToAutoHessianService" class="org.springframework.remoting.caucho.HessianProxyFactoryBean">
+ 	<!-- 本地 -->
+    <property name="serviceUrl" value="http://127.0.0.1:8080/frame/infoToAutoHessianServer" />
+    <!-- 73服务器 -->
+    <!-- <property name="serviceUrl" value="http://172.16.3.73:8080/frame/infoToAutoHessianServer" /> -->
+    <property name="serviceInterface" value="com.coffer.hessian.localserver.info2auto.InfoToAutoHessianService" />
+    <property name="overloadEnabled" value="false" />
+  </bean>
+</beans> 

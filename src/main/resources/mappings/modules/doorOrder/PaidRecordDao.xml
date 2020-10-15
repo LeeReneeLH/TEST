@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.doorOrder.v01.dao.PaidRecordDao">
+    
+	<sql id="paidRecordColumns">
+		a.id AS "id",
+		a.transaction_status AS "transactionStatus",
+		a.to_accept_the_number AS "toAcceptTheNumber",
+		a.trade_serial_number AS "tradeSerialNumber",
+		a.paid_amount AS "paidAmount",
+		a.merchan_office_id AS "merchanOfficeId",
+		a.record_office_id AS "recordOfficeId",
+		a.merchan_office_name AS "merchanOfficeName",
+		a.record_office_name AS "recordOfficeName",
+		a.del_flag AS "delFlag",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createName",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_name AS "updateName",
+		a.update_date AS "updateDate"
+	</sql>
+	
+	<sql id="paidRecordJoins">
+	left join sys_office o on a.record_office_id=o.id
+	</sql>
+    
+	<select id="get" resultType="PaidRecord">
+		SELECT 
+			<include refid="paidRecordColumns"/>
+		FROM paid_record a
+		<include refid="paidRecordJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="PaidRecord">
+		SELECT 
+			<include refid="paidRecordColumns"/>
+		FROM paid_record a
+		<include refid="paidRecordJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<!-- 清分中心机构ID -->
+		<if test=" recordOfficeId != null and recordOfficeId != ''">
+			AND (a.record_office_id = #{recordOfficeId}${sqlMap.dsf})
+		</if>
+		<!-- 商户机构ID -->
+		<if test=" merchanOfficeId != null and merchanOfficeId != ''">
+			AND a.merchan_office_id=#{merchanOfficeId}
+		</if>
+		<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="PaidRecord">
+		SELECT 
+			<include refid="paidRecordColumns"/>
+		FROM paid_record a
+		<include refid="paidRecordJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO paid_record(
+			id,
+			transaction_status,
+			to_accept_the_number,
+			trade_serial_number,
+			paid_amount,
+			merchan_office_id,
+			record_office_id,
+			merchan_office_name,
+			record_office_name,
+			del_flag,
+			create_by,
+			create_name,
+			create_date,
+			update_by,
+			update_name,
+			update_date
+		) VALUES (
+			#{id},
+			#{transactionStatus},
+			#{toAcceptTheNumber},
+			#{tradeSerialNumber},
+			#{paidAmount},
+			#{merchanOfficeId},
+			#{recordOfficeId},
+			#{merchanOfficeName},
+			#{recordOfficeName},
+			#{delFlag},
+			#{createBy.id},
+			#{createBy.name},
+			#{createDate},
+			#{updateBy.id},
+			#{updateBy.name},
+			#{updateDate}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE paid_record SET 	
+			transaction_status = #{transactionStatus},
+			to_accept_the_number = #{toAcceptTheNumber},
+			trade_serial_number = #{tradeSerialNumber},
+			paid_amount = #{paidAmount},
+			merchan_office_id = #{merchanOfficeId},
+			record_office_id = #{recordOfficeId},
+			merchan_office_name = #{merchanOfficeName},
+			record_office_name = #{recordOfficeName},
+			create_name = #{createName},
+			update_by = #{updateBy.id},
+			update_name = #{updateBy.name},
+			update_date = #{updateDate}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE paid_record SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+</mapper>

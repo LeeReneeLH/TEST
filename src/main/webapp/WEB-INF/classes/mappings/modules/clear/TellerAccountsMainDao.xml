@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.clear.v03.dao.TellerAccountsMainDao">
+    
+	<sql id="tellerAccountsMainColumns">
+		a.id AS "id",
+		a.teller_by AS "tellerBy",
+		a.teller_name AS "tellerName",
+		a.teller_type AS "tellerType",
+		a.cust_no AS "custNo",
+		a.cust_name AS "custName",
+		a.bussiness_type AS "bussinessType",
+		a.bussiness_id AS "bussinessId",
+		a.bussiness_status AS "bussinessStatus",
+		a.in_amount AS "inAmount",
+		a.out_amount AS "outAmount",
+		a.total_amount AS "totalAmount",
+		a.cash_type AS "cashType",
+		a.register_date AS "registerDate",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createName",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_name AS "updateName",
+		a.update_date AS "updateDate",
+		a.office_id	AS "office.id",
+		a.office_name AS "office.name"
+	</sql>
+	
+	<sql id="tellerAccountsMainJoins">
+	</sql>
+    
+	<select id="get" resultType="TellerAccountsMain">
+		SELECT 
+			<include refid="tellerAccountsMainColumns"/>
+		FROM teller_accounts_main a
+		<include refid="tellerAccountsMainJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="TellerAccountsMain">
+		SELECT 
+			<include refid="tellerAccountsMainColumns"/>
+		FROM teller_accounts_main a
+		<include refid="tellerAccountsMainJoins"/>
+		<where>
+			<!-- 柜员ID -->
+			<if test="tellerBy!=null and tellerBy!=''">
+				AND a.teller_by=#{tellerBy}
+			</if>
+			<!-- 金额类型 -->
+			<if test="cashType!=null and cashType!=''">
+				AND a.cash_type=#{cashType}
+			</if>
+			<!-- 业务类型 -->
+			<if test="bussinessType!=null and bussinessType!=''">
+				AND a.bussiness_type=#{bussinessType}
+			</if>
+			<!-- 登记时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(a.register_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.register_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <!-- 登记时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.register_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'"> '${searchDateEnd}'>=DATE_FORMAT(a.register_date, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	        
+	        <!-- add-start by QPH 2017-11-14 -->
+			<if test="office != null and office.id != null and office.id != ''">
+				AND A.OFFICE_ID = #{office.id}
+			</if>
+			<!-- end -->
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.register_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="TellerAccountsMain">
+		SELECT 
+			<include refid="tellerAccountsMainColumns"/>
+		FROM teller_accounts_main a
+		<include refid="tellerAccountsMainJoins"/>
+		<where>		
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.register_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO teller_accounts_main(
+			id,
+			teller_by,
+			teller_name,
+			teller_type,
+			cust_no,
+			cust_name,
+			bussiness_type,
+			bussiness_id,
+			bussiness_status,
+			in_amount,
+			out_amount,
+			total_amount,
+			cash_type,
+			register_date,
+			create_by,
+			create_name,
+			create_date,
+			update_by,
+			update_name,
+			update_date,
+			<!-- add-start by QPH 2017-11-14 -->
+			office_id,
+		    office_name
+		    <!-- end -->
+		) VALUES (
+			#{id},
+			#{tellerBy},
+			#{tellerName},
+			#{tellerType},
+			#{custNo},
+			#{custName},
+			#{bussinessType},
+			#{bussinessId},
+			#{bussinessStatus},
+			#{inAmount},
+			#{outAmount},
+			#{totalAmount},
+			#{cashType},
+			#{registerDate},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate},
+			<!-- add-start by QPH 2017-11-14 -->
+			#{office.id},
+			#{office.name}
+		    <!-- end -->
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE teller_accounts_main SET 	
+			teller_by = #{tellerBy},
+			teller_name = #{tellerName},
+			teller_type = #{tellerType},
+			cust_no = #{custNo},
+			cust_name = #{custName},
+			bussiness_type = #{bussinessType},
+			bussiness_id = #{bussinessId},
+			bussiness_status = #{bussinessStatus},
+			in_amount = #{inAmount},
+			out_amount = #{outAmount},
+			total_amount = #{totalAmount},
+			cash_type = #{cashType},
+			register_date = #{registerDate},
+			create_name = #{createName},
+			update_by = #{updateBy.id},
+			update_name = #{updateName},
+			update_date = #{updateDate}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		DELETE FROM teller_accounts_main
+		WHERE id = #{id}
+	</update>
+	
+	<select id="findTellerAccountsList" resultType="TellerAccountsMain">
+		SELECT 
+			<include refid="tellerAccountsMainColumns"/>
+		FROM teller_accounts_main a left join sys_office o 
+			on a.office_id=o.id,
+			(SELECT c.TELLER_BY,c.CASH_TYPE,max(c.REGISTER_DATE )maxDate
+			FROM teller_accounts_main c 
+			GROUP BY c.TELLER_BY,c.CASH_TYPE)b
+			
+		<where>
+			<!-- 柜员姓名 -->
+			<if test="tellerName != null and tellerName != ''">
+				AND a.teller_name LIKE 
+				<if test="dbName == 'oracle'">'%'||#{tellerName}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{tellerName}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{tellerName},'%')</if>
+			</if>
+			<!-- 金额类型 -->
+			<if test="cashType!=null and cashType!=''">
+				AND a.cash_type=#{cashType}
+			</if>
+			  <!-- add-start by QPH 2017-11-14 -->
+			<if test="office != null and office.id != null and office.id != ''">
+				AND a.office_id = '${office.id}'
+			</if>
+			<!-- end -->
+			<!-- 柜员集合 -->
+			<if test="tellerList!=null and tellerList.size!=0">
+				AND a.teller_by in
+		        <foreach collection="tellerList" item="item" separator="," open="(" close=")" index="index">
+		        	#{tellerList[${index}].escortId}
+		        </foreach>
+			</if>
+			AND a.TELLER_BY=b.TELLER_BY AND a.CASH_TYPE=b.CASH_TYPE AND a.REGISTER_DATE=b.maxDate
+			${sqlMap.dsf}
+		</where>
+		ORDER BY a.REGISTER_DATE DESC
+	</select>
+	
+</mapper>

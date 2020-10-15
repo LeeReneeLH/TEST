@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.clear.v03.dao.OrderClearMainDao">
+    <!-- 预约清分主表 -->
+	<!-- 查询所有的信息字段 -->
+  	<sql id="orderClearInfoColumns">
+  		a.in_no            		AS "allInfo.inNo",
+		a.clear_office          AS "allInfo.clearOffice",
+		a.clear_office_nm       AS "allInfo.clearOfficeNm",
+		a.status              	AS "allInfo.status",
+		a.in_amount          	AS "allInfo.inAmount",
+		a.remarks           	AS "allInfo.remarks",
+		a.create_by        		AS "allInfo.createBy",
+		a.create_name      		AS "allInfo.createName",
+		a.create_date        	AS "allInfo.createDate",
+		a.update_by          	AS "allInfo.updateBy",
+		a.update_name        	AS "allInfo.updateName",
+		a.update_date       	AS "allInfo.updateDate",
+		a.register_office		AS "allInfo.registerOffice",
+		o1.name					AS "allInfo.registerOfficeNm",
+		a.register_by		    AS "allInfo.registerBy",
+		a.register_date		    AS "allInfo.registerDate",
+		<!-- 追加预约申请方式  修改人：XL 修改时间：2018-05-22 begin  --> 
+		<!-- d.name		    		AS "allInfo.registerName" -->
+		a.method		    	AS "allInfo.method",
+		case when d.name is null then SG.gname else d.name end AS "allInfo.registerName"
+		<!-- end  --> 
+	</sql>
+
+	<!-- 查询出的所有信息的字段，保存到关联的Entity里 -->
+	<resultMap id="OrderClearInfoResult" type="com.coffer.businesses.modules.clear.v03.entity.OrderClearMain">
+	    <id column="allInfo.inNo"             		property="inNo" />
+	    <result column="allInfo.clearOffice"    	property="rOffice.id"/>
+	    <result column="allInfo.clearOfficeNm"  	property="rOffice.name"/>
+	    <result column="allInfo.status"        		property="status"/>
+	    <result column="allInfo.busType"        	property="busType"/>
+	    <result column="allInfo.inAmount"      		property="inAmount"/>
+	    <result column="allInfo.makesureManNo" 		property="makesureManNo"/>
+	    <result column="allInfo.makesureManName" 	property="makesureManName"/>
+	    <result column="allInfo.remarks"     		property="remarks"/>
+	    <result column="allInfo.createBy"     		property="createBy.id"/>
+	    <result column="allInfo.createName"    		property="createName"/>
+	    <result column="allInfo.createDate"    		property="createDate"/>
+	    <result column="allInfo.updateBy"     		property="updateBy.id"/>
+	    <result column="allInfo.updateName"  		property="updateName"/>
+	    <result column="allInfo.updateDate"    		property="updateDate"/>
+		<result column="allInfo.registerOffice"    	property="registerOffice"/>
+		<result column="allInfo.registerOfficeNm"	property="registerOfficeNm"/>
+		
+		<result column="allInfo.registerBy"    		property="registerBy"/>
+		<result column="allInfo.registerDate"    	property="registerDate"/>
+		<result column="allInfo.registerName"    	property="registerName"/>
+		<result column="allInfo.method"    			property="method"/>
+	    <!-- 登记机构 -->
+		<association property="rOffice" column="roffice_id" javaType="Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy"/>
+
+	    <!--  预约清分明细 -->
+ 	    <collection column="allInfo.inNo" property="orderClearDetailList" javaType="ArrayList" select="com.coffer.businesses.modules.clear.v03.dao.OrderClearDetailDao.findItemsList" fetchType="lazy" />
+	</resultMap>
+	
+	<sql id="orderClearJoins">
+		LEFT JOIN sys_user d ON d.id = a.register_by
+		left join sys_office o1 on a.register_office=o1.id
+		LEFT JOIN sys_guest SG ON SG.id = a.register_by
+	</sql>
+
+	
+	<!-- 按流水号查询主表信息 -->
+	<select id="get" resultMap="OrderClearInfoResult">
+		SELECT 
+			<include refid="orderClearInfoColumns"/>
+		FROM 
+			order_clear_main a 
+			<include refid="orderClearJoins"/>
+		WHERE
+			 a.in_no = #{inNo}
+	</select>
+
+	<!-- 获取多条主表信息 -->
+	<select id="findList" resultMap="OrderClearInfoResult">
+		SELECT 
+			<include refid="orderClearInfoColumns"/>
+		FROM order_clear_main A
+		<include refid="orderClearJoins"/>
+		<where>
+			A.DEL_FLAG = #{DEL_FLAG_NORMAL}
+
+	         <!-- 主表：登记时间(开始) -->
+	        <if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(a.register_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.register_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <!-- 主表：登记时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.register_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.register_date, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	        
+			<!-- 主表：登记机构 -->
+			<if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+				AND A.clear_office = '${rOffice.id}'
+			</if>
+			<!-- 主表：状态 -->
+			<if test="searchStatus != null and searchStatus != ''">
+				AND A.status = '${searchStatus}'
+			</if>
+			<if test="registerOffice != null and registerOffice != ''">
+				AND A.register_office = '${registerOffice}'
+			</if>
+			<!-- 数据范围过滤 -->
+			${sqlMap.dsf}
+		</where>
+
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.register_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 主表数据做成 -->
+	<insert id="insert">
+		INSERT INTO order_clear_main(
+		   in_no,
+		   clear_office,
+		   clear_office_nm,
+		   status,
+		   in_amount,
+		   register_office,
+		   register_office_nm,
+		   register_by,
+		   register_name,
+		   register_date,
+		   receive_by,
+		   receive_name,
+		   receive_date,
+		   create_by,
+		   create_name,
+		   create_date,
+		   update_by,
+		   update_name,
+		   update_date,
+		   del_flag,
+		   remarks,
+		   method
+		) VALUES (
+			#{inNo},
+			#{rOffice.id},
+			#{rOffice.name},
+			#{status},
+			#{inAmount},
+			#{registerOffice},
+			#{registerOfficeNm},
+			#{registerBy},
+			#{registerName},
+			#{registerDate},
+			#{receiveBy},
+			#{receiveName},
+			#{receiveDate},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate},
+			#{delFlag},
+			#{remarks},
+			#{method}
+		)
+	</insert>
+
+
+	<!-- 数据更新-->
+	<update id="update">
+		UPDATE order_clear_main SET 
+			clear_office = #{rOffice.id}, 
+			clear_office_nm = #{rOffice.name}, 
+			in_amount = #{inAmount}, 
+			update_by = #{updateBy.id}, 
+			update_name = #{updateBy.name},
+			update_date = #{updateDate}, 
+			remarks = #{remarks}
+		WHERE in_no = #{inNo}
+	</update>
+
+	<!-- 数据删除-->
+	<update id="delete">
+		UPDATE order_clear_main SET 
+			del_flag = #{DEL_FLAG_DELETE},
+			update_by = #{updateBy.id}, 
+			update_name = #{updateBy.name},
+			update_date = #{updateDate}
+		WHERE in_no = #{inNo}
+	</update>
+	
+
+
+
+
+	<!-- 状态更新 -->
+	<update id="updateStatus">
+		UPDATE order_clear_main a
+		SET 
+			a.update_by = #{updateBy.id},
+			a.update_name = #{updateBy.name},
+			a.update_date = #{updateDate},
+			a.STATUS = #{status},
+			a.authorize_by = #{authorizeBy.id},
+			a.authorize_name = #{authorizeBy.name},
+			a.authorize_date = #{authorizeDate},
+			a.authorize_reason = #{authorizeReason}
+		WHERE IN_NO = #{inNo}
+		    AND a.del_flag = '0'
+	</update>
+	
+	
+	<!-- 获取当日预约金额  -->
+	<select id="getToDayAmount" resultType="java.math.BigDecimal">
+		select 
+			case when sum(a.in_amount) is null then 0 else sum(a.in_amount) end 
+		  from order_clear_main a
+		<where>
+			a.del_flag = '0' 
+			<!-- 登记机构 -->
+			<if test="registerOffice != null and registerOffice != ''">
+				AND a.register_office = '${registerOffice}'
+			</if>
+			
+			<!-- 排除的预约单号 -->
+			<if test="excludeInNo != null and excludeInNo != ''">
+				AND a.IN_NO != '${excludeInNo}'
+			</if>
+			
+	        <!-- 当日 -->
+			<if test="dbName == 'oracle'">AND TO_CHAR(A.register_date, 'yyyy-mm-dd') = TO_CHAR(#{registerDate}, 'yyyy-mm-dd')</if>
+			<if test="dbName == 'mysql'">AND DATE_FORMAT(A.register_date, '%Y-%m-%d') = DATE_FORMAT(#{registerDate}, '%Y-%m-%d')</if>
+		</where>
+	</select>
+
+	<select id="reserveClearGraph" resultMap="OrderClearInfoResult">
+		SELECT
+			<if test="dbName == 'oracle'">to_char(A.register_date, 'yyyy-mm-dd') AS STR_DATE,</if>
+            <if test="dbName == 'mysql'">DATE_FORMAT(A.register_date, '%Y-%m-%d') AS STR_DATE,</if>
+			<include refid="orderClearInfoColumns"/>	
+		FROM order_clear_main A
+		<include refid="orderClearJoins"/>
+		<where>
+			A.DEL_FLAG = #{DEL_FLAG_NORMAL}
+			<if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+				AND A.clear_office = '${rOffice.id}'
+			</if>
+			<if test="registerOffice != null and registerOffice != ''">
+				AND A.register_office = '${registerOffice}'
+			</if>
+			<!--  主表：查询时间(开始) 修改人：wxz 2017-11-30 begin-->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				<if test="dbName == 'oracle'">
+					AND TO_CHAR(A.update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+				</if>
+				<if test="dbName == 'mysql'">
+					AND DATE_FORMAT(A.update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+				</if>
+			</if>
+				<!-- 主表：查询时间(结束) -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				<if test="dbName == 'oracle'">
+					AND '${searchDateEnd}' >= TO_CHAR(A.update_date, 'yyyy-mm-dd hh24:mi:ss')
+				</if>
+				<if test="dbName == 'mysql'">
+					AND '${searchDateEnd}' >= DATE_FORMAT(A.update_date, '%Y-%m-%d %H:%i:%s')
+				</if>
+			</if>
+			<!-- end -->
+		</where>
+		ORDER BY STR_DATE ASC,A.status ASC
+	</select>
+	
+	<select id="findClearList" resultMap="OrderClearInfoResult">
+		select c.cl01,c.cl02,c.cl03,c.cl04,c.cl05,c.cl06,c.cl07,c.cl08,c.cl09,c.cl10,
+       		(c.cl01 * 100 + c.cl02 * 50 + c.cl03 * 20 + c.cl04 * 10 + c.cl05 * 5 + c.cl06 * 2 + c.cl07 + c.cl08 * 0.5 + c.cl09 * 0.2+ c.cl10 * 0.1) * 1000 as totalAmt
+  		from (select 
+  					SUM(CASE WHEN b.denomination = '01' THEN b.count_dqf ELSE '0' END) as cl01,
+               		SUM(CASE WHEN b.denomination = '02' THEN b.count_dqf ELSE '0' END) as cl02,
+               		SUM(CASE WHEN b.denomination = '03' THEN b.count_dqf ELSE '0' END) as cl03,
+         	        SUM(CASE WHEN b.denomination = '04' THEN b.count_dqf ELSE '0' END) as cl04,
+               	  	SUM(CASE WHEN b.denomination = '05' THEN b.count_dqf ELSE '0' END) as cl05,
+               	  	SUM(CASE WHEN b.denomination = '06' THEN b.count_dqf ELSE '0' END) as cl06,
+               	  	SUM(CASE WHEN b.denomination = '07' THEN b.count_dqf ELSE '0' END) as cl07,
+               	  	SUM(CASE WHEN b.denomination = '08' THEN b.count_dqf ELSE '0' END) as cl08,
+               	  	SUM(CASE WHEN b.denomination = '09' THEN b.count_dqf ELSE '0' END) as cl09,
+               	  	SUM(CASE WHEN b.denomination = '10' THEN b.count_dqf ELSE '0' END) as cl10
+          	from order_clear_main a
+          		left join order_clear_detail b on a.in_no = b.in_no
+         	where a.del_flag = #{DEL_FLAG_NORMAL}
+           	<if test="registerOffice != null and registerOffice != ''">
+				AND A.register_office = '${registerOffice}'
+			</if>
+           and b.del_flag = #{DEL_FLAG_NORMAL}
+            <!-- 主表：登记时间(开始) -->
+	        <if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(a.register_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.register_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <!-- 主表：登记时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.register_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.register_date, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>) c
+	</select>
+	
+	<select id="getByDateAndOffice" resultMap="OrderClearInfoResult">
+		SELECT 
+			<include refid="orderClearInfoColumns"/>
+		FROM 
+			order_clear_main a 
+			<include refid="orderClearJoins"/>
+		<where>
+			a.DEL_FLAG = #{DEL_FLAG_NORMAL}
+			AND 
+	        <if test="dbName == 'oracle'">TO_CHAR(a.register_date, 'yyyy-mm-dd') ='${registerTime}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.register_date, '%Y-%m-%d') ='${registerTime}'</if> 
+			AND a.register_office = '${registerOffice}'
+			AND a.method = '${method}'
+			AND a.status ='${status}'
+		</where>
+	</select>
+</mapper>

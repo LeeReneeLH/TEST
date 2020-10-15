@@ -1,0 +1,445 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.weChat.v03.dao.DoorOrderDetailDao">
+    
+	<sql id="doorOrderDetailColumns">
+		a.id AS "id",
+		a.detail_id AS detailId,
+		a.order_id AS "orderId",
+		a.amount AS "amount",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.del_flag AS "delFlag",
+		a.rfid AS "rfid",
+		a.order_date AS "orderDate",
+		a.tickertape AS "tickertape",
+		a.photo AS "photo",
+		a.business_type AS "businessType",
+		a.coin_count AS "coinCount",
+		a.coin_amount AS "coinAmount",
+		a.paper_count AS "paperCount",
+		a.paper_amount AS "paperAmount",
+		a.other_amount AS "otherAmount",
+		a.force_amount AS "forceAmount",
+		a.remarks AS "remarks",
+		a.start_time AS "startTime",
+		a.end_time AS "endTime",
+		a.cost_time AS "costTime"
+		
+	</sql>
+	
+	<sql id="doorOrderDetailJoins">
+	</sql>
+    
+	<select id="get" resultType="DoorOrderDetail">
+		SELECT 
+			<include refid="doorOrderDetailColumns"/>
+		FROM door_order_detail a
+		<include refid="doorOrderDetailJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="DoorOrderDetail">
+		SELECT 
+			<include refid="doorOrderDetailColumns"/>
+		FROM door_order_detail a
+		<include refid="doorOrderDetailJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="orderId != null and orderId != ''">
+				AND a.order_id = #{orderId}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.detail_id ASC ,a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="DoorOrderDetail">
+		SELECT 
+			<include refid="doorOrderDetailColumns"/>
+		FROM door_order_detail a
+		<include refid="doorOrderDetailJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="orderId != null and orderId != ''">
+				AND a.order_id = #{orderId}
+			</if>
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.detail_id ASC ,a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO door_order_detail(
+			id,
+			detail_id ,
+			order_id,
+			amount,
+			update_by,
+			update_date,
+			create_by,
+			create_date,
+			del_flag,
+			rfid,
+			order_date,
+			tickertape,
+			photo,
+		    business_type,
+		    coin_count,
+			coin_amount,
+			paper_count,
+			paper_amount,
+			other_amount,
+			force_amount,
+			start_time,
+			end_time,
+			cost_time,
+		    remarks
+		) VALUES (
+			#{id},
+			#{detailId},
+			#{orderId},
+			#{amount},
+			#{updateBy.id},
+			#{updateDate},
+			#{createBy.id},
+			#{createDate},
+			#{delFlag},
+			#{rfid},
+			#{orderDate},
+			#{tickertape},
+			#{photo},
+			#{businessType},
+			#{coinCount},
+			#{coinAmount},
+			#{paperCount},
+			#{paperAmount},
+			#{otherAmount},
+			#{forceAmount},
+			#{startTime},
+			#{endTime},
+			#{costTime},
+			#{remarks}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE door_order_detail SET 	
+			order_id = #{orderId},
+			amount = #{amount},
+			rfid = #{rfid},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE door_order_detail SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="deleteByOrderId">
+		UPDATE door_order_detail SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE order_id = #{orderId}
+	</update>
+    <select id="getDetailByTickerTape" resultType="DoorOrderDetail">
+        SELECT
+        <include refid="doorOrderDetailColumns"/>
+        FROM door_order_detail a
+        LEFT JOIN door_order_info b
+        on a.ORDER_ID = b.ORDER_ID
+        WHERE a.TICKERTAPE = #{tickerTape}
+          AND b.STATUS &lt;&gt; '4'
+        AND a.DEL_FLAG = ${delFlag.valid}
+    </select>
+    
+    <!-- add by zxk start 2019-08-27 -->
+	<!-- 根据订单编号和凭条查询信息  zxk-->
+    <select id="findDetailByOrderIdAndTicker" resultType="DoorOrderDetail">
+        SELECT
+        <include refid="doorOrderDetailColumns"/>
+        FROM door_order_detail a
+        WHERE a.ORDER_ID = #{orderId}
+        AND a.TICKERTAPE = #{tickerNo}
+    </select>
+    
+    <!-- 通过id 保存(修改)图片  zxk -->
+    <update id="changePhotoById">
+      UPDATE door_order_detail SET 
+			photo = #{photo},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate}
+		WHERE id = #{id}
+    </update>
+    <!-- add by zxk end 2019-08-27 -->
+    
+    <!--  存款时间分析报表数据    2020-05-28-->
+    <select id="getDepositTimeAnalysisList" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.DepositTimeAnalysis">
+    	SELECT  main.door_id AS doorId,
+    			o.NAME AS doorName,
+    			main.totalCount AS totalCount,
+				SUM(main.lt5Count) AS ltFiveCount,
+		        SUM(main.5to10Count) AS fiveToTenCount,
+				SUM(main.10to15Count) AS tenToFifteenCount,
+				SUM(main.15to20Count) AS fifteenToTwentyCount,
+				SUM(main.gt20Count) AS gtTwentyCount,
+				ROUND(SUM(main.lt5Count)/main.totalCount,4) AS ltFivePercent,
+		        ROUND(SUM(main.5to10Count)/main.totalCount,4) AS fiveToTenPercent,
+		        ROUND(SUM(main.10to15Count)/main.totalCount,4) AS tenToFifteenPercent,
+		        ROUND(SUM(main.15to20Count)/main.totalCount,4) AS fifteenToTwentyPercent,
+		        ROUND(SUM(main.gt20Count)/main.totalCount,4) AS gtTwentyPercent
+		FROM (SELECT
+				doi.DOOR_ID AS door_id,
+				doi.OFFICE_ID AS office_id,
+				SUM( CASE WHEN dod.cost_time &lt; 300 OR dod.cost_time IS NULL THEN 1 ELSE 0 END) AS lt5Count,
+				SUM( CASE WHEN dod.cost_time &lt; 600 AND dod.cost_time >= 300 THEN 1 ELSE 0 END) AS 5to10Count,
+				SUM( CASE WHEN dod.cost_time &lt; 900 AND dod.cost_time >= 600 THEN 1 ELSE 0 END) AS 10to15Count,
+				SUM( CASE WHEN dod.cost_time &lt; 1200 AND dod.cost_time >= 900 THEN 1 ELSE 0 END) AS 15to20Count,
+				SUM( CASE WHEN dod.cost_time >= 1200 THEN 1 ELSE 0 END) AS gt20Count,
+				COUNT( dod.AMOUNT ) AS totalCount
+			FROM
+				door_order_info doi
+				LEFT JOIN door_order_detail dod ON doi.RFID = dod.RFID 
+				AND doi.ORDER_ID = dod.ORDER_ID
+			WHERE
+				doi.METHOD = '4'
+				AND doi.office_id &lt;> "99999999" 
+				AND doi.del_flag = "0" 
+				AND dod.del_flag = "0" 
+				<!-- 门店id -->
+				<if test="office != null and office.id != '' and office.id != null">
+				    AND doi.door_id = #{office.id}
+				</if>
+				<!--   开始时间 -->
+				<if test="searchDateStart != null and searchDateStart != ''">
+					AND
+					<if test="dbName == 'oracle'">TO_CHAR(dod.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+					<if test="dbName=='mysql'">DATE_FORMAT(dod.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+				</if>
+				<!-- 截止时间 -->
+				<if test="searchDateEnd != null and searchDateEnd != ''">
+					AND
+					<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(dod.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+					<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(dod.create_date, '%Y-%m-%d %H:%i:%s')</if>
+				</if>
+			GROUP BY
+				doi.DOOR_ID
+		<!-- 
+		SELECT a.DOOR_ID,
+					 o.NAME AS DOOR_NAME,
+					 a.OFFICE_ID,
+					 COUNT(b.AMOUNT) AS totalCount
+			  FROM door_order_info a
+			  LEFT JOIN door_order_detail b ON a.RFID = b.RFID AND a.ORDER_ID = b.ORDER_ID
+			  LEFT JOIN sys_office o ON o.ID = a.DOOR_ID AND o.DEL_FLAG = "0"
+			  WHERE a.del_flag = "0" AND b.del_flag = "0" AND a.office_id &lt;> "99999999"
+			   add:ZXK 限制申请方式为'存款设备'
+			   AND a.method = "4"
+				门店id
+				<if test="office != null and office.id != '' and office.id != null">
+				    AND a.door_id = #{office.id}
+				</if>
+				  开始时间
+				<if test="searchDateStart != null and searchDateStart != ''">
+					AND
+					<if test="dbName == 'oracle'">TO_CHAR(b.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+					<if test="dbName=='mysql'">DATE_FORMAT(b.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+				</if>
+				截止时间
+				<if test="searchDateEnd != null and searchDateEnd != ''">
+					AND
+					<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(b.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+					<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(b.create_date, '%Y-%m-%d %H:%i:%s')</if>
+				</if>
+				<if test="doorId != null and doorId != ''">
+					AND (a.DOOR_ID = #{doorId} or 
+						o.PARENT_IDS like  
+					<if test="dbName == 'oracle'">'%,' || #{doorId} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{doorId}, '%')</if>
+						)
+	            </if>
+			  GROUP BY a.DOOR_ID,
+					   a.OFFICE_ID -->
+			  ) main
+			  <!-- LEFT JOIN (SELECT dod.id as id,
+								dod.ORDER_ID,
+								doi.door_id,
+								IFNULL(CASE WHEN dod.cost_time &lt; 300 or dod.cost_time is null THEN COUNT(dod.id) ELSE 0 END,0) AS lt5Count,
+								IFNULL(CASE WHEN dod.cost_time &lt; 600 and dod.cost_time >= 300  THEN COUNT(dod.id) ELSE 0 END,0) AS 5to10Count,
+								IFNULL(CASE WHEN dod.cost_time &lt; 900 and dod.cost_time >= 600  THEN COUNT(dod.id) ELSE 0 END,0) AS 10to15Count,
+								IFNULL(CASE WHEN dod.cost_time &lt; 1200 and dod.cost_time >= 900  THEN COUNT(dod.id) ELSE 0 END,0) AS 15to20Count,
+								IFNULL(CASE WHEN dod.cost_time >= 1200 THEN COUNT(dod.id) ELSE 0 END,0) AS gt20Count,
+								count(dod.id)
+							FROM door_order_detail dod 
+								 LEFT JOIN door_order_info doi ON dod.RFID = doi.RFID AND dod.ORDER_ID = doi.ORDER_ID
+							WHERE dod.del_flag = "0" AND doi.del_flag = "0" AND doi.office_id &lt;> "99999999"
+							 add:ZXK 限制申请方式为'存款设备'
+							  AND doi.method = "4"
+								开始时间
+								<if test="searchDateStart != null and searchDateStart != ''">
+									AND
+									<if test="dbName == 'oracle'">TO_CHAR(dod.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+									<if test="dbName=='mysql'">DATE_FORMAT(dod.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+								</if>
+								结束时间
+								<if test="searchDateEnd != null and searchDateEnd != ''">
+									AND
+									<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(dod.CREATE_DATE,'yyyy-mm-dd hh24:mi:ss')</if>
+									<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(dod.CREATE_DATE,'%Y-%m-%d %H:%i:%s')</if>
+								</if>
+							GROUP BY dod.id,
+									 dod.ORDER_ID,
+									 doi.door_id
+						  ) detail ON main.door_id=detail.door_id -->
+		LEFT JOIN SYS_OFFICE o ON o.id = main.door_id and o.del_flag = ${delFlag.valid}
+		LEFT JOIN SYS_OFFICE o2 ON o2.id = o.parent_id and o2.del_flag = ${delFlag.valid}
+		LEFT JOIN SYS_OFFICE o1 ON o1.id = main.office_id and o1.del_flag = ${delFlag.valid}
+		<where>
+			<!-- 机构过滤 -->
+			${sqlMap.dsf}
+			<if test="doorId != null and doorId != ''">
+				AND (main.door_id = #{doorId} or o.PARENT_IDS like  
+				<if test="dbName == 'oracle'">'%,' || #{doorId} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{doorId}, '%')</if>
+					)
+            </if>
+			<if test="office != null and office.id != '' and office.id != null">
+				AND main.door_id = #{office.id}
+			</if>
+		</where>
+		GROUP BY main.door_id 
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				
+			</otherwise>
+		</choose>	
+    </select>
+    <!--  存款时间分析报表数据    2020-05-28-->
+    
+    
+    
+    <!-- 根据凭条查询 凭条金额详情列表 ZXK(一对多) 2020-6-3 -->
+	<resultMap id="tickrtapeInfo" type="DoorOrderDetail">
+		<id property="id" column="id" />
+		<result property="tickertape" column="tickerTape" />
+		<result property="businessType" column="businessType" />
+		<result property="updateName" column="updateName" />
+		<result property="updateDate" column="updateDate" />
+		<result property="remarks" column="remarks" />
+		<result property="amount" column="amount" />
+		<!-- 外连 主表对应金额明细信息集合 -->
+		<collection property="amountList" ofType="DoorOrderAmount">
+			<id property="id" column="amountId" />
+			<result property="typeId" column="typeId"/>
+			<result property="detailId" column="detailId" />
+			<result property="currency" column="currency" />
+			<result property="denomination" column="denomination" />
+			<result property="unitId" column="unitId" />
+			<result property="countZhang" column="countZhang" />
+			<result property="detailAmount" column="detailAmount" />
+			<result property="rowNo" column="rowNo" />
+		</collection>
+	</resultMap>
+	<!-- 根据凭条查询 凭条金额详情列表 ZXK 2020-6-3 -->
+	<select id="getTickrtapeInfo" resultMap="tickrtapeInfo">
+	SELECT
+		a.id AS "id",
+		a.tickertape AS "tickerTape",
+	   <!--  a.business_type AS "businessType", -->
+	    c.TYPE_NAME AS "businessType",
+		a.amount AS "amount",
+		<!-- a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate", -->
+	    a.remarks AS remarks,
+	    a.CREATE_DATE AS "updateDate",
+        s.name AS "updateName",
+		b.id AS "amountId",
+		b.type_id AS "typeId",
+		b.detail_id AS "detailId",
+		b.currency AS "currency",
+		b.denomination AS "denomination",
+		b.unit_id AS "unitId",
+		b.count_zhang AS "countZhang",
+		b.detail_amount AS "detailAmount",
+		b.row_no AS "rowNo"
+	FROM
+		door_order_detail a
+	LEFT JOIN door_order_amount b  ON b.detail_id = a.id
+	LEFT JOIN save_type c ON c.id = a.BUSINESS_TYPE
+    LEFT JOIN sys_user s ON s.id = a.CREATE_BY
+	<where>
+			a.del_flag = '0'
+			<if test="tickerTape != null and tickerTape != ''">
+				AND a.TICKERTAPE = #{tickerTape}
+			</if>
+	</where>		
+		ORDER BY  row_no ASC
+	</select>
+	
+	<!-- 查询最新业务备注 add by hzy -->
+	<select id="getRemarks" resultType="com.coffer.businesses.modules.weChat.v03.entity.DoorOrderDetail">
+		SELECT d.REMARKS,d.order_id 
+			FROM door_order_detail d 
+			LEFT JOIN (  
+				SELECT order_id, MAX( CREATE_DATE ) AS CREATE_DATE 
+				FROM door_order_detail 
+				where order_id = #{order_id}
+				GROUP BY order_id 
+			) dod on dod.order_id = d.order_id AND d.CREATE_date = dod.CREATE_DATE 
+			WHERE d.order_id = #{order_id}
+ 			GROUP BY d.order_id 
+	</select>
+	<!-- 根据凭条查询 将凭条金额明细插入到对应凭条明细中 HZY 2020-07-31 -->
+	<update id="updateDetailAmount">
+		UPDATE door_order_detail a, (
+			SELECT
+			  d.TICKERTAPE,
+			  IFNULL( SUM( a.COUNT_ZHANG ), 0 ) AS paperCount,
+			  IFNULL( SUM( a.COUNT_ZHANG ), 0 ) AS count,
+			  IFNULL( SUM( CASE WHEN a.TYPE_ID = 02 THEN a.DETAIL_AMOUNT ELSE 0 END ), 0 ) AS forceAmount,
+			  IFNULL( SUM( CASE WHEN a.TYPE_ID = 01 THEN a.DETAIL_AMOUNT ELSE 0 END ), 0 ) AS paperAmount,
+			  IFNULL( SUM( CASE WHEN a.TYPE_ID = 03 THEN a.DETAIL_AMOUNT ELSE 0 END ), 0 ) AS otherAmount,
+			  IFNULL( SUM( CASE WHEN a.TYPE_ID = 02 THEN a.DETAIL_AMOUNT ELSE 0 END ), 0 )+ IFNULL( SUM( CASE WHEN a.TYPE_ID = 01 THEN a.DETAIL_AMOUNT ELSE 0 END ), 0 ) AS amount
+			 FROM
+			  door_order_detail d
+			  LEFT JOIN door_order_amount a ON d.ID = a.DETAIL_ID 
+			  <where>
+			  	<if test="tickerTapeList != null and tickerTapeList != ''">
+					 d.TICKERTAPE in 
+					 <foreach collection="tickerTapeList" item="status" separator="," open="(" close=")" index="index">
+						 	 #{tickerTapeList[${index}]}
+					</foreach>
+				</if>
+			  </where>
+			 GROUP BY
+			  d.TICKERTAPE
+		) b set a.coin_count = 0,a.coin_amount=0.00,a.paper_count=b.paperCount,a.paper_amount=b.paperAmount,a.force_amount=b.forceAmount,a.other_amount=b.otherAmount
+		where a.TICKERTAPE = b.TICKERTAPE
+			  <if test="tickerTapeList != null and tickerTapeList != ''">
+			AND a.TICKERTAPE in 
+				 <foreach collection="tickerTapeList" item="status" separator="," open="(" close=")" index="index">
+					 	 #{tickerTapeList[${index}]}
+				</foreach>
+			</if>
+	</update>
+	<!-- 根据凭条查询 将凭条金额明细插入到对应凭条明细中 HZY 2020-07-31 -->
+</mapper>

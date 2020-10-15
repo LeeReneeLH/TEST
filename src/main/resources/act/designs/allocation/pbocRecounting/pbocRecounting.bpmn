@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.activiti.org/test">
+  <process id="pbocRecounting" name="人行复点流程" isExecutable="true">
+    <userTask id="ext.recountRegister" name="复点登记" activiti:extensionId="com.julong.palette.usertask.ext.OrderRegisterUserTask"></userTask>
+    <startEvent id="startevent2" name="Start" activiti:formKey="/allocation/v02/pbocAllocatedOrder/form"></startEvent>
+    <userTask id="ext.quotaMoney" name="配款" activiti:candidateGroups="pbocStoreMgr" activiti:extensionId="com.julong.palette.usertask.ext.QuotaMoneyUserTask"></userTask>
+    <userTask id="ext.doorScan" name="出库扫描" activiti:candidateGroups="pbocStoreMgr" activiti:extensionId="com.julong.palette.usertask.ext.DoorScanUserTask"></userTask>
+    <userTask id="ext.outfaceHandover" name="出库人脸交接" activiti:candidateGroups="pbocStoreMgr" activiti:extensionId="com.julong.palette.usertask.ext.FaceHandoverUserTask"></userTask>
+    <exclusiveGateway id="exclusivegateway3" name="Handover Gateway"></exclusiveGateway>
+    <sequenceFlow id="flow13" sourceRef="startevent2" targetRef="ext.recountRegister"></sequenceFlow>
+    <sequenceFlow id="flow17" sourceRef="ext.quotaMoney" targetRef="ext.doorScan"></sequenceFlow>
+    <sequenceFlow id="flow18" sourceRef="ext.doorScan" targetRef="exclusivegateway3"></sequenceFlow>
+    <sequenceFlow id="flow23" name="交接" sourceRef="exclusivegateway3" targetRef="ext.outfaceHandover">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${handoverPass == 0}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow24" sourceRef="ext.recountRegister" targetRef="ext.quotaMoney"></sequenceFlow>
+    <exclusiveGateway id="exclusivegateway4" name="Exclusive Gateway"></exclusiveGateway>
+    <endEvent id="endevent1" name="End"></endEvent>
+    <userTask id="ext.infaceHandover" name="入库人脸交接" activiti:extensionId="com.julong.palette.usertask.ext.FaceHandoverUserTask"></userTask>
+    <sequenceFlow id="flow28" sourceRef="ext.infaceHandover" targetRef="endevent1"></sequenceFlow>
+    <sequenceFlow id="flow29" name="未交接" sourceRef="exclusivegateway4" targetRef="endevent1"></sequenceFlow>
+    <sequenceFlow id="flow30" name="交接" sourceRef="exclusivegateway4" targetRef="ext.infaceHandover"></sequenceFlow>
+    <userTask id="ext.clearing" name="清分中" activiti:extensionId="com.julong.palette.usertask.ext.ClearingUserTask"></userTask>
+    <sequenceFlow id="flow31" sourceRef="ext.outfaceHandover" targetRef="ext.clearing"></sequenceFlow>
+    <sequenceFlow id="flow32" name="未交接" sourceRef="exclusivegateway3" targetRef="ext.clearing"></sequenceFlow>
+    <sequenceFlow id="flow33" sourceRef="ext.clearing" targetRef="exclusivegateway4"></sequenceFlow>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_pbocRecounting">
+    <bpmndi:BPMNPlane bpmnElement="pbocRecounting" id="BPMNPlane_pbocRecounting">
+      <bpmndi:BPMNShape bpmnElement="ext.recountRegister" id="BPMNShape_ext.recountRegister">
+        <omgdc:Bounds height="115.0" width="165.0" x="175.0" y="224.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="startevent2" id="BPMNShape_startevent2">
+        <omgdc:Bounds height="35.0" width="35.0" x="60.0" y="264.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="ext.quotaMoney" id="BPMNShape_ext.quotaMoney">
+        <omgdc:Bounds height="115.0" width="165.0" x="420.0" y="224.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="ext.doorScan" id="BPMNShape_ext.doorScan">
+        <omgdc:Bounds height="115.0" width="165.0" x="663.0" y="224.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="ext.outfaceHandover" id="BPMNShape_ext.outfaceHandover">
+        <omgdc:Bounds height="119.0" width="165.0" x="1010.0" y="56.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway3" id="BPMNShape_exclusivegateway3">
+        <omgdc:Bounds height="40.0" width="40.0" x="905.0" y="261.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway4" id="BPMNShape_exclusivegateway4">
+        <omgdc:Bounds height="40.0" width="40.0" x="1263.0" y="460.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endevent1" id="BPMNShape_endevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="1265.0" y="730.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="ext.infaceHandover" id="BPMNShape_ext.infaceHandover">
+        <omgdc:Bounds height="115.0" width="165.0" x="930.0" y="549.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="ext.clearing" id="BPMNShape_ext.clearing">
+        <omgdc:Bounds height="115.0" width="165.0" x="1200.0" y="224.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flow13" id="BPMNEdge_flow13">
+        <omgdi:waypoint x="95.0" y="281.0"></omgdi:waypoint>
+        <omgdi:waypoint x="175.0" y="281.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow17" id="BPMNEdge_flow17">
+        <omgdi:waypoint x="585.0" y="281.0"></omgdi:waypoint>
+        <omgdi:waypoint x="663.0" y="281.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow18" id="BPMNEdge_flow18">
+        <omgdi:waypoint x="828.0" y="281.0"></omgdi:waypoint>
+        <omgdi:waypoint x="905.0" y="281.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow23" id="BPMNEdge_flow23">
+        <omgdi:waypoint x="925.0" y="261.0"></omgdi:waypoint>
+        <omgdi:waypoint x="924.0" y="116.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1010.0" y="115.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="100.0" x="931.0" y="191.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow24" id="BPMNEdge_flow24">
+        <omgdi:waypoint x="340.0" y="281.0"></omgdi:waypoint>
+        <omgdi:waypoint x="420.0" y="281.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow28" id="BPMNEdge_flow28">
+        <omgdi:waypoint x="1012.0" y="664.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1012.0" y="747.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1265.0" y="747.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow29" id="BPMNEdge_flow29">
+        <omgdi:waypoint x="1283.0" y="500.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1282.0" y="730.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="100.0" x="1291.0" y="599.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow30" id="BPMNEdge_flow30">
+        <omgdi:waypoint x="1263.0" y="480.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1012.0" y="480.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1012.0" y="549.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="100.0" x="1111.0" y="460.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow31" id="BPMNEdge_flow31">
+        <omgdi:waypoint x="1175.0" y="115.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1282.0" y="115.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1282.0" y="224.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow32" id="BPMNEdge_flow32">
+        <omgdi:waypoint x="945.0" y="281.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1200.0" y="281.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="100.0" x="1059.0" y="264.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow33" id="BPMNEdge_flow33">
+        <omgdi:waypoint x="1282.0" y="339.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1283.0" y="460.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

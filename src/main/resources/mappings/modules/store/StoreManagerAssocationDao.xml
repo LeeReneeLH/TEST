@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoreManagerAssocationDao">
+    
+	<resultMap type="com.coffer.businesses.modules.store.v01.entity.StoreManagerAssocation" id="StoreManagerAssocationResult">
+		<id column="ID" property="id" />
+		<result column="STORE_ID" property="storeId" />
+		<result column="USER_ID" property="user.id" />
+		<result column="USER_NAME" property="user.name" />
+	</resultMap>
+
+	<sql id="Base_Column_List">
+		ID,
+		STORE_ID,
+		USER_ID,
+		USER_NAME
+	</sql>
+	
+	<select id="getByStoreId" resultMap="StoreManagerAssocationResult">
+		SELECT 
+			<include refid="Base_Column_List"></include>
+		FROM STORE_MANAGER_ASSOCATION
+		WHERE STORE_ID=#{storeId}
+	</select>
+	
+	<insert id="insert" >
+		INSERT INTO STORE_MANAGER_ASSOCATION(
+			ID,
+			STORE_ID,
+			USER_ID,
+			USER_NAME
+		) VALUES (
+			#{id},
+			#{storeId},
+			#{user.id},
+			#{user.name}
+		)
+	</insert>
+	
+	<update id="deleteByStoreId">
+		DELETE FROM STORE_MANAGER_ASSOCATION
+		WHERE STORE_ID=#{storeId}
+	</update>
+
+</mapper>

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.allocation.v02.dao.AllAllocateGoodsAreaDetailDao">
+   
+   <resultMap type="com.coffer.businesses.modules.allocation.v02.entity.PbocAllAllocateInfo" id="AllAllocateInfoResult">
+   		<id column="all_id"                property="allId" />
+	    <result column="roffice_id"        property="roffice.id"/>
+	    <result column="roffice_name" property="roffice.name"/>
+	    <result column="status" property="status"/>
+	    <!-- 调拨物品表 -->
+ 	    <collection property="pbocAllAllocateItemList" column="all_id" javaType="com.coffer.businesses.modules.allocation.v02.entity.PbocAllAllocateItem">
+			<id column="All_Items_Id"         property="allItemsId"/>
+	        <result column="all_id"          property="allId"/>
+	        <result column="goods_id"     property="goodsId"/>
+	        <result column="Money_Number"    property="moneyNumber"/>
+	        <result column="Money_Amount"    property="moneyAmount"/>
+	        <collection property="goodsAreaDetailList" column="All_Items_Id" ofType="com.coffer.businesses.modules.allocation.v02.entity.AllAllocateGoodsAreaDetail">
+	        	<id column="ID"         property="id"/>
+	        	<result column="AREA_All_Items_Id"          property="allItemsId"/>
+	        	<result column="IS_NECESSARY_OUT"          property="isNecessaryOut"/>
+	        	<result column="RFID" property="goodsLocationInfo.rfid" />
+	        	<result column="GOODS_ID" property="goodsLocationInfo.goodsId" />
+	        	<result column="IN_STORE_DATE" property="goodsLocationInfo.inStoreDate" />
+	        	<result column="GOODS_NUM" property="goodsLocationInfo.goodsNum" />
+	        	<result column="STORE_AREA_NAME" property="goodsLocationInfo.storeAreaName" />
+	        	<result column="STORE_AREA_TYPE" property="goodsLocationInfo.storeAreaType" />
+	        </collection>
+	    </collection>
+   </resultMap>
+	
+	<select id="getPrintQuotaDataByAllId" resultMap="AllAllocateInfoResult">
+		select 
+			mainInfo.all_id,
+			mainInfo.roffice_id,
+			mainInfo.roffice_name,
+			mainInfo.status,
+			goodsItems.all_id,
+			goodsItems.Regist_Type,
+		   goodsItems.All_Items_Id,
+	       goodsItems.Goods_Id,
+	       goodsItems.Money_Number,
+	       goodsItems.Money_Amount,
+	       goodsLocationInfo.Goods_Id,
+	       goodsLocationInfo.GOODS_NUM,
+	       goodsAreaInfo.ID,
+	       goodsAreaInfo.IS_NECESSARY_OUT,
+	       goodsLocationInfo.RFID,
+	       goodsAreaInfo.All_Items_Id AS AREA_All_Items_Id,
+	       goodsLocationInfo.In_Store_Date,
+	       areaSettingInfo.Store_Area_Name,
+	       areaSettingInfo.STORE_AREA_TYPE
+	  from pboc_all_allocate_info          mainInfo,
+	       pboc_all_allocate_items         goodsItems,
+	       ALLOCATE_GOODS_AREA_DETAIL goodsAreaInfo
+	  left join STO_GOODS_LOCATION_INFO goodsLocationInfo
+	    on goodsAreaInfo.Goods_Location_Id = goodsLocationInfo.id
+	  left join STORE_AREA_SETTING_INFO areaSettingInfo
+	    on goodsLocationInfo.Store_Area_Id = areaSettingInfo.Id
+	
+	 where mainInfo.all_id = goodsitems.all_id
+	   and goodsItems.Regist_Type = #{registType}
+	   and goodsItems.All_Items_Id = goodsAreaInfo.All_Items_Id
+	   and mainInfo.all_id=#{allId}
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO ALLOCATE_GOODS_AREA_DETAIL(
+			ID,
+			ALL_ID,
+			ALL_ITEMS_ID,
+			GOODS_LOCATION_ID,
+			IS_NECESSARY_OUT
+		) VALUES (
+			#{id},
+			#{allId},
+			#{allItemsId},
+			#{goodsLocationId},
+			#{isNecessaryOut}
+		)
+	</insert>
+	
+	<update id="deleteByAllId">
+		DELETE FROM ALLOCATE_GOODS_AREA_DETAIL 
+		WHERE ALL_ID = #{allId}
+	</update>
+
+    <resultMap id="NecessaryOutResultMap" type="com.coffer.businesses.modules.allocation.v02.entity.AllAllocateGoodsAreaDetail">
+        <id column="area.ID"                 property="id"              jdbcType="VARCHAR" />
+        <result column="area.itemsId"        property="allItemsId"      jdbcType="VARCHAR" />
+        <result column="area.allId"          property="allId"           jdbcType="VARCHAR" />
+        <result column="area.locationId"     property="goodsLocationId" jdbcType="VARCHAR" />
+        <result column="area.isNecessaryOut" property="isNecessaryOut"  jdbcType="VARCHAR" />
+        <result column="goods.rfid"          property="rfid"            jdbcType="VARCHAR" />
+        <result column="areaSet.storeAreaName"          property="storeAreaName"            jdbcType="VARCHAR" />
+    </resultMap>
+
+    <sql id="Necessary_Out_Column_List">
+        a.ID                   AS "area.ID", 
+        a.ALL_ITEMS_ID         AS "area.itemsId",
+        a.ALL_ID               AS "area.allId",
+        a.GOODS_LOCATION_ID    AS "area.locationId",
+        a.IS_NECESSARY_OUT     AS "area.isNecessaryOut",
+        g.RFID                 AS "goods.rfid",
+        f.store_area_name as "areaSet.storeAreaName"
+    </sql>
+
+    <select id="findIsNecessaryOut" resultMap="NecessaryOutResultMap" parameterType="java.lang.String">
+        select
+          <include refid="Necessary_Out_Column_List" />
+        from ALLOCATE_GOODS_AREA_DETAIL a, STO_GOODS_LOCATION_INFO g
+        left join STORE_AREA_SETTING_INFO f on g.store_area_id = f.id
+        where a.GOODS_LOCATION_ID = g.ID
+          and a.ALL_ID = #{allId,jdbcType=VARCHAR}
+    </select>   
+
+</mapper>

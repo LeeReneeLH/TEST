@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.coffer.businesses.modules.doorOrder.v01.dao.ClearAddMoneyDao">
+
+	<sql id="clearAddMoneyColumns">
+		a.id AS "id",
+		a.door_id AS "doorId",
+		door.name AS "doorName",
+		a.equipment_id AS "equipmentId",
+		e.series_number AS "equipmentName",
+		a.clear_center_id AS "clearCenterId",
+		a.clear_center_name AS "clearCenterName",
+		a.bag_no AS "bagNo",
+		a.count AS "count",
+		a.amount AS "amount",
+		a.bag_status AS "bagStatus",
+		a.change_date AS "changeDate",
+		a.change_code AS "changeCode",
+        a.business_id AS "business_id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_name AS "updateName",
+		a.update_date AS "updateDate",
+		<!-- add-start by ZXK 2019-07-30 -->
+		a.type AS "type",
+		a.surplus_amount AS "surplusAmount",
+		<!-- end -->
+		a.del_flag AS "delFlag"
+	</sql>
+	
+	<sql id="clearAddMoneyJoins">
+		LEFT JOIN EQUIPMENT_INFO e ON e.id=a.equipment_id
+		LEFT JOIN sys_office door on door.id = a.door_id
+	</sql>
+
+	<select id="get" resultType="ClearAddMoney">
+		SELECT
+		<include refid="clearAddMoneyColumns" />
+		FROM CLEAR_ADD_MONEY a
+		<include refid="clearAddMoneyJoins" />
+		WHERE a.id = #{id}
+	</select>
+
+	<select id="findList" resultType="ClearAddMoney">
+		SELECT
+		<include refid="clearAddMoneyColumns" />
+		FROM CLEAR_ADD_MONEY a
+		<include refid="clearAddMoneyJoins" />
+		left join sys_office o
+		on a.clear_center_id=o.id
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+
+			<if test="doorId != null and doorId != ''">
+				AND a.door_id = #{doorId}
+			</if>
+			<if test="businessId != null and businessId != ''">
+				AND a.business_id LIKE
+				<if test="dbName == 'oracle'">'%'||#{businessId}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{businessId}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{businessId},'%')</if>
+			</if>
+			<if test="equipmentName != null and equipmentName != ''">
+				AND e.series_number LIKE
+				<if test="dbName == 'oracle'">'%'||#{equipmentName}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{equipmentName}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{equipmentName},'%')</if>
+			</if>
+			<if test="clearCenterName != null and clearCenterName != ''">
+				AND a.clear_center_name = #{clearCenterName}
+			</if>
+			<if test="bagStatus != null and bagStatus != ''">
+				AND a.bag_status = #{bagStatus}
+			</if>
+			<if test="type != null and type != ''">
+				AND a.type = #{type}
+			</if>
+			<if test="bagNo != null and bagNo != ''">
+				AND a.bag_no LIKE
+				<if test="dbName == 'oracle'">'%'||#{bagNo}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{bagNo}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{bagNo},'%')</if>
+			</if>
+		   <!-- 开始时间 -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				AND 
+				<if test="dbName == 'oracle'">TO_CHAR(a.update_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.update_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+			</if>
+			<!-- 截止时间 -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND 
+				<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.update_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.update_date, '%Y-%m-%d %H:%i:%s')</if>
+			</if>	
+		   
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<update id="delete">
+		UPDATE CLEAR_ADD_MONEY SET
+		del_flag =
+		#{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+
+	<select id="findAllList" resultType="ClearAddMoney">
+		SELECT
+		<include refid="clearAddMoneyColumns" />
+		FROM clear_add_money a
+		<include refid="clearAddMoneyJoins" />
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<insert id="insert">
+		INSERT INTO clear_add_money(
+		id,
+		door_id,
+		door_name,
+		equipment_id,
+		equipment_name,
+		clear_center_id,
+		clear_center_name,
+		bag_no,
+		count,
+		amount,
+		change_date,
+		change_code,
+        business_id,
+		bag_status,
+		create_by,
+		create_name,
+		create_date,
+		update_by,
+		update_name,
+		update_date,
+		del_flag,
+		type,
+		surplus_amount
+		) VALUES (
+		#{id},
+		#{doorId},
+		#{doorName},
+		#{equipmentId},
+		#{equipmentName},
+		#{clearCenterId},
+		#{clearCenterName},
+		#{bagNo},
+		#{count},
+		#{amount},
+		#{changeDate},
+		#{changeCode},
+	    #{businessId},
+		#{bagStatus},
+		#{createBy.id},
+		#{createName},
+		#{createDate},
+		#{updateBy.id},
+		#{updateName},
+		#{updateDate},
+		#{delFlag},
+		#{type},
+		#{surplusAmount}
+		)
+	</insert>
+
+	<update id="update">
+		UPDATE clear_add_money SET
+		door_id = #{doorId},
+		door_name = #{doorName},
+		equipment_id = #{equipmentId},
+		equipment_name = #{equipmentName},
+		clear_center_id = #{clearCenterId},
+		clear_center_name = #{clearCenterName},
+		bag_no = #{bagNo},
+		count = #{count},
+		amount = #{amount},
+		change_date = #{changeDate},
+		change_code = #{changeCode},
+        business_id = #{businessId},
+		bag_status = #{bagStatus},
+		create_name = #{createName},
+		update_by = #{updateBy.id},
+		update_name = #{updateName},
+		update_date = #{updateDate},
+		type = #{type},
+		surplus_amount = #{surplusAmount}
+		WHERE id = #{id}
+	</update>
+	
+	<select id="getByEquipmentId" resultType="ClearAddMoney">
+		select 
+		<include refid="clearAddMoneyColumns" /> 
+		from CLEAR_ADD_MONEY a
+		<include refid="clearAddMoneyJoins" />
+		right  join clear_plan_info c
+		on c.id=a.business_id
+		where  a.equipment_id=#{equipmentId} AND c.id=#{id} AND a.type=#{type}
+		and a.del_flag = '0'
+		ORDER BY a.UPDATE_DATE DESC
+	</select>
+
+   <!-- ZXK 机具存款流水列表  2020-6-2 -->
+    <select id="getDepositSerialList" resultType="ClearAddMoney">
+		SELECT
+		<include refid="clearAddMoneyColumns" />,
+		b.REMARKS AS "remarks",
+		u.name AS "operator",
+		<!-- a.update_date AS "operationTime" -->
+		<if test="dbName == 'oracle'">
+		TO_CHAR(a.update_date, 'yyyy-mm-dd hh24:mi:ss') AS "operationTime"
+		</if>
+		<if test="dbName=='mysql'">
+		DATE_FORMAT(a.update_date, '%Y-%m-%d %H:%i:%s') AS "operationTime"
+		</if>
+		FROM CLEAR_ADD_MONEY a
+		<include refid="clearAddMoneyJoins" />
+		LEFT JOIN door_order_detail b ON b.TICKERTAPE = a.BUSINESS_ID
+        LEFT JOIN sys_user u ON u.id = a.UPDATE_BY
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+
+            <if test="equipmentId != null and equipmentId != ''">
+				AND a.equipment_Id = #{equipmentId}
+			</if>
+			<if test="businessId != null and businessId != ''">
+				AND a.business_id LIKE
+				<if test="dbName == 'oracle'">'%'||#{businessId}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{businessId}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{businessId},'%')</if>
+			</if>
+			<if test="type != null and type != ''">
+				AND a.type = #{type}
+			</if>
+			<if test="bagNo != null and bagNo != ''">
+				AND a.bag_no LIKE
+				<if test="dbName == 'oracle'">'%'||#{bagNo}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{bagNo}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{bagNo},'%')</if>
+			</if>
+			<!-- 业务备注 -->
+			<if test="remarks != null and remarks != ''">
+				AND b.remarks LIKE
+				<if test="dbName == 'oracle'">'%'||#{remarks}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{remarks}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{remarks},'%')</if>
+			</if>
+			<!-- 操作人 -->
+			<if test="operator != null and operator != ''">
+				AND u.name LIKE
+				<if test="dbName == 'oracle'">'%'||#{operator}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{operator}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{operator},'%')</if>
+			</if>
+		   <!-- 操作开始时间 -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				AND 
+				<if test="dbName == 'oracle'">TO_CHAR(a.update_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.update_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+			</if>
+			<!-- 操作截止时间 -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND 
+				<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.update_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.update_date, '%Y-%m-%d %H:%i:%s')</if>
+			</if>	
+		   
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+
+</mapper>

@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v02.dao.StoDocTempInfoDao">
+	<sql id="stoDocTempInfoColumns">
+		ID,
+		OFFICE_ID,
+		DOCUMENT_TYPE,
+		OFFICE_STAMPER_TYPE,
+		BUSINESS_TYPE,
+		STATUS,
+		OFFICE_STAMPER_ID,
+		PBOC_OFFICE_STAMPER_ID,
+		PBOC_OFFICE_STAMPER_TYPE,
+		CREATE_BY,
+		CREATE_NAME,
+		CREATE_DATE,
+		UPDATE_BY,
+		UPDATE_NAME,
+		UPDATE_DATE,
+		DEL_FLAG,
+		PARENTS_OFFICE_ID
+	</sql>
+	<resultMap id="stoDocTempInfoResultMap" type="com.coffer.businesses.modules.store.v02.entity.StoDocTempInfo" >
+		<id column="ID" property="id"/>
+		<result column="DOCUMENT_TYPE" property="documentType"/>
+		<result column="OFFICE_STAMPER_TYPE" property="officeStamperType"/>
+		<result column="BUSINESS_TYPE" property="businessType"/>
+		<result column="STATUS" property="status"/>
+		<result column="OFFICE_STAMPER_ID" property="officeStamperId"/>
+		<result column="PBOC_OFFICE_STAMPER_ID" property="pbocOfficeStamperId"/>
+		<result column="PBOC_OFFICE_STAMPER_TYPE" property="pbocOfficeStamperType"/>
+		<result column="CREATE_BY" property="createBy.id"/>
+		<result column="CREATE_NAME" property="createName"/>
+		<result column="CREATE_DATE" property="createDate"/>
+		<result column="UPDATE_BY" property="updateBy.id"/>
+		<result column="UPDATE_NAME" property="updateName"/>
+		<result column="UPDATE_DATE" property="updateDate"/>
+		<result column="DEL_FLAG" property="delFlag"/>
+		<!-- 机构信息 -->
+		<association property="parentsOffice" column="PARENTS_OFFICE_ID" javaType="com.coffer.core.modules.sys.entity.Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get"/>
+		<!-- 机构信息 -->
+		<association property="office" column="OFFICE_ID" javaType="com.coffer.core.modules.sys.entity.Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get"/>
+		<!-- 商业机构印章信息 -->
+		<association property="stoOfficeStamperInfo" column="OFFICE_STAMPER_ID" javaType="StoOfficeStamperInfo" select="com.coffer.businesses.modules.store.v02.dao.StoOfficeStamperInfoDao.getById"/>
+		<!-- 人行机构印章信息 -->
+		<association property="pbocStoOfficeStamperInfo" column="PBOC_OFFICE_STAMPER_ID" javaType="StoOfficeStamperInfo" select="com.coffer.businesses.modules.store.v02.dao.StoOfficeStamperInfoDao.getById"/>
+		<!-- 商业机构单据人员信息 -->
+		<collection property="docTempUserDetailList" column="ID" javaType="ArrayList" ofType="StoDocTempUserDetail"
+			select="com.coffer.businesses.modules.store.v02.dao.StoDocTempUserDetailDao.findUserDetailByDocTempId" />
+		
+	</resultMap>
+	<select id="get" resultMap="stoDocTempInfoResultMap">
+		SELECT 
+			<include refid="stoDocTempInfoColumns"></include>
+		FROM STO_DOC_TEMP_INFO
+		WHERE ID = #{id}
+	</select>
+	<select id="getByBusinessAndStatus" resultMap="stoDocTempInfoResultMap">
+		SELECT 
+			<include refid="stoDocTempInfoColumns"></include>
+		FROM STO_DOC_TEMP_INFO
+		WHERE DEL_FLAG = '0'
+		<!-- 主表：业务状态 -->
+        <if test="status != null and status != ''">
+            and status = #{status}
+        </if>
+        <!-- 主表：业务类型 -->
+		<if test="businessType != null and businessType != ''">
+			and business_type = #{businessType}
+		</if>
+		<if test="officeId != null and officeId != ''">
+			and OFFICE_ID = #{officeId}
+		</if>
+	</select>
+	<select id="findList" resultMap="stoDocTempInfoResultMap">
+		SELECT 
+			<include refid="stoDocTempInfoColumns"></include>
+		FROM STO_DOC_TEMP_INFO
+		<where>
+			DEL_FLAG = #{DEL_FLAG_NORMAL}
+			<if test="office != null and office.id != null and office.id != ''">
+				AND OFFICE_ID = #{office.id}
+			</if>
+			<if test="documentType != null and documentType != ''">
+				AND DOCUMENT_TYPE = #{documentType}
+			</if>
+			<if test="officeStamperType != null and officeStamperType != ''">
+				AND OFFICE_STAMPER_TYPE = #{officeStamperType}
+			</if>
+			<if test="parentsOffice != null and parentsOffice.id != null and parentsOffice.id != ''">
+				AND PARENTS_OFFICE_ID = #{parentsOffice.id}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY OFFICE_ID, UPDATE_DATE
+			</otherwise>
+		</choose>
+	</select>
+	<insert id="insert">
+		INSERT INTO STO_DOC_TEMP_INFO(
+			ID,
+			OFFICE_ID,
+			DOCUMENT_TYPE,
+			OFFICE_STAMPER_TYPE,
+			BUSINESS_TYPE,
+			STATUS,
+			OFFICE_STAMPER_ID,
+			PBOC_OFFICE_STAMPER_ID,
+			PBOC_OFFICE_STAMPER_TYPE,
+			CREATE_BY,
+			CREATE_NAME,
+			CREATE_DATE,
+			UPDATE_BY,
+			UPDATE_NAME,
+			UPDATE_DATE,
+			DEL_FLAG,
+			PARENTS_OFFICE_ID
+		) VALUES (
+			#{id},
+			#{office.id},
+			#{documentType},
+			#{officeStamperType},
+			#{businessType},
+			#{status},
+			#{officeStamperId},
+			#{pbocOfficeStamperId},
+			#{pbocOfficeStamperType},
+			#{createBy.id},
+			#{createBy.name},
+			#{createDate},
+			#{updateBy.id},
+			#{updateBy.name},
+			#{updateDate},
+			#{delFlag},
+			#{parentsOffice.id}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE STO_DOC_TEMP_INFO SET 
+			DOCUMENT_TYPE = #{documentType},
+			OFFICE_STAMPER_TYPE = #{officeStamperType},
+			<if test="parentsOffice != null and parentsOffice.id != null and parentsOffice.id != ''">
+				PARENTS_OFFICE_ID = #{parentsOffice.id},
+			</if>
+			update_by = #{updateBy.id},
+			update_name = #{updateBy.name},
+			update_date = #{updateDate}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="updatePbocOfficeStamperId">
+		UPDATE STO_DOC_TEMP_INFO SET 
+			PBOC_OFFICE_STAMPER_ID = #{pbocOfficeStamperId},
+			PBOC_OFFICE_STAMPER_TYPE = #{pbocOfficeStamperType},
+			update_by = #{updateBy.id},
+			update_name = #{updateBy.name},
+			update_date = #{updateDate}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE STO_DOC_TEMP_INFO SET 
+			del_flag = #{DEL_FLAG_DELETE},
+			update_by = #{updateBy.id},
+			update_name = #{updateBy.name},
+			update_date = #{updateDate}
+		WHERE id = #{id}
+	</update>
+	
+</mapper>

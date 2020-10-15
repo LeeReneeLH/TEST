@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.core.modules.sys.dao.SysOtpOfficeDao">
+    
+	<sql id="sysOtpOfficeColumns">
+		a.id AS "id",
+		a.office_id AS "office.id"
+	</sql>
+	
+	<sql id="sysOtpOfficeJoins">
+	</sql>
+    
+	<select id="get" resultType="SysOtpOffice">
+		SELECT 
+			<include refid="sysOtpOfficeColumns"/>
+		FROM sys_otp_office a
+			<include refid="sysOtpOfficeJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="SysOtpOffice">
+		SELECT 
+			<include refid="sysOtpOfficeColumns"/>
+		FROM sys_otp_office a
+			<include refid="sysOtpOfficeJoins"/>
+		<where>
+			<if test="office != null and office.id != null and office.id != ''">
+				a.office_id=#{office.id}
+			</if>
+		</where>
+	</select>
+	
+	<select id="findAllList" resultType="SysOtpOffice">
+		SELECT 
+			<include refid="sysOtpOfficeColumns"/>
+		FROM sys_otp_office a
+			<include refid="sysOtpOfficeJoins"/>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO sys_otp_office(
+			id, 
+			office_id
+		)VALUES(
+			#{id},
+			#{office.id}
+		)
+	</insert>
+	
+	<delete id="delete">
+		DELETE FROM sys_otp_office a WHERE a.id = #{id}
+	</delete>
+	
+	<delete id="deleteAll">
+		DELETE FROM sys_otp_office
+	</delete>
+	
+</mapper>

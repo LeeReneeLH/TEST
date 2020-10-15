@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.collection.v03.dao.CheckCashAmountDao">
+
+	<sql id="checkCashAmountColumns">
+		a.id AS "id",
+		a.out_no AS "outNo",
+		a.out_row_no AS "outRowNo",
+		a.detail_id AS "detailId",
+		a.input_amount AS "inputAmount",
+		a.check_amount AS "checkAmount",
+		a.diff_amount AS "diffAmount",
+		a.pack_num AS "packNum",
+		a.data_flag AS "dataFlag",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.del_flag AS "delFlag",
+		a.enabled_flag AS "enabledFlag",
+		a.remarks AS "remarks"
+	</sql>
+	
+	
+	<sql id="checkCashAmountJoins">
+		<!-- LEFT JOIN sys_user b ON b.id = a.accept_by -->
+		LEFT JOIN sys_user c ON c.id = a.update_by AND c.del_flag = #{DEL_FLAG_NORMAL}
+		LEFT JOIN sys_user d ON d.id = a.create_by AND d.del_flag = #{DEL_FLAG_NORMAL}
+		LEFT JOIN STO_ESCORT_INFO f ON f.ESCORT_ID = a.clear_man_no AND f.del_flag = #{DEL_FLAG_NORMAL}
+	</sql>
+    
+	<select id="get" resultType="CheckCashAmount">
+		SELECT 
+			<include refid="checkCashAmountColumns"/>
+		FROM CHECK_CASH_AMOUNT a
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="CheckCashAmount">
+		SELECT 
+			<include refid="checkCashAmountColumns"/>
+		    ,odetail.remarks as "oRemarks"
+		FROM CHECK_CASH_AMOUNT a
+		left join door_order_detail odetail on a.pack_num = odetail.tickertape
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="outNo != null and outNo != ''">
+				AND a.out_no = #{outNo }
+			</if>
+			<!-- add-start  添加检索条件         HaoShiJie 2020.06.24 -->
+			<if test="packNum != null and packNum != ''">
+				AND a.pack_num = #{packNum }
+			</if>
+			<if test="enabledFlag != null and enabledFlag != ''">
+				AND a.enabled_flag = #{enabledFlag }
+			</if>
+			<!-- add-end    添加检索条件         HaoShiJie 2020.06.24 -->
+		</where>
+		ORDER BY a.out_no,a.out_row_no
+	</select>
+	
+	<select id="pdaFindList" resultType="CheckCashAmount">
+		SELECT 
+		    a.CUST_NAME AS "custName",
+			a.out_no AS "outNo",
+			d.out_row_no AS "outRowNo",
+			a.detail_id AS "detailId",
+			a.input_amount AS "inputAmount",
+			a.check_amount AS "checkAmount",
+			a.diff_amount AS "diffAmount",
+			d.pack_num AS "packNum",
+			a.remarks AS "remarks"
+		FROM check_cash_main a
+		LEFT JOIN CHECK_CASH_AMOUNT d ON d.OUT_NO = a.OUT_NO AND d.del_flag = #{DEL_FLAG_NORMAL}
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="outNo != null and outNo != ''">
+				AND a.out_no = #{outNo }
+			</if>
+		</where>
+		ORDER BY a.out_no,d.out_row_no
+	</select>
+	
+
+	<select id="getMaxOutRowNo" resultType="long">
+		select case when max(out_row_no) is null then 0 else max(out_row_no) end
+		  from check_cash_amount
+		 where out_no = #{outNo}
+	</select>
+	
+	
+	<!-- 查询未拆箱数 -->
+	<select id="findNoBoxCount" resultType="long">
+		SELECT
+			COUNT(1)
+		FROM check_cash_amount a
+		WHERE a.del_flag = '0'
+		  and a.enabled_flag = '0'
+		  and a.out_no = #{outNo}
+	</select>
+	
+	
+	
+	<insert id="insert">
+		INSERT INTO CHECK_CASH_AMOUNT(
+		   id,
+		   out_no,
+		   out_row_no,
+		   detail_id,
+		   input_amount,
+		   check_amount,
+		   diff_amount,
+		   confirm_user_id,
+		   confirm_user_nm,
+		   authorize_user_id,
+		   authorize_user_nm,
+		   pack_num,
+		   data_flag,
+		   create_by,
+		   create_name,
+		   create_date,
+		   update_by,
+		   update_name,
+		   update_date,
+		   del_flag,
+		   enabled_flag,
+		   remarks
+		) VALUES (
+			#{id},
+			#{outNo},
+			#{outRowNo},
+			#{detailId},
+			#{inputAmount},
+			#{checkAmount},
+			#{diffAmount},
+			#{confirmUserId},
+			#{confirmUserNm},
+			#{authorizeUserId},
+			#{authorizeUserNm},
+			#{packNum},
+			#{dataFlag},
+			#{createBy.id},
+			#{createBy.name},
+			#{createDate},
+			#{updateBy.id},
+			#{updateBy.name},
+			#{updateDate},
+			#{delFlag},
+			#{enabledFlag},
+			#{remarks}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE CHECK_CASH_AMOUNT SET 
+			input_amount = #{inputAmount}, 
+			check_amount = #{checkAmount}, 
+			diff_amount = #{diffAmount}, 
+			confirm_user_id = #{confirmUserId}, 
+			confirm_user_nm = #{confirmUserNm},
+			authorize_user_id = #{authorizeUserId}, 
+			authorize_user_nm = #{authorizeUserNm},
+			enabled_flag = #{enabledFlag},
+			update_by = #{updateBy.id}, 
+			update_date = #{updateDate}, 
+			update_name = #{updateBy.name}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 删除每笔金额表数据(逻辑删除) -->
+	<update id="logicDelete">
+		UPDATE check_cash_amount SET
+		del_flag = '1',
+		update_by = #{updateBy.id}, 
+		update_date = #{updateDate}, 
+		update_name = #{updateBy.name}
+		WHERE out_no = #{outNo}
+		  and del_flag = '0'
+		<if test="outRowNo != null and outRowNo != ''">
+		    AND out_row_no = #{outRowNo}
+		</if>
+	</update>
+
+	<!-- 删除所有录入金额明细(逻辑删除) -->
+	<update id="inputLogicDelete">
+		UPDATE check_cash_amount SET
+		del_flag = '1',
+		update_by = #{updateBy.id}, 
+		update_date = #{updateDate}, 
+		update_name = #{updateBy.name}
+		WHERE out_no = #{outNo}
+		  	and del_flag = #{DEL_FLAG_NORMAL}
+		    AND data_flag = #{dataFlag}
+	</update>
+
+</mapper>

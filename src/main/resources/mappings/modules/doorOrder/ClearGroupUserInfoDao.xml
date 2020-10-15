@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.doorOrder.v01.dao.ClearGroupUserInfoDao">
+    
+	<sql id="clearGroupUserInfoColumns">
+		a.id AS "id",
+		a.clear_group_id AS "clearGroupId",
+		a.user_id AS "userId",
+		a.user_name AS "userName",
+		a.del_flag AS "delFlag",
+		u3.name AS "user.name"
+	</sql>
+	
+	<sql id="clearGroupUserInfoJoins">
+		LEFT JOIN sys_user u3 ON u3.id = a.user_id
+	</sql>
+    
+	<select id="get" resultType="ClearGroupUserInfo">
+		SELECT 
+			<include refid="clearGroupUserInfoColumns"/>
+		FROM clear_group_user_info a
+		<include refid="clearGroupUserInfoJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="ClearGroupUserInfo">
+		SELECT 
+			<include refid="clearGroupUserInfoColumns"/>
+		FROM clear_group_user_info a
+		<include refid="clearGroupUserInfoJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="clearGroupId != null and clearGroupId != ''">
+				AND a.clear_group_id = #{clearGroupId}	
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="ClearGroupUserInfo">
+		SELECT 
+			<include refid="clearGroupUserInfoColumns"/>
+		FROM clear_group_user_info a
+		<include refid="clearGroupUserInfoJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO clear_group_user_info(
+			id,
+			clear_group_id,
+			user_id,
+			user_name,
+			del_flag
+		) VALUES (
+			#{id},
+			#{clearGroupId},
+			#{userId},
+			#{userName},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE clear_group_user_info SET 	
+			clear_group_id = #{clearGroupId},
+			user_id = #{userId},
+			user_name = #{userName}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE clear_group_user_info SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 根据清机编号删除 清机组人员相关记录 -->
+	<update id="deleteByClearGroupId">
+		UPDATE clear_group_user_info SET 
+			del_flag = '1'
+		WHERE clear_group_id = #{clearGroupId}
+	</update>
+	
+</mapper>

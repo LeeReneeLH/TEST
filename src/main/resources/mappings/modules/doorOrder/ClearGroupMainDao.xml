@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.coffer.businesses.modules.doorOrder.v01.dao.ClearGroupMainDao">
+
+	<sql id="clearGroupMainColumns">
+		a.clear_group_id AS "clearGroupId",
+		a.clear_group_name AS
+		"clearGroupName",
+		a.clear_center_id AS "clearCenterId",
+		o.name AS
+		"clearCenterName",
+		a.create_by AS "createBy.id",
+		a.create_name AS
+		"createName",
+		a.create_date AS "createDate",
+		a.update_by AS
+		"updateBy.id",
+		a.update_name AS "updateName",
+		a.update_date AS
+		"updateDate",
+		a.del_flag AS "delFlag"
+	</sql>
+
+	<resultMap id="clearGroupMainResult" type="ClearGroupMain">
+		<id property="clearGroupId" column="clearGroupId" />
+		<result property="clearGroupId" column="clearGroupId" />
+		<result property="clearGroupName" column="clearGroupName" />
+		<result property="clearCenterId" column="clearCenterId" />
+		<result property="clearCenterName" column="clearCenterName" />
+		<result property="createBy.id" column="createBy.id" />
+		<result property="createName" column="createName" />
+		<result property="createDate" column="createDate" />
+		<result property="updateBy.id" column="updateBy.id" />
+		<result property="updateName" column="updateName" />
+		<result property="updateDate" column="updateDate" />
+		<result property="delFlag" column="delFlag" />
+		<!-- 外连 主表对应门店集合 -->
+		<collection property="doorList" ofType="Office">
+			<id property="id" column="doorList.id" />
+		</collection>
+		<!-- 外连 主表对应清机人员集合 -->
+		<collection property="userList" ofType="StoEscortInfo">
+			<id property="id" column="userList.id" />
+		</collection>
+	</resultMap>
+
+	<sql id="clearGroupMainJoins">
+		LEFT JOIN sys_office o
+		ON a.clear_center_id=o.id
+	</sql>
+
+	<select id="get" resultMap="clearGroupMainResult">
+		SELECT
+		<include refid="clearGroupMainColumns" />
+		,
+		b.door_id AS "doorList.id" ,
+		c.user_id AS "userList.id"
+		FROM
+		clear_group_main a
+		<include refid="clearGroupMainJoins" />
+		LEFT JOIN CLEAR_GROUP_DOOR_INFO b ON
+		b.clear_group_id =
+		a.clear_group_id
+		LEFT JOIN CLEAR_GROUP_USER_INFO c
+		ON c.clear_group_id =
+		a.clear_group_id
+		WHERE a.clear_group_id = #{clearGroupId}
+		AND c.del_flag
+		= '0'
+		AND b.del_flag = '0'
+
+	</select>
+
+	<select id="findList" resultType="ClearGroupMain">
+		SELECT
+		<include refid="clearGroupMainColumns" />
+		FROM clear_group_main a
+		<include refid="clearGroupMainJoins" />
+
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="clearGroupName != null and clearGroupName != ''">
+				AND a.clear_group_name LIKE
+				<if test="dbName == 'oracle'">'%'||#{clearGroupName}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{clearGroupName}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{clearGroupName},'%')</if>
+			</if>
+			<if test="clearCenterId != null and clearCenterId != ''">
+				and a.clear_center_id = #{clearCenterId}
+			</if>
+			<!-- 清机时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				AND
+				<if test="dbName == 'oracle'">TO_CHAR(a.update_date, 'yyyy-mm-dd hh24:mi:ss')
+					>='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.update_date, '%Y-%m-%d %H:%i:%s')
+					>='${searchDateStart}'</if>
+			</if>
+			<!-- 清机时间(结束) -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND
+				<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.update_date,'yyyy-mm-dd
+					hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.update_date,
+					'%Y-%m-%d %H:%i:%s')</if>
+			</if>
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="findAllList" resultType="ClearGroupMain">
+		SELECT
+		<include refid="clearGroupMainColumns" />
+		FROM clear_group_main a
+		<include refid="clearGroupMainJoins" />
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<!-- ${sqlMap.dsf} -->
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<insert id="insert">
+		INSERT INTO clear_group_main(
+		clear_group_id,
+		clear_group_name,
+		clear_center_id,
+		clear_center_name,
+		create_by,
+		create_name,
+		create_date,
+		update_by,
+		update_name,
+		update_date,
+		del_flag
+		)
+		VALUES (
+		#{id},
+		#{clearGroupName},
+		#{clearCenterId},
+		#{clearCenterName},
+		#{createBy.id},
+		#{createName},
+		#{createDate},
+		#{updateBy.id},
+		#{updateName},
+		#{updateDate},
+		#{delFlag}
+		)
+	</insert>
+
+	<update id="update">
+		UPDATE clear_group_main SET
+		clear_group_id =
+		#{clearGroupId},
+		clear_group_name = #{clearGroupName},
+		clear_center_id =
+		#{clearCenterId},
+		clear_center_name = #{clearCenterName},
+		create_name =
+		#{createName},
+		update_by = #{updateBy.id},
+		update_name = #{updateName},
+		update_date = #{updateDate}
+		WHERE clear_group_id = #{clearGroupId}
+	</update>
+
+	<update id="delete">
+		UPDATE clear_group_main SET
+		del_flag =
+		#{DEL_FLAG_DELETE}
+		WHERE clear_group_id = #{clearGroupId}
+	</update>
+
+
+
+	<!-- 根据清机组名称查询列表(名称重复性检测) zxk -->
+	<select id="findListByName" resultType="ClearGroupMain">
+		SELECT
+		<include refid="clearGroupMainColumns" />
+		FROM clear_group_main a
+		<include refid="clearGroupMainJoins" />
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		AND
+		a.clear_group_name =
+		#{clearGroupName}
+
+	</select>
+
+	<!-- 设备号查找请机组 -->
+	<select id="getGroupByEquipment" resultType="ClearGroupMain">
+		SELECT MAIN.*
+		FROM CLEAR_GROUP_DOOR_INFO INFO
+		LEFT JOIN CLEAR_GROUP_MAIN MAIN ON INFO.CLEAR_GROUP_ID =
+		MAIN.CLEAR_GROUP_ID
+		WHERE DOOR_ID = (
+		SELECT OFFICE.ID
+		FROM SYS_OFFICE OFFICE
+		RIGHT JOIN EQUIPMENT_INFO EQP ON OFFICE.ID = EQP.AOFFICE_ID
+		WHERE OFFICE.TYPE = ${office.type.door}
+		AND EQP.ID = #{eqpId}
+		AND OFFICE.DEL_FLAG = ${delFlag.valid}
+		AND EQP.DEL_FLAG = ${delFlag.valid}
+		)
+		AND INFO.DEL_FLAG = ${delFlag.valid}
+		AND MAIN.DEL_FLAG = ${delFlag.valid}
+	</select>
+
+	<!-- 验证当前清机人员是否有清机组且门店被该清机组维护 -->
+	<select id="getGroupInfoByDoorIdAndUserId" resultType="ClearGroupMain">
+		SELECT
+		group_main.*
+		FROM CLEAR_GROUP_MAIN group_main
+		LEFT JOIN CLEAR_GROUP_USER_INFO group_info
+		ON group_main.CLEAR_GROUP_ID = group_info.CLEAR_GROUP_ID
+		LEFT JOIN CLEAR_GROUP_DOOR_INFO door_info
+		ON group_main.CLEAR_GROUP_ID = door_info.CLEAR_GROUP_ID
+		WHERE
+		group_info.USER_ID = (
+		SELECT STO_ESCORT_INFO.ESCORT_ID AS ID
+		FROM SYS_USER
+		LEFT JOIN STO_ESCORT_INFO ON SYS_USER.IDCARD_NO =
+		STO_ESCORT_INFO.IDCARD_NO
+		WHERE SYS_USER.ID = #{userId}
+		AND STO_ESCORT_INFO.DEL_FLAG = ${delFlag.valid}
+		AND SYS_USER.DEL_FLAG = ${delFlag.valid}
+		)
+		AND door_info.DOOR_ID = #{doorId}
+		AND group_main.DEL_FLAG = ${delFlag.valid}
+		AND group_info.DEL_FLAG = ${delFlag.valid}
+		AND door_info.DEL_FLAG = ${delFlag.valid}
+	</select>
+</mapper>

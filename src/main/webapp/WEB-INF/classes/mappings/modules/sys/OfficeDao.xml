@@ -1,0 +1,1205 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.core.modules.sys.dao.OfficeDao">
+	<!-- 查询归属机构 修改人：xp 修改时间：2017-7-4 begin -->
+	<sql id="officeColumns">
+		a.id,
+		a.parent_id AS "parent.id",
+		a.parent_ids,
+		a.code,
+		a.name,
+		a.master,
+		a.sort,
+		a.type,
+		a.address,
+		a.zip_code,
+		a.phone,
+		a.fax,
+		a.email,
+		a.remarks,
+		a.create_by AS "createBy.id",
+		a.create_date,
+		a.update_by AS
+		"updateBy.id",
+		a.update_date,
+		a.del_flag,
+		a.trade_flag,
+		a.province_code,
+		a.city_code,
+		a.longitude,
+		a.latitude,
+		a.county_code,
+		a.provisions_switch,
+		a.joinMan_switch,
+		<!-- 新增付款 收款相关字段 修改人：ZXK 修改时间：2019-12-12 begin -->
+		a.payer_account_id,
+		a.payer_account_name,
+		a.payee_account_id,
+		a.payee_account_name,
+		a.payee_bank_name,
+		<!-- end-->
+		p.name AS "parent.name",
+		s.name AS
+		"ascriptionOfficeId.name",
+		a.bank_card AS "bankCard"
+	</sql>
+
+	<sql id="officeJoins">
+		LEFT JOIN sys_office p ON p.id = a.parent_id
+		LEFT JOIN
+		sys_office s ON s.id = a.ASCRIPTION_OFFICE_ID
+	</sql>
+	<!-- end -->
+
+
+	<select id="get" resultType="Office">
+		SELECT
+		<include refid="officeColumns" />
+		FROM sys_office a
+		<include refid="officeJoins" />
+		WHERE a.id = #{id}
+	</select>
+
+
+	<select id="getClearCenterByParentId" resultType="Office">
+		SELECT
+		<include refid="officeColumns" />
+		FROM sys_office a
+		<include refid="officeJoins" />
+		WHERE a.type = '6'
+		AND a.parent_id = #{parentId}
+	</select>
+	<!-- 获取中心机构id集合 -->
+	<select id="getClearCenterList" resultType="Office">
+		SELECT
+		<include refid="officeColumns" />
+		FROM sys_office a
+		<include refid="officeJoins" />
+		WHERE a.type = '6' and a.DEL_FLAG = 0
+	</select>
+	
+	<!-- 获取中心机构id集合 -->
+	<select id="getClearCenterOfficeList" resultType="Office">
+		SELECT
+		<include refid="officeColumns" />
+		FROM sys_office a
+		<include refid="officeJoins" />
+		WHERE a.type = '6' and a.DEL_FLAG = 0
+		<if test="name != null and name != ''">
+			AND a.name LIKE
+			<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+			<if test="dbName == 'mysql'">CONCAT('%',#{name}, '%')</if>
+		</if>
+	</select>
+
+	<select id="findPbocByParentId" resultType="Office">
+		SELECT
+		<include refid="officeColumns" />
+		FROM sys_office a
+		<include refid="officeJoins" />
+		WHERE a.type = '1'
+		AND a.parent_id = #{parentId}
+	</select>
+
+	<select id="findList" resultType="Office">
+		SELECT
+		<include refid="officeColumns" />
+		FROM sys_office a
+		<include refid="officeJoins" />
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		<!-- 数据范围过滤 -->
+		${sqlMap.dsf}
+		OR a.id = #{currentUser.office.id}
+		<!-- ORDER BY NLSSORT(a.name,'NLS_SORT = SCHINESE_PINYIN_M') -->
+		<if test="dbName == 'oracle'">ORDER BY NLSSORT(a.name,'NLS_SORT = SCHINESE_PINYIN_M')
+		</if>
+		<if test="dbName == 'mysql'">ORDER BY CONVERT (a. NAME USING gbk) COLLATE
+			gbk_chinese_ci ASC</if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="findAllList" resultType="Office">
+		SELECT
+		<include refid="officeColumns" />
+		FROM sys_office a
+		<include refid="officeJoins" />
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		<if test="type != null and type != ''">
+			AND a.type = #{type}
+		</if>
+		<if test="code != null and code != ''">
+			AND a.code = #{code}
+		</if>
+		<!-- ORDER BY NLSSORT(a.name,'NLS_SORT = SCHINESE_PINYIN_M') -->
+		<if test="dbName == 'oracle'">ORDER BY NLSSORT(a.name,'NLS_SORT = SCHINESE_PINYIN_M')
+		</if>
+		<if test="dbName == 'mysql'">ORDER BY CONVERT (a. NAME USING gbk) COLLATE
+			gbk_chinese_ci ASC
+		</if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="findByParentIdsLike" resultType="Office">
+		SELECT
+		<include refid="officeColumns" />
+		FROM sys_office a
+		<include refid="officeJoins" />
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		<if test="parentIds != null and parentIds != ''">
+			AND a.parent_ids LIKE
+			<if test="dbName == 'oracle'">#{parentIds}||'%'</if>
+			<if test="dbName == 'mysql'">CONCAT(#{parentIds}, '%')</if>
+		</if>
+		<if test="id != null and id != ''">
+			OR a.id = #{id}
+		</if>
+		<if test="dbName == 'oracle'">ORDER BY NLSSORT(a.name,'NLS_SORT = SCHINESE_PINYIN_M')
+		</if>
+		<if test="dbName == 'mysql'">ORDER BY CONVERT (a. NAME USING gbk) COLLATE
+			gbk_chinese_ci ASC
+		</if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<!-- <otherwise>
+				ORDER BY a.parent_ids, a.code
+			</otherwise> -->
+		</choose>
+	</select>
+
+	<select id="findOfficeListForInterface" resultType="Office">
+		SELECT
+		<include refid="officeColumns" />
+		FROM sys_office a
+		<include refid="officeJoins" />
+		WHERE (a.parent_ids LIKE
+		<!-- #{parentIds}||'%' -->
+		<if test="dbName == 'oracle'">#{parentIds}||'%' </if>
+		<if test="dbName == 'mysql'"> CONCAT(#{parentIds}, '%')</if>
+		OR a.id = #{officeId})
+		<if test="lastSearchDate != null and lastSearchDate != ''">
+			<if test="dbName == 'oracle'">AND TO_CHAR(a.update_date,'yyyyMMddhh24missff6') &gt;
+				#{lastSearchDate}</if>
+			<if test="dbName == 'mysql'">AND date_format(a.update_date,'%Y%m%d%H%i%S%f') &gt;
+				#{lastSearchDate}</if>
+
+		</if>
+		ORDER BY a.update_date ASC
+	</select>
+
+	<select id="findListBySearch" resultType="Office">
+		SELECT
+		<include refid="officeColumns" />
+		FROM sys_office a
+		<include refid="officeJoins" />
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		<if test="tradeFlag != null and tradeFlag != ''">
+			<if test="tradeFlag!=0">
+				AND a.trade_flag = #{tradeFlag}
+			</if>
+			<if test="tradeFlag==0">
+				AND (a.trade_flag = #{tradeFlag}
+				OR a.trade_flag is null)
+			</if>
+		</if>
+		<if test="name != null and name != ''">
+			AND a.name like
+			<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+			<if test="dbName == 'mysql'">CONCAT('%', #{name}, '%')</if>
+		</if>
+		<if test="code != null and code != ''">
+			AND a.code like
+			<if test="dbName == 'oracle'">'%'||#{code}||'%'</if>
+			<if test="dbName == 'mysql'">CONCAT('%', #{code}, '%')</if>
+		</if>
+		<if test="parentIds != null and parentIds != ''">
+			AND (a.parent_ids LIKE
+			<if test="dbName == 'oracle'">#{parentIds}||'%'</if>
+			<if test="dbName == 'mysql'">CONCAT(#{parentIds}, '%')</if>
+			<if test="id != null and id != ''">
+				OR a.id = #{id}
+			</if>
+			)
+		</if>
+
+
+		<!-- 修改人：wanglin 修改时间：20170901 修改原因：机构根据类型查询 Begin -->
+		<if test="type != null and type != ''">
+			AND a.type = #{type}
+		</if>
+		<!-- 修改人：wanglin 修改时间：20170901 修改原因：机构根据类型查询 End -->
+
+		ORDER BY a.parent_ids, a.code
+	</select>
+
+	<select id="getMaxOfficeId" resultType="Integer">
+		SELECT
+		max(a.id) as id
+		FROM sys_office a
+		WHERE a.id != '99999999'
+	</select>
+	<!-- 补加归属机构 修改人：xp 修改时间：2017-7-3 begin -->
+	<insert id="insert">INSERT INTO sys_office(
+		id,
+		parent_id,
+		parent_ids,
+		code,
+		name,
+		master,
+		sort,
+		type,
+		address,
+		zip_code,
+		phone,
+		fax,
+		email,
+		create_by,
+		create_date,
+		update_by,
+		update_date,
+		remarks,
+		del_flag,
+		trade_flag,
+		ascription_office_id,
+		province_code,
+		city_code,
+		county_code,
+		longitude,
+		latitude,
+		provisions_switch,
+		joinman_switch,
+		bank_card,
+		<!-- 新增付款 收款相关字段 修改人：ZXK 修改时间：2019-12-12 begin -->
+		payer_account_id,
+		payer_account_name,
+		payee_account_id,
+		payee_account_name,
+		payee_bank_name
+		<!-- end -->
+		) VALUES (
+		#{id},
+		#{parent.id},
+		#{parentIds},
+		#{code},
+		#{name},
+		#{master},
+		#{sort},
+		#{type},
+		#{address},
+		#{zipCode},
+		#{phone},
+		#{fax},
+		#{email},
+		#{createBy.id},
+		#{createDate},
+		#{updateBy.id},
+		#{updateDate},
+		#{remarks},
+		#{delFlag},
+		#{tradeFlag},
+		#{ascriptionOfficeId.id},
+		#{provinceCode},
+		#{cityCode},
+		#{countyCode},
+		#{longitude},
+		#{latitude},
+		#{provisionsSwitch},
+		#{joinManSwitch},
+		#{bankCard},
+		<!-- 新增付款 收款相关字段 修改人：ZXK 修改时间：2019-12-12 begin -->
+		#{payerAccountId},
+		#{payerAccountName},
+		#{payeeAccountId},
+		#{payeeAccountName},
+		#{payeeBankName}
+		<!-- end -->
+		)
+	</insert>
+
+	<update id="update">
+		UPDATE sys_office SET
+		parent_id = #{parent.id},
+		parent_ids = #{parentIds},
+		code = #{code},
+		name = #{name},
+		master = #{master},
+		type = #{type},
+		address = #{address},
+		zip_code = #{zipCode},
+		phone = #{phone},
+		fax = #{fax},
+		email = #{email},
+		province_code=#{provinceCode},
+		city_code=#{cityCode},
+		county_code=#{countyCode},
+		longitude=#{longitude},
+		latitude=#{latitude},
+		update_by = #{updateBy.id},
+		update_date = #{updateDate},
+		remarks = #{remarks},
+		trade_flag = #{tradeFlag},
+		ascription_office_id=#{ascriptionOfficeId.id},
+		provisions_switch=#{provisionsSwitch},
+		joinman_switch=#{joinManSwitch},
+		bank_card = #{bankCard},
+		<!-- 新增付款 收款相关字段 修改人：ZXK 修改时间：2019-12-12 begin -->
+		payer_account_id = #{payerAccountId},
+		payer_account_name = #{payerAccountName},
+		payee_account_id = #{payeeAccountId},
+		payee_account_name = #{payeeAccountName},
+		payee_bank_name = #{payeeBankName}
+		<!-- end -->
+		WHERE id = #{id}
+	</update>
+	<!-- end -->
+	<update id="updateParentIds">
+		UPDATE sys_office SET
+		parent_id = #{parent.id},
+		parent_ids = #{parentIds}
+		WHERE id = #{id}
+	</update>
+
+	<update id="delete">
+		UPDATE sys_office SET
+		del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id} OR parent_ids LIKE
+		<if test="dbName == 'oracle'">'%,'||#{id}||',%'</if>
+		<if test="dbName == 'mysql'">CONCAT('%,', #{id}, ',%')</if>
+	</update>
+
+	<select id="checkOfficeCode" resultType="Office">
+		SELECT
+		<include refid="officeColumns" />
+		FROM sys_office a
+		<include refid="officeJoins" />
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		AND a.code = #{code}
+	</select>
+
+
+	<select id="findCustList" resultType="Office">
+		SELECT
+		<include refid="officeColumns" />
+		FROM sys_office a
+		<include refid="officeJoins" />
+		<where>
+			a.del_flag = '0'
+			<if test="list != null and list != ''">
+				AND a.type in
+				<foreach item="list" index="index" collection="list" open="("
+					separator="," close=")">#{list}</foreach>
+			</if>
+			<if test="officeParentId != null and officeParentId != ''">
+				AND (a.parent_ids like '%${officeParentId},%'
+			</if>
+			<if test="officeParentId != null and officeParentId != ''">
+				OR a.id = #{officeParentId})
+			</if>
+		</where>
+		<if test="dbName == 'oracle'">ORDER BY NLSSORT(a.name,'NLS_SORT = SCHINESE_PINYIN_M')
+		</if>
+		<if test="dbName == 'mysql'">ORDER BY CONVERT (a. NAME USING gbk) COLLATE
+			gbk_chinese_ci ASC</if>
+		<!-- ORDER BY a.update_date ASC -->
+	</select>
+
+	<!-- 查询当前机构和子机构下的有效用户 -->
+	<select id="getVaildCntByOfficeId" parameterType="String"
+		resultType="Integer">
+		SELECT
+		COUNT(ID)
+		FROM
+		SYS_USER
+		WHERE
+		(OFFICE_ID IN (SELECT ID
+		FROM SYS_OFFICE
+		WHERE PARENT_ID =#{id}
+		AND DEL_FLAG='0'
+		) OR OFFICE_ID =#{id}) AND DEL_FLAG='0'
+
+	</select>
+
+	<sql id="mapColumns">
+		ID,
+		NAME,
+		TYPE,
+		PARENT_ID AS "parent.id",
+		PROVINCE_CODE,
+		CITY_CODE,
+		COUNTY_CODE,
+		LONGITUDE,
+		LATITUDE
+	</sql>
+
+	<!-- 获取当前、父子机构的省市 -->
+	<select id="getProCityOffice" resultType="Office">
+		SELECT
+		<include refid="mapColumns"></include>
+		FROM
+		sys_office
+		WHERE
+		(
+		ID = #{currentId}
+		OR ID = (
+		SELECT
+		PARENT_ID
+		FROM
+		sys_office
+		WHERE
+		ID = #{currentId}
+		)
+		OR PARENT_ID = #{currentId}
+		)
+		AND TYPE NOT IN ('0','6')
+		AND DEL_FLAG = '0'
+	</select>
+
+	<!-- 查询与人行有业务往来的机构 -->
+	<select id="getAssoGenBusinOffice" resultType="Office">
+		SELECT
+		T2.ID,
+		T2.NAME,
+		T2.TYPE,
+		T2.PROVINCE_CODE,
+		T2.CITY_CODE,
+		T2.LONGITUDE,
+		T2.LATITUDE
+		FROM
+		(
+		SELECT
+		ROFFICE_ID AS OFFICE_ID
+		FROM
+		pboc_all_allocate_info
+		WHERE
+		BUSINESS_TYPE IN ('50','51','52','53','54')
+		AND AOFFICE_ID = #{gentralId}
+		AND STATUS = '99'
+		AND DEL_FLAG = '0'
+		GROUP BY
+		ROFFICE_ID
+		UNION
+		SELECT
+		AOFFICE_ID AS OFFICE_ID
+		FROM
+		pboc_all_allocate_info
+		WHERE
+		BUSINESS_TYPE IN ('50','51','52','53','54')
+		AND ROFFICE_ID = #{gentralId}
+		AND STATUS = '99'
+		AND DEL_FLAG = '0'
+		GROUP BY
+		AOFFICE_ID
+		) T1
+		LEFT JOIN sys_office T2 ON T1.OFFICE_ID = T2.ID
+		AND T2.DEL_FLAG =
+		'0'
+	</select>
+
+	<!-- 查询与清分中心有业务往来的机构 -->
+	<select id="getAssWithClearOffice" resultType="Office">
+		SELECT
+		<include refid="mapColumns"></include>
+		FROM sys_office
+		<where>
+			PARENT_ID = #{parentId}
+			AND TYPE = '3'
+			AND DEL_FLAG = '0'
+		</where>
+
+		UNION
+
+		SELECT
+		<include refid="mapColumns"></include>
+		FROM sys_office
+		<where>
+			(
+			ID = #{id}
+			OR ID = #{parentId}
+			)
+			AND TYPE IN ('1','6')
+			AND DEL_FLAG = '0'
+		</where>
+	</select>
+
+	<!-- 查询与人行有业务往来的机构（默认父子机构和同级人行） -->
+	<select id="getAssoGenOffice" resultType="Office">
+		SELECT
+		<include refid="mapColumns"></include>
+		FROM
+		sys_office
+		WHERE
+		(
+		ID = #{currentId}
+		OR ID = (
+		SELECT
+		PARENT_ID
+		FROM
+		sys_office
+		WHERE
+		ID = #{currentId}
+		)
+		OR PARENT_ID = #{currentId}
+		)
+		AND TYPE NOT IN ('0','6','7')
+		AND DEL_FLAG = '0'
+
+		UNION
+
+		SELECT
+		<include refid="mapColumns"></include>
+		FROM
+		sys_office
+		WHERE
+		PARENT_ID = #{parentId}
+		AND TYPE = '1'
+		AND DEL_FLAG = '0'
+	</select>
+
+	<!-- ADD BY qph 2018-01-31 -->
+	<!-- 按省份过滤清分中心 -->
+	<select id="findClearCityDataByProvinceCode" resultType="com.coffer.core.modules.sys.entity.Office">
+		SELECT
+		T2.CITY_CODE,
+		T1.ID,
+		T1.PARENT_ID,
+		T1.NAME,
+		T1.TYPE,
+		T2.LONGITUDE,
+		T2.LATITUDE
+		FROM
+		(
+		SELECT
+		A.ID,
+		A.PARENT_ID,
+		A.NAME,
+		A.TYPE,
+		A.CITY_CODE,
+		A.LONGITUDE,
+		A.LATITUDE
+		FROM
+		sys_office A
+		<where>
+
+			A.TYPE IN ('6')
+			AND A.province_code = #{provinceCode}
+			AND PARENT_IDS LIKE
+			<if test="dbName == 'oracle'">'%'|| #{id} || '%'</if>
+			<if test="dbName == 'mysql'">CONCAT('%', #{id}, '%')</if>
+			AND A.DEL_FLAG = '0'
+			AND A.CITY_CODE IS NOT NULL
+			<if test="dbName == 'mysql'">
+				AND A.CITY_CODE &lt;&gt; ''
+			</if>
+		</where>
+		) T1
+		LEFT JOIN SYS_CITY T2
+		ON T1.CITY_CODE=T2.CITY_CODE
+	</select>
+
+	<!-- ADD BY qph 2018-02-01 -->
+	<!-- 按城市过滤清分中心 -->
+	<select id="findClearCityDataByCityCode" resultType="com.coffer.core.modules.sys.entity.CountyEntity">
+		SELECT
+		T2.COUNTY_CODE,
+		T1.ID AS OFFICE_ID,
+		T1.PARENT_ID,
+		T1.NAME AS OFFICE_NAME,
+		T1.TYPE,
+		T2.LONGITUDE,
+		T2.LATITUDE
+		FROM
+		(
+		SELECT
+		A.ID,
+		A.PARENT_ID,
+		A.NAME,
+		A.TYPE,
+		A.COUNTY_CODE,
+		A.LONGITUDE,
+		A.LATITUDE
+		FROM
+		sys_office A
+		<where>
+
+			A.TYPE IN ('3','6')
+			AND A.CITY_CODE = #{cityCode}
+			AND PARENT_IDS LIKE
+			<if test="dbName == 'oracle'">'%'|| #{id} || '%'</if>
+			<if test="dbName == 'mysql'">CONCAT('%', #{id}, '%')</if>
+			AND A.DEL_FLAG = '0'
+			AND A.COUNTY_CODE IS NOT NULL
+			<if test="dbName == 'mysql'">
+				AND A.COUNTY_CODE &lt;&gt; ''
+			</if>
+		</where>
+
+		UNION
+
+		SELECT
+		A.ID,
+		A.PARENT_ID,
+		A.NAME,
+		A.TYPE,
+		A.COUNTY_CODE,
+		A.LONGITUDE,
+		A.LATITUDE
+		FROM
+		sys_office A
+		<where>
+			(
+			A.ID = #{id}
+			)
+			AND A.TYPE IN ('1')
+			AND A.CITY_CODE = #{cityCode}
+			<if test="dbName == 'mysql'">
+				AND A.CITY_CODE = #{cityCode}
+				AND (( A.PROVINCE_COD &lt;&gt; ' ' and
+				A.CITY_CODE &lt;&gt; ' ' and A.COUNTY_CODE = ' '))
+			</if>
+			<if test="dbName == 'oracle'">
+				AND (A.PROVINCE_CODE IS NOT NULL AND A.CITY_CODE IS NOT NULL AND
+				A.COUNTY_CODE IS NULL)
+			</if>
+			AND A.DEL_FLAG = '0'
+			AND A.COUNTY_CODE IS NOT NULL
+			<if test="dbName == 'mysql'">
+				AND A.COUNTY_CODE &lt;&gt; ''
+			</if>
+
+		</where>
+
+		) T1
+		LEFT JOIN SYS_COUNTY T2
+		ON T1.COUNTY_CODE=T2.COUNTY_CODE
+	</select>
+
+	<sql id="officeColumnsForService">
+		a.parent_id AS parentId,
+		a.id AS officeId,
+		a.name AS officeName,
+		a.province_code AS provinceCode,
+		a.city_code AS cityCode,
+		a.county_code AS countyCode,
+		a.type AS officeType,
+		b.longitude AS longitude,
+		b.latitude AS latitude
+	</sql>
+
+
+	<!-- 同步机构信息（接口用） -->
+	<select id="getOfficeListByOffice" resultType="Map">
+		SELECT
+		a.parent_id AS parentId,
+		a.id AS officeId,
+		a.name AS officeName,
+		a.province_code AS provinceCode,
+		a.city_code AS cityCode,
+		a.county_code AS countyCode,
+		a.type AS officeType,
+		b.longitude AS longitude,
+		b.latitude AS latitude
+		from sys_office A
+		left join sys_province B on A.province_code = B.province_code
+		left join sys_city C on A.city_code = C.city_code
+		left join sys_county D on A.county_code = D.county_code
+		<where>
+			<if test="dbName == 'oracle'">
+				A.PROVINCE_CODE IS NOT NULL and A.CITY_CODE IS NOT NULL
+				and A.COUNTY_CODE IS NOT NULL
+			</if>
+			<if test="dbName == 'mysql'">
+				A.PROVINCE_CODE &lt;&gt; ' ' and
+				A.CITY_CODE &lt;&gt; ' ' and A.COUNTY_CODE &lt;&gt; ' '
+			</if>
+		</where>
+	</select>
+
+	<select id="getOfficeNameById" parameterType="String"
+		resultType="java.lang.String">
+		SELECT
+		a.NAME
+		FROM SYS_OFFICE a
+		WHERE a.id = #{officeId}
+	</select>
+
+	<!-- 查询当前机构所属人行下的所有门店 lihe start -->
+	<select id="findDoorList" resultType="Office">
+		SELECT
+		a.id,
+		a.parent_id AS "parent.id",
+		a.parent_ids,
+		a.code,
+		a.name,
+		a.master,
+		a.sort,
+		a.type,
+		a.address,
+		a.zip_code,
+		a.phone,
+		a.fax,
+		a.email,
+		a.remarks,
+		a.create_by AS "createBy.id",
+		a.create_date,
+		a.update_by AS "updateBy.id",
+		a.update_date,
+		a.del_flag,
+		a.trade_flag,
+		a.province_code,
+		a.city_code,
+		a.longitude,
+		a.latitude,
+		a.county_code,
+		a.provisions_switch,
+		a.joinMan_switch,
+		a.bank_card AS "bankCard"
+		FROM
+		SYS_OFFICE a
+		WHERE
+		a.TYPE = #{type} AND a.del_flag='0'
+		AND a.PARENT_IDS LIKE
+		<if test="dbName == 'oracle'">'%' || (SELECT ID FROM SYS_OFFICE WHERE
+			ID = (SELECT
+			PARENT_ID FROM SYS_OFFICE WHERE TYPE = '6' AND ID = #{id})
+			) || '%'
+		</if>
+		<if test="dbName == 'mysql'">CONCAT('%,',(SELECT ID FROM SYS_OFFICE WHERE
+			ID = (
+			SELECT PARENT_ID FROM SYS_OFFICE WHERE TYPE = '6' AND ID = #{id})
+			),',%')
+		</if>
+		ORDER BY a.parent_ids, a.code
+	</select>
+	<!-- 查询当前机构所属人行下的所有门店 lihe end -->
+
+	<!-- 查询门店 zxk start -->
+	<select id="selectStore" resultType="Office">
+		SELECT
+		a.NAME,
+		a.ID
+		FROM SYS_OFFICE a
+		WHERE a.DEL_FLAG = '0'
+		AND a.TYPE = '8'
+	</select>
+	<!-- 查询门店 zxk end -->
+
+	<!-- 获取数字化金融服务平台 wqj -->
+	<select id="getPlatform" resultType="Office">
+		SELECT
+		<include refid="officeColumns" />
+		FROM sys_office a
+		<include refid="officeJoins" />
+		<where>
+			a.del_flag = '0'
+			AND a.type = '7'
+		</where>
+		ORDER BY a.update_date ASC
+	</select>
+
+	<!-- 根据设备号查询商户 yinkai -->
+	<select id="getMerchantByEqpId" resultType="Office">
+		SELECT
+		a.id,
+		a.parent_id AS "parent.id",
+		a.parent_ids,
+		a.code,
+		a.name,
+		a.master,
+		a.sort,
+		a.type,
+		a.address,
+		a.zip_code,
+		a.phone,
+		a.fax,
+		a.email,
+		a.remarks,
+		a.create_by AS "createBy.id",
+		a.create_date,
+		a.update_by AS "updateBy.id",
+		a.update_date,
+		a.del_flag,
+		a.trade_flag,
+		a.province_code,
+		a.city_code,
+		a.longitude,
+		a.latitude,
+		a.county_code,
+		a.provisions_switch,
+		a.joinMan_switch,
+		a.bank_card AS "bankCard"
+		FROM SYS_OFFICE a
+		WHERE ID = (SELECT OFFICE.PARENT_ID FROM SYS_OFFICE OFFICE RIGHT JOIN
+		EQUIPMENT_INFO EQP ON OFFICE.ID =
+		EQP.AOFFICE_ID WHERE EQP.ID = #{eqpId})
+	</select>
+
+	<!-- 通过登录机构查询商户信息 zxk 2019-9-3 -->
+	<select id="getMerListByOffice" resultType="OfficeApp">
+		SELECT
+		a.ID,
+		a.NAME,
+		count(eq.ID) AS merchartEquiCount,
+		SUM(CASE WHEN eq.CONN_STATUS in
+		<foreach item="item" index="index" collection="list" open="("
+			separator="," close=")">${item}</foreach>
+		THEN 1 ELSE 0 END) AS eCount
+		FROM
+		(
+		SELECT
+		a.ID,
+		a. NAME
+		FROM
+		SYS_OFFICE a
+		WHERE
+		a.del_flag = #{DEL_FLAG_NORMAL}
+		${sqlMap.dsf}
+		) a
+		LEFT JOIN sys_office o ON o.PARENT_ID = a.ID
+		LEFT JOIN equipment_info eq ON eq.aoffice_id = o.id
+		AND eq.del_flag = #{DEL_FLAG_NORMAL}
+		GROUP BY a.ID,a.NAME
+		HAVING merchartEquiCount > 0
+	</select>
+
+	<!-- 根据机具状态查询门店设备列表 zxk(一对多) 2019-9-3 -->
+	<resultMap id="DoorAndEquipList" type="OfficeApp">
+		<id property="id" column="id" />
+		<result property="name" column="name" />
+		<!-- 外连 主表对应机具信息集合 -->
+		<collection property="equipmentInfoList" ofType="EquipmentInfo">
+			<id property="id" column="equipmentId" />
+			<result property="seriesNumber" column="seriesNumber"/>
+			<result property="name" column="equipmentName" />
+			<result property="lastDate" column="lastDate" />
+			<result property="intervalTime" column="intervalTime" />
+			<result property="surplusAmount" column="surplusAmount" />
+			<result property="connStatus" column="connStatus" />
+		</collection>
+	</resultMap>
+	<!-- 查询门店设备列表(商户或门店下,过滤没有机具信息的记录) zxk 2019-9-3 -->
+	<select id="selectDoorAndEquipList" resultMap="DoorAndEquipList">
+	SELECT
+		ta.ID,
+		ta. NAME,
+		ta.seriesNumber,
+		ta.equipmentId,
+		ta.equipmentName,
+		ta.cid,
+		ta.surplusAmount,
+		ta.intervalTime,
+		ta.connStatus,
+		ta.lastDate
+	FROM(
+		SELECT
+		d.ID,
+		d. NAME,
+		d.equipmentId,
+		d.seriesNumber,
+		d.equipmentName,
+		d.connStatus,
+		c3.cid,
+	    c3.surplus_amount as surplusAmount,
+		c4.intervalTime,
+		c4.lastDate
+		FROM
+		(
+		SELECT
+		a.ID,
+		a. NAME,
+		<!-- 业务逻辑  机具编号实际展示为'序列号' ZXK -->
+		eq.ID AS equipmentId,
+		eq.SERIES_NUMBER AS seriesNumber,
+		eq.CONN_STATUS AS connStatus,
+		eq. NAME AS equipmentName
+		FROM
+		sys_office a
+		LEFT JOIN equipment_info eq ON a.ID = eq.AOFFICE_ID
+		AND eq.DEL_FLAG = #{DEL_FLAG_NORMAL}
+		WHERE
+		a.del_flag = #{DEL_FLAG_NORMAL}
+		<if test="connStatus != null and connStatus != ''">
+			AND eq.CONN_STATUS = #{connStatus}
+		</if>
+		<if test="id != null and id != ''">
+		  <!-- 业务逻辑  按'序列号'进行条件检索  ZXK -->
+			AND eq.SERIES_NUMBER like
+			<if test="dbName == 'oracle'">'%'||#{id}||'%'</if>
+			<if test="dbName == 'mysql'">CONCAT('%', #{id}, '%')</if>
+		</if>
+		${sqlMap.dsf}
+		) d
+		LEFT JOIN (
+		SELECT
+		c1.cid,
+		c2.surplus_amount
+		FROM
+		(
+		SELECT
+		c.equipment_id cid,
+		max(c.update_date) lastDate
+		FROM
+		clear_add_money c
+		GROUP BY
+		c.equipment_id
+		) c1
+		LEFT JOIN clear_add_money c2
+		ON c1.cid = c2.equipment_id
+		AND
+		c1.lastDate = c2.update_date
+		) c3 ON c3.cid = d.equipmentId
+		<!-- 清机时间分离 add zxk-->
+       LEFT JOIN(
+        SELECT
+		c1.cid,
+         <if test="dbName == 'oracle'">
+		floor(to_date(to_char(sysdate, 'yyyy-MM-dd HH24-mi-ss'), 'yyyy-MM-dd
+		HH24-mi-ss')- To_date(to_char( c1.lastDate, 'yyyy-MM-dd HH24-mi-ss') ,
+		'yyyy-MM-dd HH24-mi-ss')) as intervalTime,
+		to_char(c1.lastDate, 'yyyy-MM-dd HH24-mi') as lastDate
+		</if>
+		<if test="dbName == 'mysql'">
+			TIMESTAMPDIFF(DAY, c1.lastDate,SYSDATE()) as intervalTime,
+			date_format(c1.lastDate,'%Y-%m-%d %H:%i') as lastDate
+		</if>
+		FROM
+		(
+		SELECT
+		c.equipment_id cid,
+		max(c.update_date) lastDate
+		FROM
+		clear_add_money c
+          WHERE 1 = 1
+		<if test="type != null and type != ''">
+			AND c.type = #{type}
+		</if>
+		GROUP BY
+		c.equipment_id
+		) c1
+		LEFT JOIN clear_add_money c2
+		ON c1.cid = c2.equipment_id
+		AND
+		c1.lastDate = c2.update_date
+         ) c4  ON c4.cid = d.equipmentId
+         <!-- end -->
+		) ta
+		GROUP BY ta.ID, ta.equipmentId
+		HAVING count(ta.equipmentId) > 0
+	</select>
+	<select id="validateDoorCompany" resultType="Office">
+		select
+		<include refid="officeColumns"/>
+		from sys_office a
+		<include refid="officeJoins" />
+		<bind name="companyLike" value="'%' + companyId +'%'"/>
+		where a.parent_ids like #{companyLike}
+		and a.id = #{doorId}
+	</select>
+	
+	 <!-- 追加机构查询的分页功能  xp start -->
+    <select id="findPagesByParentIdsLike" resultType="Office">
+		SELECT
+			<include refid="officeColumns"/>
+		FROM sys_office a
+		<include refid="officeJoins"/>
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL} 
+		<if test="parentIds != null and parentIds != ''">
+			AND a.parent_ids LIKE 
+			<if test="dbName == 'oracle'">#{parentIds}||'%'</if>
+			<if test="dbName == 'mysql'">CONCAT(#{parentIds}, '%')</if>
+		</if>
+		<if test="id != null and id != ''">
+			OR a.id = #{id}
+		</if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy},a.parent_ids, a.code
+			</when>
+			<otherwise>
+				ORDER BY a.parent_ids, a.code
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 根据查询条件分页查询机构列表 -->
+	<select id="findPageListBySearch" resultType="Office">
+		SELECT
+			<include refid="officeColumns"/>
+		FROM sys_office a
+		<include refid="officeJoins"/>
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL} 
+		<if test="tradeFlag != null and tradeFlag != ''">
+			<if test="tradeFlag!=0">
+				AND a.trade_flag = #{tradeFlag}
+			</if>
+			<if test="tradeFlag==0">
+				AND (a.trade_flag = #{tradeFlag}
+				OR a.trade_flag is null)
+			</if>
+		</if>
+		<if test="name != null and name != ''">
+			AND a.name like 
+					<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{name}, '%')</if>
+		</if>
+		<if test="code != null and code != ''">
+			AND a.code like 
+					<if test="dbName == 'oracle'">'%'||#{code}||'%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{code}, '%')</if>
+		</if>
+		<if test="parentIds != null and parentIds != ''">
+			AND (a.parent_ids LIKE 
+					<if test="dbName == 'oracle'">#{parentIds}||'%'</if>
+					<if test="dbName == 'mysql'">CONCAT(#{parentIds}, '%')</if>
+					<if test="id != null and id != ''">
+					  OR a.id = #{id} 
+					</if>
+				)
+		</if>
+		<if test="type != null and type != ''">
+			AND a.type = #{type} 
+		</if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy},a.parent_ids, a.code
+			</when>
+			<otherwise>
+				ORDER BY a.parent_ids, a.code
+			</otherwise>
+		</choose>
+	</select>
+	
+	<resultMap type="com.coffer.core.modules.sys.entity.Office" id="OfficeResult">
+		<id column="id" property="id"/>
+		<result column="parent_id" property="parent.id"/>
+		<result column="parent_ids" property="parentIds"/>
+		<result column="name" property="name"/>
+		<result column="type" property="type"/>
+	    <!-- 新增付款 收款相关字段 修改人：ZXK 修改时间：2019-12-12 begin -->
+	    <result column="payer_account_id" property="payerAccountId"/>
+	    <result column="payer_account_name" property="payerAccountName"/>
+	    <result column="payee_account_id" property="payeeAccountId"/>
+	    <result column="payee_account_name" property="payeeAccountName"/>
+	    <result column="payee_bank_name" property="payeeBankName"/>
+		 <!-- end-->
+		<!-- 子机构数量 -->
+		<association property="subagencyCount" column="id" javaType="Integer" select="com.coffer.core.modules.sys.dao.OfficeDao.findCountByParentId" fetchType="lazy" />
+	</resultMap>
+	
+	<select id="findByParentId" resultMap="OfficeResult">
+		SELECT
+			<include refid="officeColumns"/>
+		FROM sys_office a
+		<include refid="officeJoins"/>
+		WHERE a.parent_id = #{parentId}
+		AND a.del_flag = ${delFlag.valid}
+		<if test="dbName == 'oracle'">ORDER BY NLSSORT(a.name,'NLS_SORT = SCHINESE_PINYIN_M')</if>
+		<if test="dbName == 'mysql'">ORDER BY CONVERT (a. NAME USING gbk) COLLATE gbk_chinese_ci ASC</if>
+	</select>
+	
+	<!-- 查询当前机构下子机构的数量 -->
+	<select id="findCountByParentId" resultType="Integer">
+		SELECT
+			count(a.id)
+		FROM sys_office a
+		WHERE a.parent_id = #{parentId}
+		and a.del_flag = ${delFlag.valid}
+	</select>
+	<!-- 追加机构查询的分页功能  xp end -->
+	<select id="findOfficeByBusiness" resultType="Office">
+	SELECT * from sys_office WHERE TYPE = 9 and DEL_FLAG = 0
+	<if test="type == 8 or type == 6">
+	AND (parent_ids LIKE CONCAT('%',#{parentId},'%' ) OR ID = #{parentId})
+	</if>
+	<if test="type != 8 and type != 6">
+	AND (parent_ids LIKE CONCAT('%',#{id},'%' ) OR ID = #{id})
+	</if>
+	</select>
+	<select id="findOfficeById" resultType="Office">
+	SELECT ID,NAME,type from sys_office WHERE ID = #{id}
+	</select>
+	<select id="findOfficeByOtherId" resultType="Office">
+	SELECT ID,NAME,PARENT_IDS from sys_office WHERE ID = #{id}
+	</select>
+	<select id="officeSearch" resultType="Office" >
+	select * from sys_office WHERE TYPE = 9 and DEL_FLAG = 0
+	<if test="type == 8 or type == 6">
+	AND (parent_ids LIKE CONCAT('%',#{parentId},'%' ) OR ID = #{parentId})
+	</if>
+	<if test="type != 8 and type != 6">
+	AND (parent_ids LIKE CONCAT('%',#{id},'%' ) OR ID = #{id})
+	</if>
+	<if test="name != null and name != ''">
+	and name like CONCAT('%',#{name},'%' )
+	</if>
+	</select>
+	
+	<!--add-start  根据父机构id查询机构列表       ZXK   2020.05.20-->
+	<select id="getOfficeByParentId" resultType="Office">
+		SELECT
+		a.id,
+		a.parent_id AS "parent.id",
+		a.parent_ids,
+		a.code,
+		a.name,
+		a.master,
+		a.sort,
+		a.type,
+		a.address,
+		a.zip_code,
+		a.phone,
+		a.fax,
+		a.email,
+		a.remarks,
+		a.create_by AS "createBy.id",
+		a.create_date,
+		a.update_by AS "updateBy.id",
+		a.update_date,
+		a.del_flag,
+		a.trade_flag,
+		a.province_code,
+		a.city_code,
+		a.longitude,
+		a.latitude,
+		a.county_code,
+		a.provisions_switch,
+		a.joinMan_switch,
+		a.bank_card AS "bankCard"
+		FROM sys_office a
+		LEFT JOIN sys_office p ON a.parent_id = p.id
+		WHERE p.id = #{id}
+		AND a.del_flag = ${delFlag.valid}
+	</select>
+	<!--add-end    根据父机构id查询机构列表       ZXK   2020.05.20-->
+	
+	<!-- 通过父级ids查询对应清分中心信息 add by lihe 2020-06-15 start -->
+	<select id="getCenterByParentIds" resultType="Office">
+		SELECT
+		<include refid="officeColumns" />
+		FROM sys_office a
+		<include refid="officeJoins" />
+		WHERE a.type = '6'
+		<!-- 这里存作父级id集合 -->
+		<if test="parentIdList != null and parentIdList.size != 0">
+			AND a.parent_id in 
+			<foreach collection="parentIdList" item="parentIdListTag" separator="," open="(" close=")" index="index">
+			 	#{parentIdList[${index}]}
+			</foreach>
+		</if>
+	</select>
+	<!-- 通过父级ids查询对应清分中心信息 add by lihe 2020-06-15 end -->
+</mapper>

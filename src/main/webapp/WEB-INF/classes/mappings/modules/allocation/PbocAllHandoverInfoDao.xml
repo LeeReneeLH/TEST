@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.allocation.v02.dao.PbocAllHandoverInfoDao">
+	
+	<sql id="pbocAllHandoverInfoColumns">
+		  HANDOVER_ID,
+		  ALL_ID,
+		  MANAGER_USER_ID,
+		  MANAGER_USER_NAME,
+		  MANAGER_HAND_TYPE,
+		  MANAGER_REASON,
+		  HANDOVER_STATUS,
+		  ACCEPT_DATE,
+		  SCAN_MANAGER_USER_ID,
+		  SCAN_MANAGER_USER_NAME,
+		  SCAN_MANAGER_HAND_TYPE,
+		  SCAN_MANAGER_REASON,
+		  RC_IN_MANAGER_USER_ID,
+		  RC_IN_MANAGER_USER_NAME,
+		  RC_IN_MANAGER_HAND_TYPE,
+		  RC_IN_MANAGER_REASON,
+		  RC_IN_HANDOVER_STATUS,
+		  RC_IN_ACCEPT_DATE,
+		  RC_IN_SCAN_MANAGER_USER_ID,
+		  RC_IN_SCAN_MANAGER_USER_NAME,
+		  RC_IN_SCAN_MANAGER_HAND_TYPE,
+		  RC_IN_SCAN_MANAGER_REASON
+	</sql>
+	
+	<resultMap id="BaseResultMap" type="com.coffer.businesses.modules.allocation.v02.entity.PbocAllHandoverInfo">
+		<result column="HANDOVER_ID"            property="handoverId"          jdbcType="VARCHAR" />
+		<result column="ALL_ID"                 property="allId"               jdbcType="VARCHAR" />
+		<result column="MANAGER_USER_ID"        property="managerUserId"       jdbcType="VARCHAR" />
+		<result column="MANAGER_USER_NAME"      property="managerUserName"     jdbcType="VARCHAR" />
+		<result column="MANAGER_HAND_TYPE"      property="managerHandType"     jdbcType="VARCHAR" />
+		<result column="MANAGER_REASON"         property="managerReason"       jdbcType="VARCHAR" />
+		<result column="HANDOVER_STATUS"        property="handoverStatus"      jdbcType="VARCHAR" />
+		<result column="ACCEPT_DATE"            property="acceptDate"          jdbcType="OTHER" />
+		<result column="SCAN_MANAGER_USER_ID"   property="scanManagerUserId"   jdbcType="VARCHAR" />
+		<result column="SCAN_MANAGER_USER_NAME" property="scanManagerUserName" jdbcType="VARCHAR" />
+		<result column="SCAN_MANAGER_HAND_TYPE" property="scanManagerHandType" jdbcType="VARCHAR" />
+		<result column="SCAN_MANAGER_REASON"    property="scanManagerReason"   jdbcType="VARCHAR" />
+		
+		<result column="RC_IN_MANAGER_USER_ID"        property="rcInManagerUserId"       jdbcType="VARCHAR" />
+		<result column="RC_IN_MANAGER_USER_NAME"      property="rcInManagerUserName"     jdbcType="VARCHAR" />
+		<result column="RC_IN_MANAGER_HAND_TYPE"      property="rcInManagerHandType"     jdbcType="VARCHAR" />
+		<result column="RC_IN_MANAGER_REASON"         property="rcInManagerReason"       jdbcType="VARCHAR" />
+		<result column="RC_IN_HANDOVER_STATUS"        property="rcInHandoverStatus"      jdbcType="VARCHAR" />
+		<result column="RC_IN_ACCEPT_DATE"            property="rcInAcceptDate"          jdbcType="OTHER" />
+		<result column="RC_IN_SCAN_MANAGER_USER_ID"   property="rcInScanManagerUserId"   jdbcType="VARCHAR" />
+		<result column="RC_IN_SCAN_MANAGER_USER_NAME" property="rcInScanManagerUserName" jdbcType="VARCHAR" />
+		<result column="RC_IN_SCAN_MANAGER_HAND_TYPE" property="rcInScanManagerHandType" jdbcType="VARCHAR" />
+		<result column="RC_IN_SCAN_MANAGER_REASON"    property="rcInScanManagerReason"   jdbcType="VARCHAR" />
+		<collection property="handoverUserDetailList" column="HANDOVER_ID" javaType="ArrayList" ofType="PbocAllHandoverUserDetail"
+		select="com.coffer.businesses.modules.allocation.v02.dao.PbocAllHandoverUserDetailDao.findListByHandoverId" fetchType="lazy" />
+	</resultMap>
+	
+	<select id="getByAllId" resultMap="BaseResultMap" parameterType="java.lang.String">
+		SELECT 
+			<include refid="pbocAllHandoverInfoColumns"/>
+		FROM pboc_all_handover_info a
+		WHERE a.all_id = #{allId,jdbcType=VARCHAR}
+	</select>
+
+	<insert id="insertHandoverInfo" parameterType="com.coffer.businesses.modules.allocation.v02.entity.PbocAllHandoverInfo">
+		insert into PBOC_ALL_HANDOVER_INFO
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="handoverId != null">
+				HANDOVER_ID,
+			</if>
+			<if test="allId != null">
+				ALL_ID,
+			</if>
+			<if test="managerUserId != null">
+				MANAGER_USER_ID,
+			</if>
+			<if test="managerUserName != null">
+				MANAGER_USER_NAME,
+			</if>
+			<if test="managerHandType != null">
+				MANAGER_HAND_TYPE,
+			</if>
+			<if test="managerReason != null">
+				MANAGER_REASON,
+			</if>
+			<if test="handoverStatus != null">
+				HANDOVER_STATUS,
+			</if>
+			<if test="acceptDate != null">
+				ACCEPT_DATE,
+			</if>
+			<if test="scanManagerUserId != null">
+				SCAN_MANAGER_USER_ID,
+			</if>
+			<if test="scanManagerUserName != null">
+				SCAN_MANAGER_USER_NAME,
+			</if>
+			<if test="scanManagerHandType != null">
+				SCAN_MANAGER_HAND_TYPE,
+			</if>
+			<if test="scanManagerReason != null">
+				SCAN_MANAGER_REASON,
+			</if>
+			
+			
+			<if test="rcInManagerUserId != null">
+				RC_IN_MANAGER_USER_ID,
+			</if>
+			<if test="rcInManagerUserName != null">
+				RC_IN_MANAGER_USER_NAME,
+			</if>
+			<if test="rcInManagerHandType != null">
+				RC_IN_MANAGER_HAND_TYPE,
+			</if>
+			<if test="rcInManagerReason != null">
+				RC_IN_MANAGER_REASON,
+			</if>
+			<if test="rcInHandoverStatus != null">
+				RC_IN_HANDOVER_STATUS,
+			</if>
+			<if test="rcInAcceptDate != null">
+				RC_IN_ACCEPT_DATE,
+			</if>
+			<if test="rcInScanManagerUserId != null">
+				RC_IN_SCAN_MANAGER_USER_ID,
+			</if>
+			<if test="rcInScanManagerUserName != null">
+				RC_IN_SCAN_MANAGER_USER_NAME,
+			</if>
+			<if test="rcInScanManagerHandType != null">
+				RC_IN_SCAN_MANAGER_HAND_TYPE,
+			</if>
+			<if test="rcInScanManagerReason != null">
+				RC_IN_SCAN_MANAGER_REASON,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="handoverId != null">
+				#{handoverId,jdbcType=VARCHAR},
+			</if>
+			<if test="allId != null">
+				#{allId,jdbcType=VARCHAR},
+			</if>
+			<if test="managerUserId != null">
+				#{managerUserId,jdbcType=VARCHAR},
+			</if>
+			<if test="managerUserName != null">
+				#{managerUserName,jdbcType=VARCHAR},
+			</if>
+			<if test="managerHandType != null">
+				#{managerHandType,jdbcType=VARCHAR},
+			</if>
+			<if test="managerReason != null">
+				#{managerReason,jdbcType=VARCHAR},
+			</if>
+			<if test="handoverStatus != null">
+				#{handoverStatus,jdbcType=VARCHAR},
+			</if>
+			<if test="acceptDate != null">
+				#{acceptDate,jdbcType=OTHER},
+			</if>
+			<if test="scanManagerUserId != null">
+				#{scanManagerUserId,jdbcType=VARCHAR},
+			</if>
+			<if test="scanManagerUserName != null">
+				#{scanManagerUserName,jdbcType=VARCHAR},
+			</if>
+			<if test="scanManagerHandType != null">
+				#{scanManagerHandType,jdbcType=VARCHAR},
+			</if>
+			<if test="scanManagerReason != null">
+				#{scanManagerReason,jdbcType=VARCHAR},
+			</if>
+			
+			
+			
+			<if test="rcInManagerUserId != null">
+				#{rcInManagerUserId,jdbcType=VARCHAR},
+			</if>
+			<if test="rcInManagerUserName != null">
+				#{rcInManagerUserName,jdbcType=VARCHAR},
+			</if>
+			<if test="rcInManagerHandType != null">
+				#{rcInManagerHandType,jdbcType=VARCHAR},
+			</if>
+			<if test="rcInManagerReason != null">
+				#{rcInManagerReason,jdbcType=VARCHAR},
+			</if>
+			<if test="rcInHandoverStatus != null">
+				#{rcInHandoverStatus,jdbcType=VARCHAR},
+			</if>
+			<if test="rcInAcceptDate != null">
+				#{rcInAcceptDate,jdbcType=OTHER},
+			</if>
+			<if test="rcInScanManagerUserId != null">
+				#{rcInScanManagerUserId,jdbcType=VARCHAR},
+			</if>
+			<if test="rcInScanManagerUserName != null">
+				#{rcInScanManagerUserName,jdbcType=VARCHAR},
+			</if>
+			<if test="rcInScanManagerHandType != null">
+				#{rcInScanManagerHandType,jdbcType=VARCHAR},
+			</if>
+			<if test="rcInScanManagerReason != null">
+				#{rcInScanManagerReason,jdbcType=VARCHAR},
+			</if>
+		</trim>
+	</insert>
+
+    <update id="udateHandoverInfoByAllId" parameterType="com.coffer.businesses.modules.allocation.v02.entity.PbocAllHandoverInfo">
+        update PBOC_ALL_HANDOVER_INFO
+        <set>
+            <if test="managerUserId != null">
+                MANAGER_USER_ID = #{managerUserId,jdbcType=VARCHAR},
+            </if>
+            <if test="managerUserName != null">
+                MANAGER_USER_NAME = #{managerUserName,jdbcType=VARCHAR},
+            </if>
+            <if test="managerHandType != null">
+                MANAGER_HAND_TYPE = #{managerHandType,jdbcType=VARCHAR},
+            </if>
+            <if test="managerReason != null">
+                MANAGER_REASON = #{managerReason,jdbcType=VARCHAR},
+            </if>
+            <if test="handoverStatus != null">
+                HANDOVER_STATUS = #{handoverStatus,jdbcType=VARCHAR},
+            </if>
+            <if test="acceptDate != null">
+                ACCEPT_DATE = #{acceptDate,jdbcType=OTHER},
+            </if>
+            <if test="scanManagerUserId != null">
+                SCAN_MANAGER_USER_ID = #{scanManagerUserId,jdbcType=VARCHAR},
+            </if>
+            <if test="scanManagerUserName != null">
+                SCAN_MANAGER_USER_NAME = #{scanManagerUserName,jdbcType=VARCHAR},
+            </if>
+            <if test="scanManagerHandType != null">
+                SCAN_MANAGER_HAND_TYPE = #{scanManagerHandType,jdbcType=VARCHAR},
+            </if>
+            <if test="scanManagerReason != null">
+                SCAN_MANAGER_REASON = #{scanManagerReason,jdbcType=VARCHAR},
+            </if>
+            
+            
+            
+            <if test="rcInManagerUserId != null">
+                RC_IN_MANAGER_USER_ID = #{rcInManagerUserId,jdbcType=VARCHAR},
+            </if>
+            <if test="rcInManagerUserName != null">
+                RC_IN_MANAGER_USER_NAME = #{rcInManagerUserName,jdbcType=VARCHAR},
+            </if>
+            <if test="rcInManagerHandType != null">
+                RC_IN_MANAGER_HAND_TYPE = #{rcInManagerHandType,jdbcType=VARCHAR},
+            </if>
+            <if test="rcInManagerReason != null">
+                RC_IN_MANAGER_REASON = #{rcInManagerReason,jdbcType=VARCHAR},
+            </if>
+            <if test="rcInHandoverStatus != null">
+                RC_IN_HANDOVER_STATUS = #{rcInHandoverStatus,jdbcType=VARCHAR},
+            </if>
+            <if test="rcInAcceptDate != null">
+                RC_IN_ACCEPT_DATE = #{rcInAcceptDate,jdbcType=OTHER},
+            </if>
+            <if test="rcInScanManagerUserId != null">
+                RC_IN_SCAN_MANAGER_USER_ID = #{rcInScanManagerUserId,jdbcType=VARCHAR},
+            </if>
+            <if test="rcInScanManagerUserName != null">
+                RC_IN_SCAN_MANAGER_USER_NAME = #{rcInScanManagerUserName,jdbcType=VARCHAR},
+            </if>
+            <if test="rcInScanManagerHandType != null">
+                RC_IN_SCAN_MANAGER_HAND_TYPE = #{rcInScanManagerHandType,jdbcType=VARCHAR},
+            </if>
+            <if test="rcInScanManagerReason != null">
+                RC_IN_SCAN_MANAGER_REASON = #{rcInScanManagerReason,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where ALL_ID = #{allId,jdbcType=VARCHAR}
+    </update>
+</mapper>

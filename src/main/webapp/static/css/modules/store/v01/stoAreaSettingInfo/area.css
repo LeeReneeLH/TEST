@@ -1,0 +1,58 @@
+﻿@charset "utf-8";
+/* CSS Document */
+.area_list{    width: 100% !important;overflow-x: scroll !important;max-height:650px;
+
+	float:left;}
+.area_list ul{
+	margin: 0;
+	padding: 0;
+	list-style-type: none;    
+	
+	max-width: 1200px;
+}
+.area_list li{float:left;list-style-type: none;  }
+.area_list_max{    width: 90% !important;
+	display: table;
+	float:left;}
+.area_list_max ul{
+	margin: 0;
+	padding: 0;
+	list-style-type: none;    display: table-cell;
+
+}
+.area_list_max li{float:left;}
+.area{
+	width: 200px;
+	padding: 5px;
+	margin: 5px;
+	float: left;
+	border: 5px solid #c2c9dc;
+	background-color: #F8F8F8;
+}  /*黄色*/
+.area_yellow{width:200px;padding:5px;margin:5px;float:left;border:5px solid #ffff00;background-color: #F8F8F8;} /*红色*/
+.area_red{width:200px;padding:5px;margin:5px;float:left;border:5px solid #db0435;background-color: #F8F8F8;}
+.area_invild{
+	width: 200px;
+	padding: 5px;
+	margin: 5px;
+	float: left;
+	border: 5px solid #c2c9dc;
+	background-color: #c2c9dc;
+	background-image: url(../../../../../images/invild_area_bg.jpg);
+	background-repeat: no-repeat;
+	background-position: center center;
+}
+
+.area_title{
+	width: 100%;
+	border-bottom: 1px solid #c5ccd0;
+	
+	color: #6992be;
+	font-family: Arial, Helvetica, sans-serif;
+	font-weight: bold;float:left;
+
+}
+.area_title_num{float:left;font-size:30px;width:50%;text-align:center;line-height:50px;}
+.area_title_bag{float:left;font-size:18px;padding-top:15px;text-align:center;width:50%;}
+.area_time{height:25px;float:left;font-size:14px;text-align:center;width:100%;color: #6992be;font-family: Arial, Helvetica, sans-serif;line-height:25px;
+	}

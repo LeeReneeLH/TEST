@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.clear.v03.dao.ClInDetailDao">
+    <!-- 商行交款明细表 -->
+    <!-- 查询明细表信息字段 -->
+  	<sql id="bankPayDetailColumns">
+  		t_aaitem.detail_id AS "detailId",
+	  	t_aaitem.in_no AS "inNo",
+	  	t_aaitem.currency as "currency",
+	  	<!-- 修改属性名为denomination  修改人：xl 修改时间：2017-8-26 begin  -->
+		t_aaitem.denomination AS "denomination" ,
+		<!--end -->
+		t_aaitem.unit_id AS "unitId",
+		t_aaitem.count_dqf AS "countDqf",
+		t_aaitem.count_yqf AS "countYqf",
+		t_aaitem.count AS "totalCount",
+		t_aaitem.total_amt AS "totalAmt"
+	</sql>
+	
+	
+	<!-- 按交款单号，商行交款明细列表 -->
+	<select id="findItemsList" resultType="com.coffer.businesses.modules.clear.v03.entity.ClInDetail">
+	    SELECT 
+		  <include refid="bankPayDetailColumns"/>
+	    FROM CL_IN_DETAIL t_aaitem
+	    WHERE
+	      1=1
+	      and t_aaitem.IN_NO = #{inNo} 
+	      and t_aaitem.DEL_FLAG='0'
+	    order by t_aaitem.denomination
+	</select>
+	
+	<!-- 明细表数据做成 -->
+	<insert id="insert">
+		INSERT INTO cl_in_detail(
+		   detail_id,
+		   in_no,
+		   currency,
+		   denomination,
+		   unit_id,
+		   count_dqf,
+		   count_yqf,
+		   count,
+		   total_amt,
+		   create_by,
+		   create_name,
+		   create_date,
+		   update_by,
+		   update_name,
+		   update_date,
+		   del_flag,
+		   remarks
+		) VALUES (
+			#{id},
+			#{inNo},
+			#{currency},
+			<!-- 修改属性名为denomination  修改人：xl 修改时间：2017-8-26 begin  -->
+			#{denomination},
+			<!-- end  -->
+			#{unitId},
+			#{countDqf},
+			#{countYqf},
+			#{totalCount},
+			#{totalAmt},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate},
+			#{delFlag},
+			#{remarks}
+		)
+	</insert>
+	
+</mapper>

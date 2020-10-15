@@ -1,0 +1,374 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.doorOrder.v01.dao.EquipmentWarningsDao">
+
+	<sql id="EquipmentWarningsColumns">
+ 		a.id AS "id",
+		a.mach_no AS "machNo",
+		a.mach_name AS "machName",
+		a.warn_time AS "warnTime",
+		a.warn_level AS "warnLevel",
+		a.warn_type AS "warnType",
+		a.warn_code AS "warnCode",
+		a.warn_name AS "warnName",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS  "remarks",
+		a.del_flag AS "delFlag",
+		a.office_id  AS "office.id",
+		a.office_name  AS "office.name",
+		a.CLEAR_STATUS AS "clearStatus",
+		a.PRINTER_STATUS AS "printerStatus",
+		a.DOOR_STATUS AS "doorStatus"
+	</sql>
+	
+	<sql id="officeJoins">
+		LEFT JOIN sys_office b ON b.ID = E.aoffice_id and b.del_flag = ${delFlag.valid}
+		LEFT JOIN sys_office c ON c.ID = b.parent_id and c.del_flag = ${delFlag.valid}
+	</sql>	
+	
+	<sql id="officeJoins1">
+		LEFT JOIN equipment_Info e ON a.mach_no = e.id
+	</sql> 
+			
+	<select id="get" resultType="EquipmentWarnings">
+		SELECT 
+			<include refid="EquipmentWarningsColumns"/>	
+		FROM Equipment_Warnings a
+				<include refid="officeJoins1"/>	
+		WHERE a.id = #{id}
+	</select>
+		
+	<insert id="insert">
+		INSERT INTO Equipment_Warnings(
+			id,
+			mach_no,
+			mach_name,
+			warn_time,
+			warn_level,
+			warn_type,
+			warn_code,
+			warn_name,
+			create_by,
+			create_date,
+			remarks,
+			del_flag,
+			office_id,
+			office_name,
+			CLEAR_STATUS,
+			PRINTER_STATUS,
+			DOOR_STATUS,
+			update_date
+		) VALUES (
+			#{id},
+			#{machNo},
+			#{machName},
+			#{warnTime},
+			#{warnLevel},		
+			#{warnType},
+			#{warnCode},
+			#{warnName},	
+			#{createBy.id},
+			#{createDate},
+			#{remarks},
+			#{delFlag},
+			#{office.id},
+			#{office.name},
+			#{clearStatus},
+			#{printerStatus},
+			#{doorStatus},
+			#{updateDate}
+		)
+	</insert> 
+	
+ 	<update id="delete">
+		UPDATE Equipment_Warnings
+			SET del_Flag = #{DEL_FLAG_DELETE}
+		WHERE  id= #{id}
+	</update>
+	
+	<select id="findList" resultType="EquipmentWarnings">
+		SELECT
+ 				 c.id AS pOfficeId,
+ 				 c.name  AS pOfficeName,
+  				 E.aoffice_id AS aofficeId,
+ 				 E.aoffice_name AS aofficeName,
+ 				 E.SERIES_NUMBER  AS seriesNumber,
+ 				 VIN.id AS vinoffice_id,
+ 				 VIN.name AS vinoffice_name,
+ 				 E.mach_no AS machNo,
+   				 E.mach_name AS machName,
+   				 E.warn_time AS warnTime,
+				 E.warn_level AS warnLevel,
+				 E.warn_type AS warnType,
+		      	 E.warn_code AS warnCode,
+			 	 E.warn_name AS warnName,
+				 E.remarks AS  remarks,
+				 E.del_flag AS delFlag,
+				 E.create_date AS createDate,
+				 E.update_date AS updateDate,
+				 E.clear_status AS clearStatus,
+				 E.printer_status AS printerStatus,
+				 E.door_status AS doorStatus
+				 FROM
+  				(
+ 				  SELECT
+   						 e1.aoffice_id AS aoffice_id,
+  						 o.name AS aoffice_name,
+   						 e1.vinoffice_id AS vinoffice_id,
+   						 e1.vinoffice_name AS vinoffice_name,
+   						 e1.SERIES_NUMBER AS SERIES_NUMBER,
+   						 w.id,
+ 						 w.mach_no,
+   						 w.mach_name,  
+   						 w.warn_time,
+				 		 w.warn_level,
+			   		     w.warn_type,
+				 		 w.warn_code,
+				 		 w.warn_name,
+						 w.remarks,
+						 w.del_flag,
+						 w.create_date,
+						 w.update_date,
+						 w.clear_status,
+						 w.printer_status,
+						 w.door_status
+   				 		 FROM
+    						 equipment_info e1
+  							 LEFT JOIN equipment_warnings w ON e1.id = w.mach_no
+  							 LEFT JOIN sys_office o ON o.id = e1.aoffice_id and o.del_flag = ${delFlag.valid}
+  							 WHERE w.del_flag='0' AND e1.del_flag='0'
+ 						 ) E
+		<include refid="officeJoins"/>
+		LEFT JOIN SYS_OFFICE VIN ON E.vinoffice_id = VIN.ID
+		<where>
+			<if test="centerId != null and centerId != ''">
+				AND E.vinoffice_id = '${centerId}'
+			</if>
+			
+     		<if test="doorId != null and doorId != ''">
+				AND E.aoffice_Id = '${doorId}'
+			</if>
+			
+     		<if test="merchantId != null and merchantId != ''">
+				AND c.pOfficeId = '${merchantId}'
+			</if>
+			
+			<if test="machNo != null and machNo != ''">
+				and E.mach_no like 
+				<if test="dbName == 'mysql'">concat('%',#{machNo},'%')</if>
+				<if test="dbName == 'oracle'">'%'||#{machNo}||'%'</if>
+			</if>
+			<!-- 机具序列号 hzy 2020-04-15 -->
+			<if test="seriesNumber != null and seriesNumber != ''">
+				and E.SERIES_NUMBER like 
+				<if test="dbName == 'mysql'">concat('%',#{seriesNumber},'%')</if>
+				<if test="dbName == 'oracle'">'%'||#{seriesNumber}||'%'</if>
+			</if>
+			<if test="machName != null and machName != ''">
+				and E.mach_name like
+				<if test="dbName == 'mysql'">concat('%',#{machName},'%')</if>
+				<if test="dbName == 'oracle'">'%'||#{machName}||'%'</if>
+			</if>
+			
+			 <if test="office != null and office.id != null and office.id != ''">
+				AND E.aoffice_Id = #{office.id}
+			</if>
+			
+			<if test="office != null and office.name!=null and office.name != ''">
+				AND E.aoffice_Name = #{office.name}
+			</if> 
+		
+			
+			<if test="searchTimeStart != null and searchTimeStart != '' ">
+				<!-- and TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') &gt;= #{searchTimeStart} -->
+				<if test="dbName == 'mysql'">AND date_format(E.warn_time,'%Y-%m-%d %H:%i:%S') &gt;= #{searchTimeStart}</if>
+				<if test="dbName == 'oracle'">AND TO_CHAR(E.warn_time, 'yyyy-mm-dd hh24:mi:ss') &gt;= #{searchTimeStart}</if>
+			</if>
+			
+			<if test="searchTimeEnd != null and searchTimeEnd != '' ">
+				<!-- and TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') &lt;= #{searchTimeEnd} -->
+				<if test="dbName == 'mysql'">AND date_format(case when E.update_date is not null then  E.update_date else  E.warn_time end,'%Y-%m-%d %H:%i:%S') &lt;= #{searchTimeEnd}</if>
+				<if test="dbName == 'oracle'">AND TO_CHAR( case when E.update_date is not null then  E.update_date else  E.warn_time end , 'yyyy-mm-dd hh24:mi:ss') &lt;= #{searchTimeEnd}</if>
+			</if>
+            ${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY E.warn_time DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	 <update id="update">
+		UPDATE Equipment_Warnings SET 	
+			id=#{id},
+			mach_no=#{machNo},
+			mach_name=#{machName},
+			warn_time=#{warnTime},
+			warn_level=#{warnLevel},		
+			warn_type=#{warnType},
+			warn_code=#{warnCode},
+			warn_name=#{warnName},		
+			update_by=#{updateBy.id},
+			update_Date=#{updateDate},
+			remarks=#{remarks},
+			del_Flag=#{delFlag},
+			office_id=#{office.id},
+			office_name=#{office.name},
+			CLEAR_STATUS=#{clearStatus},
+			PRINTER_STATUS=#{printerStatus},
+			DOOR_STATUS=#{doorStatus}
+		WHERE id=#{id}
+	</update> 
+	
+  <!-- 查询当前机构所属人行下的所有门店   lihe start-->
+    <select id="findDoorList" resultType="Office">
+		SELECT
+			a.id,
+			a.parent_id AS "parent.id",
+			a.parent_ids,
+			a.code,
+			a.name,
+			a.master,
+			a.sort,
+			a.type,
+			a.address,
+			a.zip_code,
+			a.phone,
+			a.fax,
+			a.email,
+			a.remarks,
+			a.create_by AS "createBy.id",
+			a.create_date,
+			a.update_by AS "updateBy.id",
+			a.update_date,
+			a.del_flag,
+			a.trade_flag,
+			a.province_code,
+			a.city_code,
+			a.longitude,
+			a.latitude,
+			a.county_code,
+			a.provisions_switch,
+			a.joinMan_switch,
+			a.bank_card AS "bankCard"		
+		FROM
+			SYS_OFFICE a
+		WHERE
+				(a.type = #{type} or a.type='9')
+				AND a.del_flag='0'
+		 AND a.PARENT_IDS LIKE
+		 <if test="office.dbName == 'oracle'">'%' || (SELECT ID FROM SYS_OFFICE WHERE
+			ID = (SELECT PARENT_ID FROM SYS_OFFICE WHERE TYPE = '6' AND ID = #{office.id})
+			) || '%'
+		</if>
+		<if test="office.dbName == 'mysql'">CONCAT('%,',(SELECT ID FROM SYS_OFFICE WHERE
+			ID = (
+				SELECT PARENT_ID FROM SYS_OFFICE WHERE TYPE = '6' AND ID = #{office.id})
+			),',%')
+		</if>   
+		ORDER BY a.id
+	</select>
+	
+	<!-- 查询当前机具当天是否发生过该类型异常信息   HuZhiYong start-->
+    <select id="findDoorEqNow" resultType="EquipmentWarnings">
+		SELECT 
+		<include refid="EquipmentWarningsColumns"/>
+		 FROM equipment_warnings a
+		<where>
+			<if test="machNo != null and machNo != '' ">
+				AND a.MACH_NO = #{machNo}
+				AND a.CREATE_DATE = (
+				select 
+					max(CREATE_DATE) 
+				FROM 
+					equipment_warnings 
+				where 
+				DATE_FORMAT( CREATE_DATE, '%Y-%m-%d' ) = DATE_FORMAT( now( ), '%Y-%m-%d' ) 
+				and MACH_NO = #{machNo}
+			)
+			</if>
+			<if test="warnLevel != null and warnLevel != '' ">
+				AND a.WARN_LEVEL = #{warnLevel}
+			</if>
+			<if test="warnType != null and warnType != '' ">
+				AND a.WARN_TYPE = #{warnType}
+			</if>
+			<if test="warnName != null and warnName != '' ">
+				AND a.WARN_NAME = #{warnName}
+			</if>
+			<if test="clearStatus != null and clearStatus != '' ">
+				AND a.CLEAR_STATUS = #{clearStatus}
+			</if>
+			<if test="printerStatus != null and printerStatus != '' ">
+				AND a.PRINTER_STATUS = #{printerStatus}
+			</if>
+			<if test="doorStatus != null and doorStatus != '' ">
+				AND a.DOOR_STATUS = #{doorStatus}
+			</if>			
+			<if test="dbName == 'oracle'">
+			AND TO_CHAR(a.CREATE_DATE,'yyyy-mm-dd')=
+				TO_CHAR(SYSDATE,'yyyy-mm-dd')
+			</if>
+			<if test="dbName == 'mysql'">
+			AND DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d')=
+				DATE_FORMAT(now(), '%Y-%m-%d')
+			</if>
+			<if test="warnTimeSearch != null and warnTimeSearch != '' ">
+				<if test="dbName == 'mysql'">
+					AND TIMESTAMPDIFF(SECOND,DATE_FORMAT(a.update_date, '%Y-%m-%d %H:%i:%s'),'${warnTimeSearch}') &lt; '60'
+				</if>
+				<if test="dbName == 'oracle'">
+				AND TIMESTAMPDIFF(SECOND,TO_CHAR(a.update_date, 'yyyy-mm-dd hh24:mi:ss'),'${warnTimeSearch}') &lt; '60'
+			</if>
+			</if>
+			
+		</where>
+			ORDER BY a.CREATE_DATE DESC
+			LIMIT 1
+	</select>
+	
+	<select id="findWarningList" resultType="EquipmentWarnings">
+		SELECT
+			e.mach_no AS 'machNo',
+			e.clear_status AS 'clearStatus',
+			e.printer_status AS 'printerStatus',
+			e.door_status AS 'doorStatus',
+			e.create_date AS 'createDate',
+			ei.series_number as 'seriesNumber'
+		FROM
+			( SELECT 
+				max( create_date ) AS 'lastestDate', 
+				mach_no 
+			  FROM 
+			  	equipment_warnings 
+			  GROUP BY 
+			  	mach_no 
+			  HAVING DATE_FORMAT( max( create_date ), '%Y-%m-%d' ) = CURRENT_DATE () ) a
+		LEFT JOIN 
+			(SELECT
+				* 
+			FROM
+				equipment_warnings 
+			WHERE
+				DATE_FORMAT( create_date, '%Y-%m-%d' ) = CURRENT_DATE ()) e ON a.lastestDate = e.CREATE_DATE AND a.mach_no = e.mach_no
+		LEFT JOIN 
+			sys_office o ON o.id = e.office_id
+			LEFT JOIN equipment_info ei on a.mach_no = ei.id
+		WHERE 
+			e.del_flag = 0
+			<if test="machNo != null and machNo != ''">
+				AND e.mach_no = #{machNo}
+			</if>
+			${sqlMap.dsf}
+		ORDER BY
+			e.mach_no DESC,e.update_date DESC
+	</select>
+</mapper>
+	

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.core.modules.sys.dao.FaceIdSerialNumberDao">
+    
+	<sql id="serialNumberColumns">
+		a.ID AS "id",
+		a.PBOC_OFFICE_ID AS "pbocOfficeId",
+		a.OFFICE_TYPE AS "officeType",
+		a.SEQUENCE AS "sequence",
+		a.UPDATE_DATE AS "updateDate"
+	</sql>
+	
+	<sql id="serialNumberJoins">
+	</sql>
+    
+	<select id="findFaceId" resultType="FaceIdSerialNumber">
+		SELECT 
+			<include refid="serialNumberColumns"/>
+		FROM SYS_FACE_ID_SERIAL_NUMBER a
+		<include refid="serialNumberJoins"/>
+		WHERE a.OFFICE_TYPE = #{userOfficeType}
+			AND a.PBOC_OFFICE_ID = #{pbocOfficeId}
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO SYS_FACE_ID_SERIAL_NUMBER(
+			ID,
+			PBOC_OFFICE_ID,
+			OFFICE_TYPE,
+			SEQUENCE,
+			UPDATE_DATE
+		) VALUES (
+			#{id},
+			#{pbocOfficeId},
+			#{officeType},
+			#{sequence},
+			#{updateDate}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE SYS_FACE_ID_SERIAL_NUMBER SET 	
+			SEQUENCE = #{sequence},
+			UPDATE_DATE = #{updateDate}
+		WHERE ID = #{id}
+	</update>
+</mapper>

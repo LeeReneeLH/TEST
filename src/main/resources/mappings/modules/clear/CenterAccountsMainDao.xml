@@ -1,0 +1,404 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.clear.v03.dao.CenterAccountsMainDao">
+    
+	<sql id="centerAccountsMainColumns">
+		a.accounts_id AS "accountsId",
+		a.client_id AS "clientId",
+		a.client_name AS "clientName",
+		a.business_type AS "businessType",
+		a.business_id AS "businessId",
+		a.roffice_id AS "rofficeId",
+		a.roffice_name AS "rofficeName",
+		a.aoffice_id AS "aofficeId",
+		a.aoffice_name AS "aofficeName",
+		a.in_amount AS "inAmount",
+		a.out_amount AS "outAmount",
+		a.total_amount AS "totalAmount",
+		a.guest_totalAmount AS "guestTotalAmount",
+		a.business_status AS "businessStatus",
+		a.create_by AS "createBy",
+		a.create_name AS "createName",
+		a.create_date AS "createDate",
+		a.del_flag AS "delFlag"
+	</sql>
+		<!-- 查询出的所有信息的字段，保存到关联的Entity里 -->
+	<resultMap id="CenterAccountsMainResult" type="com.coffer.businesses.modules.clear.v03.entity.CenterAccountsMain">
+	    <id column="a.accountsId"             	property="accountsId" />
+	    <result column="a.clientId"     	property="clientId"/>
+	    <result column="a.clientName"  		property="clientName"/>
+	    <result column="a.businessType"        	property="businessType"/>
+	    <result column="a.businessId"        property="businessId"/>
+	    <result column="a.rofficeId"      	property="rofficeId"/>
+	    <result column="a.rofficeName"   	property="rofficeName"/>
+	    <result column="a.aofficeId" 	property="aofficeId"/>
+	     <result column="a.aofficeName" 	property="aofficeName"/>
+ 	    <result column="a.inAmount"   	property="inAmount"/>
+	    <result column="a.outAmount" 	property="outAmount"/>
+	    <result column="a.totalAmount"   	property="totalAmount"/>
+	    <result column="a.guestTotalAmount" 	property="guestTotalAmount"/>
+	    <result column="a.businessStatus" 	property="businessStatus"/>
+	    <result column="a.createBy" 	property="createBy.id"/>
+	    <result column="a.createName" 	property="createName"/>
+	    <result column="a.createDate" 	property="createDate"/>
+	    <result column="a.delFlag"     	property="delFlag"/>
+	 <!--财务明细 -->
+ 	    <collection column="accountsId" property="centerAccountsDetailList" javaType="ArrayList" select="com.coffer.businesses.modules.clear.v03.dao.CenterAccountsDetailDao.findItemsList"  fetchType="lazy"/>
+	</resultMap>
+		
+	<sql id="centerAccountsMainJoins">
+	</sql>
+    
+	<select id="get" resultType="CenterAccountsMain">
+		SELECT 
+			<include refid="centerAccountsMainColumns"/>
+		FROM center_accounts_main a
+		<include refid="centerAccountsMainJoins"/>
+		WHERE a.accounts_id = #{accountsId}
+	</select>
+	
+	<select id="findList" resultType="CenterAccountsMain">
+		SELECT 
+			<include refid="centerAccountsMainColumns"/>
+		FROM center_accounts_main a left join sys_office o 
+			on a.roffice_id=o.id
+		<include refid="centerAccountsMainJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		<!-- 业务类型集合 -->
+		<if test="businessTypes != null and businessTypes.size != 0">
+			AND a.business_type in 
+			<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+			 	#{businessTypes[${index}]}
+			</foreach>
+		</if>
+		<!-- 业务类型 -->
+		<if test="businessType != null and businessType != ''">
+			AND a.business_type = '${businessType}'
+		</if>
+		<!-- 机构ID -->
+		<if test="clientId != null and clientId != ''">
+			AND a.client_id = '${clientId}'
+		</if>
+		<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>	
+		<!-- 客户列表 -->
+		<if test="clientIdList != null and clientIdList.size != 0">
+			AND a.client_id in 
+			<foreach collection="clientIdList" item="clientIdTag" separator="," open="(" close=")" index="">
+			 	#{clientIdTag}
+			</foreach>
+		</if>
+		
+		<if test=" rofficeId != null and rofficeId != ''">
+			AND (a.roffice_id = #{rofficeId}${sqlMap.dsf})
+		</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.create_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="CenterAccountsMain">
+		SELECT 
+			<include refid="centerAccountsMainColumns"/>
+		FROM center_accounts_main a
+		<include refid="centerAccountsMainJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+
+
+	<select id="getAccountByBusinessType" resultType="CenterAccountsMain">
+		SELECT
+		<include refid="centerAccountsMainColumns" />
+		FROM center_accounts_main a
+		<include refid="centerAccountsMainJoins" />
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		<!-- 业务类型 -->
+		<if test="businessTypes != null and businessTypes.size != 0">
+			AND a.business_type in 
+			<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="">
+			 	#{businessTypeTag}
+			</foreach>
+		</if>
+		<!-- 机构ID -->
+		<if test="clientId != null and clientId != ''">
+			AND a.client_id = '${clientId}'
+		</if>
+		<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>	
+		
+		<!-- 客户列表 -->
+		<if test="clientIdList != null and clientIdList.size != 0">
+			AND a.client_id in 
+			<foreach collection="clientIdList" item="clientIdTag" separator="," open="(" close=")" index="">
+			 	#{clientIdTag}
+			</foreach>
+		</if>
+		<if test=" rofficeId != null and rofficeId != ''">
+			AND a.roffice_id = #{rofficeId}
+		</if>
+		
+		order by a.create_date   desc
+	</select>
+	
+	<select id="getAccountByBusinessTypeForReport" resultType="CenterAccountsMain">
+		SELECT
+		<include refid="centerAccountsMainColumns" />
+		FROM center_accounts_main a LEFT JOIN cl_in_main b on a.BUSINESS_ID = b.in_NO
+		LEFT JOIN cl_out_main c on a.BUSINESS_ID = c.OUT_NO
+		LEFT JOIN CL_ERROR_INFO d on a.business_id = d.error_no
+		<include refid="centerAccountsMainJoins" />
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		<!-- 去掉status的引号 wzj 2017-12-12 begin  -->
+		and (b.STATUS = '1' or c.STATUS = '1' or d.status = '1')
+		<!-- end -->
+		<!-- 业务类型 -->
+		<if test="businessTypes != null and businessTypes.size != 0">
+			AND a.business_type in 
+			<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="">
+			 	#{businessTypeTag}
+			</foreach>
+		</if>
+		<!-- 机构ID -->
+		<if test="clientId != null and clientId != ''">
+			AND a.client_id = '${clientId}'
+		</if>
+		<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>	
+		
+		<!-- 客户列表 -->
+		<if test="clientIdList != null and clientIdList.size != 0">
+			AND a.client_id in 
+			<foreach collection="clientIdList" item="clientIdTag" separator="," open="(" close=")" index="">
+			 	#{clientIdTag}
+			</foreach>
+		</if>
+		
+		<if test=" rofficeId != null and rofficeId != ''">
+			AND a.roffice_id = #{rofficeId}
+		</if>
+		
+		order by a.create_date   desc
+	</select>
+	
+	<select id="getDetailListByAccountsId" resultMap="CenterAccountsMainResult">
+		SELECT 
+		<include refid="centerAccountsMainColumns" />
+		FROM center_accounts_main a 
+		left join sys_office o 
+			on a.roffice_id=o.id
+		<include refid="centerAccountsMainJoins" />
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		
+		<if test="clientId != null and clientId != ''">
+			AND a.client_id = '${clientId}'
+		</if>
+		
+		<if test="rofficeId != null and rofficeId != ''">
+			AND (a.roffice_id = #{rofficeId}${sqlMap.dsf})
+		</if>
+		
+	</select>
+	
+	
+	
+	<!-- 查询出的所有信息的字段，保存到关联的Entity里 -->
+	<resultMap id="CenterAccountsMainGroupBy" type="com.coffer.businesses.modules.clear.v03.entity.CenterAccountsMain">
+	    <result column="inCount"     	property="inCount"/>
+	    <result column="outCount"  		property="outCount"/>
+	    <result column="inAmount"        	property="inAmount"/>
+	    <result column="outAmount"        	property="outAmount"/>
+	</resultMap>
+
+
+	<select id="findListGroupByBusinessType" resultMap="CenterAccountsMainGroupBy">
+		SELECT
+		t.business_type,
+		sum(case when t.in_amount is null then 0 else 1 end) as inCount,
+		sum(case when t.out_amount is null then 0 else 1 end) as outCount,
+		sum(t.in_amount) as inAmount,
+		sum(t.out_amount) as outAmount
+		FROM CENTER_ACCOUNTS_MAIN t LEFT JOIN cl_in_main b on t.BUSINESS_ID = b.in_NO
+		LEFT JOIN cl_out_main c on t.BUSINESS_ID = c.OUT_NO
+		LEFT JOIN CL_ERROR_INFO d on t.business_id = d.error_no
+		<include refid="centerAccountsMainJoins" />
+		WHERE t.del_flag = '0'
+		and (b.STATUS = '1' or c.STATUS = '1' or d.status = '1')
+		<if test=" rofficeId != null and rofficeId != ''">
+			AND t.roffice_id = #{rofficeId}
+		</if>
+		<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(t.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(t.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(t.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(t.create_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>	
+		<if test="businessTypes != null and businessTypes.size != 0">
+			AND t.business_type in 
+			<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+			 	#{businessTypes[${index}]}
+			</foreach>
+		</if>
+		group by t.business_type
+	</select>
+	
+	<!-- 根据开始结束时间查询入库金额及出库金额总数 -->
+	<select id="findSumList" resultMap="CenterAccountsMainResult">
+		SELECT
+		sum(t.in_amount) as inAmount,
+		sum(t.out_amount) as outAmount
+		FROM CENTER_ACCOUNTS_MAIN t
+		left join sys_office o 
+			on t.roffice_id=o.id
+		LEFT JOIN cl_out_main b on t.BUSINESS_ID = b.OUT_NO 
+		LEFT JOIN  cl_in_main c on t.BUSINESS_ID = c.IN_NO
+		<include refid="centerAccountsMainJoins" />
+		WHERE t.del_flag = '0'
+			<!-- 业务类型集合 -->
+		<if test="businessTypes != null and businessTypes.size != 0">
+			AND t.business_type in 
+			<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+			 	#{businessTypes[${index}]}
+			</foreach>
+		</if>
+		<if test=" rofficeId != null and rofficeId != ''">
+			AND (t.roffice_id = #{rofficeId}${sqlMap.dsf})
+		</if>
+		<!-- 机构ID -->
+		<if test="clientId != null and clientId != ''">
+			AND t.client_id = '${clientId}'
+		</if>
+		<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(t.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(t.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(t.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(t.create_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>	
+			and ( b.STATUS = '1' or c.STATUS = '1')
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO center_accounts_main(
+			accounts_id,
+			client_id,
+			client_name,
+			business_type,
+			business_id,
+			roffice_id,
+			roffice_name,
+			aoffice_id,
+			aoffice_name,
+			in_amount,
+			out_amount,
+			total_amount,
+			guest_totalAmount,
+			business_status,
+			create_by,
+			create_name,
+			create_date,
+			del_flag
+		) VALUES (
+			#{accountsId},
+			#{clientId},
+			#{clientName},
+			#{businessType},
+			#{businessId},
+			#{rofficeId},
+			#{rofficeName},
+			#{aofficeId},
+			#{aofficeName},
+			#{inAmount},
+			#{outAmount},
+			#{totalAmount},
+			#{guestTotalAmount},
+			#{businessStatus},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">	
+		UPDATE center_accounts_main SET 	
+			accounts_id = #{accountsId},
+			client_id = #{clientId},
+			client_name = #{clientName},
+			business_type = #{businessType},
+			business_id = #{businessId},
+			roffice_id = #{rofficeId},
+			roffice_name = #{rofficeName},
+			aoffice_id = #{aofficeId},
+			aoffice_name = #{aofficeName},
+			in_amount = #{inAmount},
+			out_amount = #{outAmount},
+			total_amount = #{totalAmount},
+			guest_totalAmount = #{guestTotalAmount},
+			business_status = #{businessStatus}
+		WHERE accounts_id = #{accountsId}
+	</update>
+	
+	<update id="delete">
+		UPDATE center_accounts_main SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE accounts_id = #{accountsId}
+	</update>
+	
+</mapper>

@@ -1,0 +1,1949 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.allocation.v01.dao.AllAllocateInfoDao">
+
+	<!-- 查询所有的调拨信息字段 -->
+  	<sql id="allAllocateInfoColumns">
+  		a.all_id                  AS "allInfo.allId",
+		a.business_type           AS "allInfo.businessType",
+		a.route_id                AS "allInfo.routeId",
+		a.route_name              AS "allInfo.routeName",
+		a.register_amount         AS "allInfo.registerAmount",
+		a.confirm_amount          AS "allInfo.confirmAmount",
+		a.register_number         AS "allInfo.registerNumber",
+		a.accept_number           AS "allInfo.acceptNumber",
+		a.status                  AS "allInfo.status",
+		a.create_by               AS "allInfo.createBy",
+		a.create_name             AS "allInfo.createName",
+		a.create_date             AS "allInfo.createDate",
+		a.update_by               AS "allInfo.updateBy",
+		a.update_name             AS "allInfo.updateName",
+		a.update_date             AS "allInfo.updateDate",
+		a.roffice_id              AS "allInfo.rOfficeId",
+		a.roffice_name            AS "allInfo.rOfficeName",
+		a.aoffice_id              AS "allInfo.aOfficeId",
+		a.aoffice_name            AS "allInfo.aOfficeName",
+		a.confirm_name			  AS "allInfo.confirmName",
+		a.confirm_date			  AS "allInfo.confirmDate",	
+		a.scan_date               AS "allInfo.scanDate",
+  		a.store_handover_id       AS "allInfo.storeHandoverId",
+  		a.point_handover_id       AS "allInfo.pointHandoverId",
+  		<!-- add-start by SongYuanYang 2017-7-18 -->
+		a.clear_in_receive_by,
+		a.clear_in_receive_name,
+		a.clear_in_receive_date,
+		a.clear_in_register_by,
+		a.clear_in_register_name,
+		a.clear_in_register_date,
+		<!-- add-end by liuyaowen 2017-7-18 -->
+  		<!-- add-start by SongYuanYang 2017-7-18 -->
+		a.cancel_reason,
+		a.cancel_office_id,
+		a.cancel_user_id,
+		a.cancel_user_name,
+		a.cancel_date
+		<!-- add-end by liuyaowen 2017-7-18 -->
+	</sql>
+
+	<!-- 查询出的所有调拨信息的字段，保存到关联的Entity里 -->
+	<resultMap id="AllAllocateInfoResult" type="com.coffer.businesses.modules.allocation.v01.entity.AllAllocateInfo">
+	    <id column="allInfo.allId"                property="allId" />
+	    <result column="allInfo.businessType"     property="businessType"/>
+	    <result column="allInfo.routeId"          property="routeId"/>
+	    <result column="allInfo.routeName"        property="routeName"/>
+	    <result column="allInfo.rOfficeId"        property="rOffice.id"/>
+	    <result column="allInfo.rOfficeName"      property="rOffice.name"/>
+	    <result column="allInfo.aOfficeId"        property="aOffice.id"/>
+	    <result column="allInfo.aOfficeName"      property="aOffice.name"/>
+ 	    <result column="allInfo.registerNumber"   property="registerNumber"/>
+	    <result column="allInfo.acceptNumber"     property="acceptNumber"/>
+	    <result column="allInfo.registerAmount"   property="registerAmount"/>
+	    <result column="allInfo.confirmAmount"    property="confirmAmount"/>
+	    <result column="allInfo.status"           property="status"/>
+	    <result column="allInfo.createBy"         property="createBy.id"/>
+	    <result column="allInfo.createName"       property="createName"/>
+	    <result column="allInfo.createDate"       property="createDate"/>
+	    <result column="allInfo.updateBy"         property="updateBy.id"/>
+	    <result column="allInfo.updateName"       property="updateName"/>
+	    <result column="allInfo.updateDate"       property="updateDate"/>
+	    <result column="allInfo.confirmName"      property="confirmName"/>
+	    <result column="allInfo.confirmDate"      property="confirmDate"/>
+	    <result column="allInfo.scanDate"         property="scanDate"/>
+	    <result column="allInfo.storeHandoverId"  property="storeHandoverId"/>
+	    <result column="allInfo.pointHandoverId"  property="pointHandoverId"/>
+	    <result column="str_update_date" 		  property="strUpdateDate" />
+	    <!-- add-start by SongYuanYang 2017-7-17  新增的字段映射   -->
+	    <result column="clear_in_receive_by"  property="clearInReceiveBy.id"/>
+	    <result column="clear_in_receive_name"  property="clearInReceiveName"/>
+	    <result column="clear_in_receive_date"  property="clearInReceiveDate"/>
+	    <!-- add-end by SongYuanYang 2017-7-17  新增的字段映射   -->
+	    <!-- add-start by SongYuanYang 2017-7-14  新增的字段映射   -->
+	    <result column="clear_in_register_by"  property="clearInRegisterBy.id"/>
+	    <result column="clear_in_register_name"  property="clearInRegisterName"/>
+	    <result column="clear_in_register_date"  property="clearInRegisterDate"/>
+	    <!-- add-end by SongYuanYang 2017-7-14  新增的字段映射   -->
+	    <result column="cancel_reason"  property="cancelReason"/>
+	    <result column="cancel_office_id"  property="cancelOffice.id"/>
+	    <result column="cancel_user_id"  property="cancelUser.id"/>
+	    <result column="cancel_user_name"  property="cancelUserName"/>
+	    <result column="cancel_date"  property="cancelDate"/>
+	    <!-- add-start by SongYuanYang 2017-7-11  新增的关联查询   -->
+	    <!-- 登记机构 -->
+		<association property="rOffice" column="roffice_id" javaType="Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy" />
+		<!-- 接收机构 -->
+		<association property="aOffice" column="aoffice_id" javaType="Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy"/>
+	    <!-- add-end by SongYuanYang 2017-7-11  新增的关联查询   -->
+	    <!-- 撤回机构 -->
+		<association property="cancelOffice" column="cancel_office_id" javaType="Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy"/>
+	    <!--  库房交接表信息 -->
+	    <association column="allInfo.storeHandoverId" property="storeHandover" javaType="com.coffer.businesses.modules.allocation.v01.entity.AllHandoverInfo" select="com.coffer.businesses.modules.allocation.v01.dao.AllHandoverInfoDao.get" fetchType="lazy"/>
+	    <!--  网点交接表信息 -->
+	    <association column="allInfo.pointHandoverId" property="pointHandover" javaType="com.coffer.businesses.modules.allocation.v01.entity.AllHandoverInfo" select="com.coffer.businesses.modules.allocation.v01.dao.AllHandoverInfoDao.get" fetchType="lazy"/>
+	    <!--  调缴详细信息 -->
+	    <collection column="allInfo.allId" property="allDetailList" javaType="ArrayList" select="com.coffer.businesses.modules.allocation.v01.dao.AllAllocateDetailDao.getByAllId" fetchType="lazy"/>
+	    <!--  调拨物品表 -->
+ 	    <collection column="allInfo.allId" property="allAllocateItemList" javaType="ArrayList" select="com.coffer.businesses.modules.allocation.v01.dao.AllAllocateItemDao.findItemsList" fetchType="lazy"/>
+	</resultMap>
+	
+	<!-- 查询调缴关联所有表，页面显示用 -->
+	<sql id="fromAllTables">
+		all_allocate_info a
+		   left join all_allocate_detail d on a.all_id = d.all_id 
+		   left join all_allocate_items i on a.all_id = i.all_id 
+           left join sto_box_info s on s.box_no = d.box_no
+	</sql>
+
+	<sql id="whereCondition">
+	(
+  		(
+  		a.del_flag = '0'
+		<!-- 主表：登记时间(开始) -->
+		<if test="createTimeStart != null and createTimeStart != ''">
+			<if test="dbName == 'oracle'">and TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+			<if test="dbName == 'mysql'">and DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+		</if>
+		<!-- 主表：登记时间(结束) -->
+		<if test="createTimeEnd != null and createTimeEnd != ''">
+			<if test="dbName == 'oracle'">and '${searchDateEnd}' >= TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName == 'mysql'">and '${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%S')</if>
+		</if>
+		<!-- 主表：登记机构 -->
+		<if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+			and a.roffice_id = '${rOffice.id}'
+		</if>
+		<!-- 主表：接收机构 -->
+		<if test="aOffice != null and aOffice.id != null and aOffice.id != ''">
+			and (a.aoffice_id = '${aOffice.id}'
+			${sqlMap.dsf})
+		</if>
+		
+		<!-- 主表：流水号 -->
+		<if test="allId != null and allId != ''">
+			and a.all_id like '%${allId}%'
+		</if>
+		<!-- 主表：流水号列表 -->
+		<if test="allIds != null and allIds.size != 0">
+			and a.all_id in 
+			<foreach collection="allIds" item="allIdtag" separator="," open="(" close=")" index="">
+			 	#{allIdtag}
+			</foreach>
+		</if>
+
+		<!-- 主表：接收机构ID列表 -->
+		<if test="aOfficeList != null and aOfficeList.size != 0">
+			and a.aoffice_id in 
+			<foreach collection="aOfficeList" item="aOfficeIdtag" separator="," open="(" close=")" index="index">
+			 	#{aOfficeIdtag}
+			</foreach>
+		</if>
+
+		<!-- 主表：登记机构ID列表 -->
+		<if test="rOfficeList != null and rOfficeList.size != 0">
+			and a.roffice_id in 
+			<foreach collection="rOfficeList" item="rOfficeIdtag" separator="," open="(" close=")" index="">
+			 	#{rOfficeIdtag}
+			</foreach>
+		</if>
+
+		<!-- 主表：业务类型:业务类型列表为空，业务类型不为空 -->
+		<if test="businessTypes == null and businessType != null and businessType != ''">
+			and a.business_type = '${businessType}'
+		</if>
+		<!-- 主表：业务类型列表 -->
+		<if test="businessTypes != null and businessTypes.size != 0">
+			and a.business_type in 
+			<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="">
+			 	#{businessTypeTag}
+			</foreach>
+		</if>
+		<!-- 主表：出入库类型 -->
+	
+		<!-- 主表：业务状态 -->
+		<if test="status != null and status != ''">
+			and a.status = '${status}'
+		</if>
+		<!-- 主表：业务状态列表 -->
+		<if test="statuses != null and statuses.size != 0">
+			and a.status in 
+			<foreach collection="statuses" item="statusTag" separator="," open="(" close=")" index="">
+			 	#{statusTag}
+			</foreach>
+		</if>
+		<!-- 详细表：箱号 -->
+		<if test="boxNo != null and boxNo != ''">
+			and d.box_no = #{boxNo}
+		</if>
+		<!-- 物品表：币种 -->
+		<if test="currency != null and currency != ''">
+			and i.currency = '${currency}'
+		</if>
+		<!-- 主表：路线 -->
+		<if test="routeId != null and routeId != ''">
+			and a.route_id = '${routeId}'
+		</if>
+
+		<!-- 主表：接收(更新)时间(开始) -->
+		<if test="acceptTimeStart != null and acceptTimeStart != ''">
+			<if test="dbName == 'oracle'">and TO_CHAR(a.update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+			<if test="dbName == 'mysql'">and DATE_FORMAT(a.update_date, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+		</if>
+		<!-- 主表：接收(更新)时间(结束) -->
+		<if test="acceptTimeEnd != null and acceptTimeEnd != ''">
+			<if test="dbName == 'oracle'">and '${searchDateEnd}' >= TO_CHAR(a.update_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName == 'mysql'">and '${searchDateEnd}' >= DATE_FORMAT(a.update_date, '%Y-%m-%d %H:%i:%S')</if>
+		</if>
+		)
+	)
+	</sql>
+	
+	<!-- 按流水号查询库间调拨信息 -->
+	<select id="get" resultMap="AllAllocateInfoResult">
+		SELECT 
+			<include refid="allAllocateInfoColumns"/>
+		FROM 
+			<!-- <include refid="fromAllTables"/> -->
+			all_allocate_info a 
+		WHERE
+			a.del_flag = '0' 
+			and a.all_id = #{allId}
+	</select>
+
+	<!-- 查询调缴主表所有的流水号，分页用 -->
+	<select id="findPageList" resultType="String">
+		SELECT DISTINCT
+			a.all_id AS "allInfo.allId"
+		FROM 
+			all_allocate_info a 
+		<where>
+			 <include refid="whereCondition"/>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.all_id DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- add-start by SongYuanYang 2017-7-10  新增的查询方法   -->
+	<!-- 获取多条主表信息 -->
+	<select id="findList" resultMap="AllAllocateInfoResult">
+		SELECT 
+			<include refid="allAllocateInfoColumns"/>
+		FROM ALL_ALLOCATE_INFO A
+		<where>
+			A.DEL_FLAG = #{DEL_FLAG_NORMAL}
+			<!-- 主表：业务状态 -->
+	        <if test="status != null and status != ''">
+	            AND A.STATUS = '${status}'
+	        </if>
+	        <!-- 主表：登记时间(开始) -->
+	        <if test="searchDateStart != null and searchDateStart != ''">
+	            <if test="dbName == 'oracle'">AND TO_CHAR(A.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+		        <if test="dbName == 'mysql'">AND DATE_FORMAT(A.CREATE_DATE, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>	            
+	        </if>
+	        <!-- 主表：登记时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            <if test="dbName == 'oracle'">AND '${searchDateEnd}' >= TO_CHAR(A.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+		        <if test="dbName == 'mysql'">AND '${searchDateEnd}' >= DATE_FORMAT(A.CREATE_DATE, '%Y-%m-%d %H:%i:%S')</if>	            
+	        </if>
+	        <!-- 主表：流水号 -->
+			<if test="allId != null and allId != ''">
+				AND A.ALL_ID like '%${allId}%'
+			</if>
+			<!-- 主表：登记机构 -->
+			<if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+				AND A.ROFFICE_ID = '${rOffice.id}'
+			</if>
+			<!-- 主表：接收机构 -->
+			<if test="aOffice != null and aOffice.id != null and aOffice.id != ''">
+				AND A.AOFFICE_ID = '${aOffice.id}'
+			</if>
+			<!-- 主表：登记机构名 -->
+			<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+				AND A.ROFFICE_NAME = '${rOffice.name}'
+			</if>
+			<!-- 主表：接收机构名 -->
+			<if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+				AND A.AOFFICE_NAME = '${aOffice.name}'
+			</if>
+			<!-- 主表：业务类型:业务类型列表为空，业务类型不为空 -->
+			<if test="businessType != null and businessType != ''">
+				AND A.business_type = '${businessType}'
+			</if>
+			<!-- 主表：业务类型列表 -->
+			<if test="businessTypes != null and businessTypes.size != 0">
+				AND A.business_type in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="">
+				 	'${businessTypeTag}'
+				</foreach>
+			</if>
+			<!-- 主表：路线 -->
+			<if test="routeId != null and routeId != ''">
+				AND A.route_id = '${routeId}'
+			</if>
+			<!-- 追加根据库房交接ID查询  修改人:sg 修改日期：2017-11-16 begin-->
+			<if test="storeHandoverId != null and storeHandoverId != ''">
+				AND A.store_handover_id = '${storeHandoverId}'
+			</if>
+			<!-- end -->
+			<!-- 主表：业务状态列表 -->
+			<if test="statuses != null and statuses.size != 0">
+				AND A.STATUS in 
+				<foreach collection="statuses" item="statusTag" separator="," open="(" close=")" index="">
+				 	'${statusTag}'
+				</foreach>
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.create_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	<!-- add-end by SongYuanYang 2017-7-10  新增查询方法   -->
+	
+	<!-- add-start by SongYuanYang 2017-7-11  新增更新确认金额方法   -->
+	<!-- 清分中心更新确认信息 -->
+	<update id="updateConfirmMessage">
+		UPDATE ALL_ALLOCATE_INFO 
+			SET
+		CONFIRM_AMOUNT = #{confirmAmount},
+		CONFIRM_NAME = #{confirmName},
+		CONFIRM_DATE = #{confirmDate},
+		STATUS = #{status},
+		UPDATE_BY = #{updateBy.id},
+		UPDATE_NAME = #{updateBy.name},
+		UPDATE_DATE = #{updateDate}
+		WHERE ALL_ID = #{allId}
+	</update>
+	<!-- add-end by SongYuanYang 2017-7-11  新增更新确认金额方法   -->
+	
+	<!-- add-start by SongYuanYang 2017-7-12  新增更新清分信息方法   -->
+	<!-- 清分中心更新清分信息 -->
+	<update id="updateClearMessage">
+		UPDATE ALL_ALLOCATE_INFO 
+			SET
+		CLEAR_IN_REGISTER_BY = #{clearInRegisterBy.id},
+		CLEAR_IN_REGISTER_NAME = #{clearInRegisterName},
+		CLEAR_IN_REGISTER_DATE = #{clearInRegisterDate},
+		STATUS = #{status},
+		UPDATE_BY = #{updateBy.id},
+		UPDATE_NAME = #{updateBy.name},
+		UPDATE_DATE = #{updateDate}
+		WHERE ALL_ID = #{allId}
+	</update>
+	<!-- add-end by SongYuanYang 2017-7-12  新增更新清分信息方法   -->
+	
+	<!-- add-start by SongYuanYang 2017-7-17  新增更新入库接收信息方法   -->
+	<!-- 现金库更新入库接收信息 -->
+	<update id="updateInStoreReceiveMessage">
+		UPDATE ALL_ALLOCATE_INFO 
+			SET
+		CLEAR_IN_RECEIVE_BY = #{clearInReceiveBy.id},
+		CLEAR_IN_RECEIVE_NAME = #{clearInReceiveName},
+		CLEAR_IN_RECEIVE_DATE = #{clearInReceiveDate},
+		STATUS = #{status},
+		UPDATE_BY = #{updateBy.id},
+		UPDATE_NAME = #{updateBy.name},
+		UPDATE_DATE = #{updateDate}
+		WHERE ALL_ID = #{allId}
+	</update>
+	<!-- add-end by SongYuanYang 2017-7-17  新增更新入库接收信息方法   -->
+	
+	<!-- LLF 根据箱袋信息获取调较明细 -->
+	<select id="findAllocationByNo" resultMap="AllAllocateInfoResult">
+		SELECT DISTINCT
+			<include refid="allAllocateInfoColumns"/>
+		FROM 
+			<include refid="fromAllTables"/>
+		<where>
+			a.all_id in (
+				select m.all_id
+				from (all_allocate_info m left join all_allocate_detail n on m.all_id = n.all_id) left join sto_box_info s on n.box_no = s.box_no
+				where
+				a.del_flag = '0'
+				<!-- 登记时间(开始) -->
+				<if test="createTimeStart != null and createTimeStart != ''">
+					<if test="dbName == 'oracle'">and TO_CHAR(m.create_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+					<if test="dbName == 'mysql'">and DATE_FORMAT(m.create_date, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+				</if>
+				<!-- 登记时间(结束) -->
+				<if test="createTimeEnd != null and createTimeEnd != ''">
+					<if test="dbName == 'oracle'">and '${searchDateEnd}' >= TO_CHAR(m.create_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+					<if test="dbName == 'mysql'">and '${searchDateEnd}' >= DATE_FORMAT(m.create_date, '%Y-%m-%d %H:%i:%S')</if>
+				</if>
+			
+				<!-- 登记机构 -->
+				<if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+					and m.roffice_id = '${rOffice.id}'
+				</if>
+				<!-- 业务类型 -->
+				<if test="businessType != null and businessType != ''">
+					and m.business_type = '${businessType}'
+				</if>
+				<!-- 出入库类型 -->
+			
+				<!-- 业务状态 -->
+				<if test="status != null and status != ''">
+					and m.status = '${status}'
+				</if>
+				<!-- 箱号 -->
+				<if test="boxNo != null and boxNo != ''">
+					and n.box_no = #{boxNo}
+				</if>
+				
+			)
+			and a.all_id = d.all_id
+		</where>
+		<choose>
+			<when test="orderBy != null and orderBy != ''">
+				ORDER BY ${orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.all_id DESC, d.box_no
+			</otherwise>
+		</choose>
+	</select>
+
+	<!-- 管局条件，查询调缴关联所有表，页面显示用 -->
+	<select id="findAllocationList" resultMap="AllAllocateInfoResult">
+		SELECT DISTINCT
+			<include refid="allAllocateInfoColumns"/>
+		FROM 
+			<!-- <include refid="fromAllTables"/> -->
+			all_allocate_info a 
+			left join sys_office o 
+			on a.aoffice_id=o.id
+		<where>
+			<include refid="whereCondition"/>
+		</where>
+		<choose>
+			<when test="orderBy != null and orderBy != ''">
+				ORDER BY ${orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.create_date DESC, a.all_id DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 库间现金出入库合计 -->
+	<select id="countCashBetween" resultMap="AllAllocateInfoResult">
+		SELECT 
+			DISTINCT
+			<include refid="allAllocateInfoColumns"/>
+		FROM
+			all_allocate_info a
+		WHERE
+			<include refid="whereFindCashCount"/>
+		ORDER BY a.inout_type
+	</select>
+
+	<sql id="whereFindCashCount">
+		a.del_flag = '0'
+		<!-- AND a.all_id = b.all_id -->
+		 <!-- 注册机构ID -->
+		<if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+			AND a.roffice_id = '${rOffice.id}'
+		</if>
+		<!-- 业务类型 -->
+		<if test="businessTypes != null and businessTypes.size != 0">
+			AND a.business_type IN 
+			<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+			 	#{businessTypes[${index}]}
+			</foreach>
+		</if>
+		<!-- 业务状态 -->
+		<if test="status != null and status != ''">
+			and a.status = '${status}'
+		</if>
+		<!-- 登记时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			<if test="dbName == 'oracle'">and TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+			<if test="dbName == 'mysql'">and DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+		</if>
+		<!-- 登记时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			<if test="dbName == 'oracle'">and '${searchDateEnd}' >= TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName == 'mysql'">and '${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%S')</if>
+		</if>
+	</sql>
+	
+	
+	<!-- 查询库间调拨信息字段 -->
+  	<sql id="allAllocateInfoBetweenColumns">
+		t_aai.all_id AS "allInfo.allId",
+		t_aai.business_type AS "allInfo.businessType",
+		t_aai.register_amount AS "allInfo.registerAmount",
+		t_aai.confirm_amount AS "allInfo.confirmAmount",
+		t_aai.register_number AS "allInfo.registerNumber",
+		t_aai.accept_number AS "allInfo.acceptNumber",
+		t_aai.status AS "allInfo.status",
+		t_aai.create_by AS "allInfo.createBy",
+		t_aai.create_name AS "allInfo.createName",
+		t_aai.create_date AS "allInfo.createDate",
+		t_aai.roffice_id AS "allInfo.rOfficeId",
+		t_aai.roffice_name AS "allInfo.rOfficeName",
+		t_aai.aoffice_id AS "allInfo.aOfficeId",
+		t_aai.aoffice_name AS "allInfo.aOfficeName",
+		t_aai.confirm_name AS "allInfo.confirmName",
+  		t_aai.confirm_date AS "allInfo.confirmDate",
+  		t_aai.scan_date AS "allInfo.scanDate",
+  		t_aai.store_handover_id AS "allInfo.storeHandoverId",
+  		t_aai.point_handover_id AS "allInfo.pointHandoverId",
+
+		t_aad.all_detail_id AS "allDetail.allDetailId",
+		t_aad.all_id AS "allDetail.allId",
+		t_aad.box_no AS "allDetail.boxNo",
+		t_aad.scan_flag AS "allDetail.scanFlag",
+		t_aad.amount AS "allDetail.amount",
+		
+		t_aaitem.all_items_id AS "allAllocateItem.allItemsId",
+		t_aaitem.all_id AS "allAllocateItem.allId",
+		t_aaitem.money_number AS "allAllocateItem.moneyNumber" ,
+		t_aaitem.money_amount AS "allAllocateItem.moneyAmount",
+		t_aaitem.confirm_flag AS "allAllocateItem.confirmFlag",
+		t_aaitem.goods_id AS "allAllocateItem.goodsId"
+	</sql>
+	<!-- 查询库间调拨信息字段 -->
+  	<sql id="allAllocateInfoBetweenListColumns">
+		t_aai.all_id AS "allInfo.allId",
+		t_aai.business_type AS "allInfo.businessType",
+		t_aai.register_amount AS "allInfo.registerAmount",
+		t_aai.confirm_amount AS "allInfo.confirmAmount",
+		t_aai.status AS "allInfo.status",
+		t_aai.create_by AS "allInfo.createBy",
+		t_aai.create_name AS "allInfo.createName",
+		t_aai.create_date AS "allInfo.createDate",
+		t_aai.roffice_id AS "allInfo.rOfficeId",
+		t_aai.roffice_name AS "allInfo.rOfficeName",
+		t_aai.aoffice_id AS "allInfo.aOfficeId",
+		t_aai.aoffice_name AS "allInfo.aOfficeName",
+		
+		t_ahi.handover_id AS "handInfo.handoverId",
+		t_ahi.accept_date AS "handInfo.acceptDate"
+	</sql>
+	<!-- 查询上缴信息列表字段 -->
+  	<sql id="allAllocateInfoHandinColumns">
+	    t_aai.all_id AS "allInfo.allId",
+		t_aai.business_type AS "allInfo.businessType",
+		t_aai.register_amount AS "allInfo.registerAmount",
+		t_aai.confirm_amount AS "allInfo.confirmAmount",
+		t_aai.register_number AS "allInfo.registerNumber",
+		t_aai.accept_number AS "allInfo.acceptNumber",
+		t_aai.status AS "allInfo.status",
+		t_aai.create_by AS "allInfo.createBy",
+		t_aai.create_name AS "allInfo.createName",
+		t_aai.create_date AS "allInfo.createDate",
+		t_aai.roffice_id AS "allInfo.rOfficeId",
+		t_aai.roffice_name AS "allInfo.rOfficeName",
+		t_aai.aoffice_id AS "allInfo.aOfficeId",
+		t_aai.aoffice_name AS "allInfo.aOfficeName",
+		t_aai.confirm_name AS "allInfo.confirmName",
+  		t_aai.confirm_date AS "allInfo.confirmDate",
+  		t_aai.scan_date AS "allInfo.scanDate",
+  		t_aai.store_handover_id AS "allInfo.storeHandoverId",
+  		t_aai.point_handover_id AS "allInfo.pointHandoverId",
+  		
+        t_aad.all_detail_id      AS "allDetail.allDetailId",
+        t_aad.all_id             AS "allDetail.allId",
+        t_aad.box_no             AS "allDetail.boxNo",
+        t_aad.scan_flag          AS "allDetail.scanFlag",
+        t_aad.amount             AS "allDetail.amount"
+	</sql>
+	<!-- 查询库间调拨字段，保存到关联的Entity里 -->
+	
+	
+		
+	<!-- 查询调缴关联所有表，页面显示用 -->
+	<sql id="fromAllBetweenTables">
+			all_allocate_info t_aai 
+			left join all_allocate_detail t_aad on t_aai.all_id = t_aad.all_id 
+			left join all_allocate_items t_aaitem on t_aai.all_id = t_aaitem.all_id
+	</sql>
+	<!-- 按流水号查询库间调拨信息 -->
+	<select id="getBetween" resultMap="AllAllocateInfoResult">
+		SELECT *
+			<!--<include refid="allAllocateInfoBetweenColumns"/>-->
+		FROM 
+			all_allocate_info t_aai 
+			left join all_allocate_items t_aaitem on t_aai.all_id = t_aaitem.all_id
+			<!--<include refid="fromAllBetweenTables"/>-->
+		WHERE
+			t_aai.del_flag = '0' 
+			and t_aai.all_id = #{allId}
+	</select>
+	<!-- 查询库间调拨信息列表 -->
+	<select id="findBetweenPageList" resultMap="AllAllocateInfoResult">
+		SELECT 
+			<include refid="allAllocateInfoBetweenListColumns"/>
+		FROM 
+			all_allocate_info t_aai , all_handover_info t_ahi 
+		WHERE
+		    t_aai.del_flag = '0' 
+		    <!-- 注册机构ID -->
+			<if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+				AND t_aai.roffice_id = '${rOffice.id}'
+			</if>
+			<!-- 接收机构ID -->
+			<if test="aOffice != null and aOffice.id != null and aOffice.id != ''">
+				AND t_aai.aoffice_id = '${aOffice.id}'
+			</if>
+			<!-- 业务类型 -->
+			<if test="businessTypes != null and businessTypes.size != 0">
+				AND t_aai.business_type IN 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>
+			</if>
+			<!-- 业务状态 -->
+			<if test="statuses != null and statuses.size != 0">
+				AND t_aai.status IN 
+				<foreach collection="statuses" item="statusTag" separator="," open="(" close=")" index="index">
+				 	#{statuses[${index}]}
+				</foreach>
+			</if>
+			<!-- 登记时间(开始) -->
+			<if test="createTimeStart != null and createTimeStart != ''">
+				<if test="dbName == 'oracle'">and TO_CHAR(t_aai.create_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+                <if test="dbName == 'mysql'">and DATE_FORMAT(t_aai.create_date, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+			</if>
+			<!-- 登记时间(结束) -->
+			<if test="createTimeEnd != null and createTimeEnd != ''">
+				<if test="dbName == 'oracle'">and '${searchDateEnd}' >= TO_CHAR(t_aai.create_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+                <if test="dbName == 'mysql'">and '${searchDateEnd}' >= DATE_FORMAT(t_aai.create_date, '%Y-%m-%d %H:%i:%S')</if>
+			</if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY t_aai.all_id DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 查询上缴接收信息列表 -->
+	<select id="findHandinPageList" resultMap="AllAllocateInfoResult">
+		SELECT 
+			<include refid="allAllocateInfoColumns"/>
+		FROM 
+			all_allocate_info a
+				left join sys_office RO on RO.id=a.roffice_id
+		WHERE
+		    a.del_flag = '0' 
+		    <!-- 注册机构ID -->
+			<if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+				AND a.roffice_id = '${rOffice.id}'
+			</if>
+			<!-- 接收机构ID -->
+			<if test="aOffice != null and aOffice.id != null and aOffice.id != ''">
+				AND a.aoffice_id = '${aOffice.id}'
+			</if>
+			<!-- 注册机构(数据穿透) -->
+			<if test="searchRoffice != null and searchRoffice.id != null and searchRoffice.id != '' ">
+				AND (a.roffice_id = #{searchRoffice.id} OR RO.parent_ids LIKE 
+					<if test="dbName == 'oracle'">'%,' || #{searchRoffice.id} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%,', #{searchRoffice.parentIds}, ',%')</if>						
+				)
+			</if>
+			<!-- 业务类型 -->
+			<if test="businessTypes != null and businessTypes.size != 0">
+				AND a.business_type IN 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>
+			</if>
+			<!-- 业务状态 -->
+			<if test="statuses != null and statuses.size != 0">
+				AND a.status IN 
+				<foreach collection="statuses" item="statusTag" separator="," open="(" close=")" index="index">
+				 	#{statuses[${index}]}
+				</foreach>
+			</if>
+			<!-- 登记时间(开始) -->
+			<if test="createTimeStart != null and createTimeStart != ''">
+				<if test="dbName == 'oracle'">and TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+                <if test="dbName == 'mysql'">and DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+			</if>
+			<!-- 登记时间(结束) -->
+			<if test="createTimeEnd != null and createTimeEnd != ''">
+				<if test="dbName == 'oracle'">and '${searchDateEnd}' >= TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+                <if test="dbName == 'mysql'">and '${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%S')</if>
+			</if>
+			<!-- 数据范围过滤 -->
+			${sqlMap.dsf}
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.all_id DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 通过路线ID查询钞箱信息列表 -->
+	<select id="findBoxInfoList" resultMap="AllAllocateInfoResult">
+		SELECT 
+			<include refid="allAllocateInfoBetweenColumns"/>
+		FROM 
+			<include refid="fromAllBetweenTables"/>
+		WHERE
+		    t_aai.del_flag = '0' 
+		    <!-- 路线ID -->
+			<if test="routeId != null and routeId != ''">
+				AND t_aai.route_id = '${routeId}'
+			</if>
+			<!-- 业务类型 -->
+			<if test="businessType != null and businessType != ''">
+				AND t_aai.business_type = '${businessType}'
+			</if>
+			<!-- 业务状态 -->
+			<if test="status != null and status != ''">
+				AND t_aai.status = '${status}'
+			</if>
+			<!-- 登记时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				<if test="dbName == 'oracle'">and TO_CHAR(t_aai.create_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+                <if test="dbName == 'mysql'">and DATE_FORMAT(t_aai.create_date, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+			</if>
+			<!-- 登记时间(结束) -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+                <if test="dbName == 'oracle'">and '${searchDateEnd}' >= TO_CHAR(t_aai.create_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+                <if test="dbName == 'mysql'">and '${searchDateEnd}' >= DATE_FORMAT(t_aai.create_date, '%Y-%m-%d %H:%i:%S')</if>
+			</if>
+		
+	</select>
+	
+	<!-- 取得库间调拨登记状态的流水号 -->
+	<select id="getCashBetweenRegistAllId" resultType="java.lang.String">
+		SELECT 
+			t_aai.all_id
+		FROM 
+			all_allocate_info t_aai
+		WHERE
+			t_aai.del_flag = '0' 
+			<!-- 业务类型 -->
+			<if test="businessTypes != null and businessTypes.size != 0">
+				AND t_aai.business_type IN 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>
+			</if>
+			<!-- 业务状态 -->
+			<if test="statuses != null and statuses.size != 0">
+				AND t_aai.status IN 
+				<foreach collection="statuses" item="statusTag" separator="," open="(" close=")" index="index">
+				 	#{statuses[${index}]}
+				</foreach>
+			</if>
+			<!-- 注册机构ID -->
+			<if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+				AND t_aai.roffice_id = '${rOffice.id}'
+			</if>
+	</select>
+	<insert id="insert">
+		INSERT INTO all_allocate_info(
+			all_id,
+			business_type,
+			route_id,
+			route_name,
+			roffice_id,
+			roffice_name,
+			aoffice_id,
+			aoffice_name,
+			register_number,
+			accept_number,
+			register_amount,
+			confirm_amount,
+			confirm_name,
+			confirm_date,
+			scan_date,
+			status,
+			create_by,
+			create_name,
+			create_date,
+			update_by,
+			update_name,
+			update_date,
+			del_flag,
+			point_handover_id,
+			store_handover_id,
+			clear_in_register_by,
+			clear_in_register_name,
+			clear_in_register_date
+		) VALUES (
+			#{allId},
+			#{businessType},
+			#{routeId},
+			#{routeName},
+			#{rOffice.id},
+			#{rOffice.name},
+			#{aOffice.id},
+			#{aOffice.name},
+			#{registerNumber},
+			#{acceptNumber},
+			#{registerAmount},
+			#{confirmAmount},
+			#{confirmName},
+			#{confirmDate},
+			#{scanDate},
+			#{status},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate},
+			#{delFlag},
+			#{pointHandoverId},
+			#{storeHandoverId},
+			#{clearInRegisterBy.id},
+			#{clearInRegisterName},
+			#{clearInRegisterDate}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE all_allocate_info 
+		<trim prefix="set" suffixOverrides=",">
+		
+		<if test="businessType != null and businessType != ''">
+			business_type = #{businessType},
+		</if>
+		<if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+			roffice_id = #{rOffice.id},
+		</if>
+		<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+			roffice_name = #{rOffice.name},
+		</if>
+		<if test="aOffice != null and aOffice.id != null and aOffice.id != ''">
+			aoffice_id = #{aOffice.id},
+		</if>
+		<if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+			aoffice_name = #{aOffice.name},
+		</if>
+		<if test="registerNumber != null">
+			register_number = #{registerNumber},
+		</if>
+		<if test="acceptNumber != null ">
+			accept_number = #{acceptNumber},
+		</if>
+		<if test="registerAmount != null ">
+			register_amount = #{registerAmount},
+		</if>
+		<if test="confirmAmount != null">
+			confirm_amount = #{confirmAmount},
+		</if>
+		<if test="confirmName != null and confirmName != ''">
+			confirm_name = #{confirmName},
+		</if>
+		<if test="confirmDate != null and confirmDate != ''">
+			confirm_date = #{confirmDate},
+		</if>
+		<if test="scanDate != null and scanDate != ''">
+			scan_date = #{scanDate},
+		</if>
+		<if test="status != null and status != ''">
+			status = #{status},
+		</if>
+		<if test="createBy != null and createBy.id != null and createBy.id != ''">
+			create_by = #{createBy.id},
+		 </if>
+		 <if test="createName != null and createName != ''">
+			create_name = #{createName},
+		 </if>
+		 <if test="createDate != null and createDate != ''">
+			create_date = #{createDate},
+		 </if>
+		 <if test="updateBy != null and updateBy.id != null and updateBy.id != ''">
+			update_by = #{updateBy.id},
+		 </if>
+		 <if test="updateBy != null and updateBy.name != null and updateBy.name != ''">
+			update_name = #{updateBy.name},
+		 </if>
+		 <if test="updateDate != null and updateDate != ''">
+			update_date = #{updateDate},
+		 </if>
+		 
+		   <if test="cancelReason != null and cancelReason != ''">
+			cancel_reason = #{cancelReason},
+		 </if>
+		 <if test="cancelOffice != null and cancelOffice.id != null and cancelOffice.id != ''">
+			cancel_office_id = #{cancelOffice.id},
+		 </if>
+		 <if test="cancelUser != null and cancelUser.id != null and cancelUser.id != ''">
+			cancel_user_id = #{cancelUser.id},
+		 </if>
+		 <if test="cancelUser != null and cancelUser.name != null and cancelUser.name != ''">
+			cancel_user_name = #{cancelUser.name},
+		 </if>
+		 <if test="cancelDate != null and cancelDate != ''">
+			cancel_date = #{cancelDate},
+		 </if>
+		 
+		 <if test="delFlag != null and delFlag != ''">
+			del_flag = #{delFlag},
+		 </if>
+		</trim>
+	WHERE all_id = #{allId}
+	</update>
+	
+	<update id="updateStatus">
+		UPDATE all_allocate_info 
+		SET
+			status = #{status},
+			update_by = #{updateBy.id},
+			update_name = #{updateBy.name},
+			update_date = #{updateDate}
+		WHERE all_id = #{allId}
+	</update>
+	<update id="updateBetweenAcceptStatus">
+		UPDATE all_allocate_info 
+		SET
+			status = #{status},
+			confirm_amount = #{confirmAmount},
+			update_by = #{updateBy.id},
+			update_name = #{updateBy.name},
+			update_date = #{updateDate}
+		WHERE all_id = #{allId}
+	</update>
+	<update id="delete">
+		UPDATE all_allocate_info 
+		SET 
+			update_by = #{updateBy.id},
+			update_name = #{updateBy.name},
+			update_date = #{updateDate},
+			del_flag = '1'
+		WHERE all_id = #{allId}
+		    AND del_flag = '0'
+	</update>
+	<update id="updateAllocateInfoStatus">
+		UPDATE all_allocate_info 
+		SET
+			<if test="aOffice != null and aOffice.id != null and aOffice.id != ''">
+				aoffice_id = #{aOffice.id},
+			</if>
+			<if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+				aoffice_name = #{aOffice.name},
+			</if>
+			<if test="confirmAmount != null ">
+				confirm_amount = #{confirmAmount},
+			</if>
+			<if test="acceptNumber != null">
+				accept_number = #{acceptNumber},
+			</if>
+			<if test="status != null and status != ''">
+				status = #{status},
+			</if>
+			<if test="registerAmount != null and registerAmount != ''">
+				register_amount = #{registerAmount},
+			</if>
+			<if test="confirmName != null and confirmName != ''">
+				confirm_name = #{confirmName},
+			</if>
+			<if test="confirmDate != null and confirmDate != ''">
+				confirm_date = #{confirmDate},
+			</if>
+			<if test="scanDate != null and scanDate != ''">
+				scan_date = #{scanDate},
+			</if>
+			<if test="pointHandoverId != null and pointHandoverId != ''">
+				point_handover_id = #{pointHandoverId},
+			</if>
+			<if test="storeHandoverId != null and storeHandoverId != ''">
+				store_handover_id = #{storeHandoverId},
+			</if>
+			<!-- 追加交接个数修改  修改人：xl 修改时间：2017-11-24 begin  --> 
+			<if test="registerNumber != null and registerNumber != ''">
+				register_number = #{registerNumber},
+			</if>
+			<!-- end  --> 
+			update_by = #{updateBy.id},
+			update_name = #{updateBy.name},
+			update_date = #{updateDate}
+		WHERE all_id = #{allId}
+	</update>
+	<resultMap id="bankAcceptedBoxDetailResult" type="com.coffer.businesses.modules.allocation.v01.entity.AllAllocateInfo">
+	    <id column="allInfo.allId" property="allId" />
+	    <!--  押运人员信息列表 -->
+	    <association property="escortNoOneList" javaType="com.coffer.businesses.modules.allocation.v01.entity.StoEscort" fetchType="lazy">
+	    	<id column="escortNoOne.escort_id" property="escortId"/>
+	    	<result column="escortNoOne.escort_name" property="escortName"/>
+	    	<result column="escortNoOne.finger_no1" property="fingerNo1"/>
+	    	<result column="escortNoOne.finger_no2" property="fingerNo2"/>
+	    	<result column="escortNoOne.password" property="password"/>
+	    	<result column="escortNoOne.photo" property="photo"/>
+	    	<result column="escortNoOne.rfid" property="rfid"/>
+	    </association>
+	    <association property="escortNoTwoList" javaType="com.coffer.businesses.modules.allocation.v01.entity.StoEscort" fetchType="lazy">
+	    	<id column="escortNoTwo.escort_id" property="escortId"/>
+	    	<result column="escortNoTwo.escort_name" property="escortName"/>
+	    	<result column="escortNoTwo.finger_no1" property="fingerNo1"/>
+	    	<result column="escortNoTwo.finger_no2" property="fingerNo2"/>
+	    	<result column="escortNoTwo.password" property="password"/>
+	    	<result column="escortNoTwo.photo" property="photo"/>
+	    	<result column="escortNoTwo.rfid" property="rfid"/>
+	    </association>
+	   	<!--  箱袋列表 -->
+	    <collection property="boxList" ofType="com.coffer.businesses.modules.allocation.v01.entity.AllAllocateDetail" fetchType="lazy">
+	        <id column="box.allDetailId" property="allDetailId"/>
+	        <result column="box.boxNo" property="boxNo"/>
+	        <result column="box.scanFlag" property="scanFlag"/>
+	    </collection>
+	</resultMap>
+	<select id="serachbankAcceptedBoxDetail" resultMap="bankAcceptedBoxDetailResult">		
+		select a.all_id as "allInfo.allId",
+			   b.box_no as "box.boxNo",
+			   b.scan_flag as "box.scanFlag",
+		       d.escort_id as "escortNoOne.escort_id",
+		       d.escort_name as "escortNoOne.escort_name",
+		       d.pda_finger_no1 as "escortNoOne.finger_no1",
+		       d.pda_finger_no2 as "escortNoOne.finger_no2",
+		       d.password as "escortNoOne.password",
+		       d.photo as "escortNoOne.photo",
+		       d.rfid as "escortNoOne.rfid",
+		       e.escort_id as "escortNoTwo.escort_id",
+		       e.escort_name as "escortNoTwo.escort_name",
+		       e.pda_finger_no1 as "escortNoTwo.finger_no1",
+		       e.pda_finger_no2 as "escortNoTwo.finger_no2",
+		       e.password as "escortNoTwo.password",
+		       e.photo as "escortNoTwo.photo",
+		       e.rfid as "escortNoTwo.rfid"
+	    from sto_route_detail f
+			  left join sto_route_info c
+			    on f.route_id = c.route_id and c.del_flag = '0'
+			  left join sto_escort_info d
+			    on c.escort_id1 = d.escort_id
+			  left join sto_escort_info e
+			    on c.escort_id2 = e.escort_id
+			  left join all_allocate_info a
+			    on (a.route_id = c.route_id and a.del_flag = '0' 
+				     <if test="businessType != null and businessType != ''">
+						and a.business_type = #{businessType}
+					 </if>
+					
+					 
+				<if test="status != null and status != ''">
+					and a.status = '${status}'
+				</if>
+			  		and a.aoffice_id = f.office_id)
+		 	 left join all_allocate_detail b
+    			on a.all_id = b.all_id
+   		where 1=1
+			 <if test="aOffice != null and aOffice.id != null and aOffice.id != ''">
+				and f.office_id = #{aOffice.id}
+			 </if>
+        order by a.create_date desc
+
+	</select>
+	<resultMap id="stoOutsideBoxInOrOutDetailResult" type="com.coffer.businesses.modules.allocation.v01.entity.AllAllocateInfo">
+	    <id column="allInfo.allId" property="allId" />
+	    <result column="allInfo.routeId" property="routeId"/>
+	    <result column="allInfo.routeName" property="routeName"/>
+	   	<!--  箱袋列表 -->
+	    <collection property="boxList" ofType="com.coffer.businesses.modules.allocation.v01.entity.AllAllocateDetail" fetchType="lazy">
+	        <id column="box.allDetailId" property="allDetailId"/>
+	        <result column="box.boxNo" property="boxNo"/>
+	        <result column="box.scanFlag" property="scanFlag"/>
+	        <result column="box.boxOfficeId" property="boxOfficeId"/>
+	    </collection>
+	</resultMap>
+	<select id="serachstoOutsideBoxInOrOutDetail" resultMap="stoOutsideBoxInOrOutDetailResult">		
+			select a.all_id as "allInfo.allId",
+			       a.route_id as "allInfo.routeId",
+				   a.route_name as "allInfo.routeName" ,
+				   b.box_no as "box.boxNo",
+				   s.office_id as "box.boxOfficeId",
+				   o.name as "box.boxOfficeName",
+				   b.scan_flag as "box.scanFlag",
+				   s.out_date as "box.outDate"
+              from all_allocate_info a, all_allocate_detail b left join sto_box_info s on s.box_no = b.box_no
+               		left join sys_office o on s.office_id=o.id
+	         where a.del_flag = '0'
+	     	   and a.route_id in (select a1.route_id 
+ 	                              from all_allocate_info a1
+ 	                              left join sys_office o1 on a1.aoffice_id=o1.id
+ 	                             where 
+ 	                                a1.del_flag = '0'
+					 	           <if test="status != null and status != ''">
+					 	               and a1.status = #{status}
+					 	           </if>
+					 	           <if test="businessType != null and businessType != ''">
+					 	               and a1.business_type = #{businessType}
+					 	           </if>
+					 	           <if test="aOffice != null and aOffice.id != null and aOffice.id != ''">
+										and (a1.aoffice_id = #{aOffice.id} or o1.parent_ids like '%${aOffice.id}%' )
+								   </if>
+					 	          
+					 	          
+					 	           <!-- 登记时间(开始) -->
+									<if test="searchDateStart != null and searchDateStart != ''">
+										<if test="dbName == 'oracle'">and TO_CHAR(a1.create_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+                                        <if test="dbName == 'mysql'">and DATE_FORMAT(a1.create_date, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+									</if>
+									<!-- 登记时间(结束) -->
+									<if test="searchDateEnd != null and searchDateEnd != ''">
+										<if test="dbName == 'oracle'">and '${searchDateEnd}' >= TO_CHAR(a1.create_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+                                        <if test="dbName == 'mysql'">and '${searchDateEnd}' >= DATE_FORMAT(a1.create_date, '%Y-%m-%d %H:%i:%S')</if>
+									</if>
+ 	           				    ) 
+ 	           and a.all_id= b.all_id
+		
+		 <if test="aOffice != null and aOffice.id != null and aOffice.id != ''">
+			and (a.aoffice_id = #{aOffice.id} or o.parent_ids like '%${aOffice.id}%' )
+		 </if>
+		 <if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+			and a.roffice_id = #{rOffice.id}
+		 </if>
+		 <if test="status != null and status != ''">
+			and a.status = #{status}
+		 </if>
+		 <if test="scanFlag != null and scanFlag != ''">
+			and b.scan_flag = #{scanFlag}
+		 </if>
+		 <!-- 登记时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			<if test="dbName == 'oracle'">and TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+            <if test="dbName == 'mysql'">and DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>		
+		</if>
+		<!-- 登记时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			<if test="dbName == 'oracle'">and '${searchDateEnd}' >= TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+            <if test="dbName == 'mysql'">and '${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%S')</if>
+		</if>
+	</select>
+	<resultMap id="stoOutsideHandoverDetailResult" type="com.coffer.businesses.modules.allocation.v01.entity.AllAllocateInfo">
+	    <id column="allInfo.storeHandoverId" property="storeHandoverId"/>
+	    <result column="allInfo.acceptNumber" property="acceptNumber"/>
+	    <result column="allInfo.registerNumber" property="registerNumber"/>
+	    <result column="allInfo.routeId" property="routeId"/>
+	    <result column="allInfo.routeName" property="routeName"/>
+	    <result column="allInfo.createDate" property="createDate"/>
+	    <result column="allInfo.rOfficeName" property="rOfficeName"/>
+	    <result column="allInfo.allId" property="allId"/>
+	    <!--  调缴详细信息 -->
+	    <association property="allDetailList" javaType="com.coffer.businesses.modules.allocation.v01.entity.AllAllocateDetail" fetchType="lazy">
+	        <id column="allDetail.allDetailId"    property="allDetailId"/>
+	        <result column="allDetail.allId"      property="allId"/>
+	        <result column="allDetail.boxNo"      property="boxNo"/>
+	        <result column="allDetail.amount"     property="amount"/>
+	        <result column="allDetail.scanFlag"   property="scanFlag"/>
+	        <result column="allDetail.boxType"    property="boxType"/>
+	        <result column="allDetail.rfid"       property="rfid"/>
+	    </association>
+	    <association property="routeInfo" javaType="com.coffer.businesses.modules.store.v01.entity.StoRouteInfo" fetchType="lazy">
+		    <result column="allInfo.routeType" property="routeType"/>
+	    </association>
+	   	<!--  押运人员信息列表 -->
+	    <association property="escortNoOneList" javaType="com.coffer.businesses.modules.allocation.v01.entity.StoEscort" fetchType="lazy">
+	    	<id column="escortNoOne.escortId" property="escortId"/>
+	    	<result column="escortNoOne.escortName" property="escortName"/>
+	    	<result column="escortNoOne.idcardNo" property="idcardNo"/>
+	    	<result column="escortNoOne.fingerNo1" property="fingerNo1"/>
+	    	<result column="escortNoOne.fingerNo2" property="fingerNo2"/>
+	    </association>
+	    <association property="escortNoTwoList" javaType="com.coffer.businesses.modules.allocation.v01.entity.StoEscort" fetchType="lazy">
+	    	<id column="escortNoTwo.escortId" property="escortId"/>
+	    	<result column="escortNoTwo.escortName" property="escortName"/>
+	    	<result column="escortNoTwo.idcardNo" property="idcardNo"/>
+	    	<result column="escortNoTwo.fingerNo1" property="fingerNo1"/>
+	    	<result column="escortNoTwo.fingerNo2" property="fingerNo2"/>
+	    </association>
+	</resultMap>
+	<select id="serachstoOutsideHandoverDetail" resultMap="stoOutsideHandoverDetailResult">		
+		  SELECT t1.store_handover_id AS "allInfo.storeHandoverId",
+		  		 <!-- add-start by liuyaowen -->
+		  		 t1.roffice_name      AS "allInfo.rOfficeName",
+		  		 t1.all_id            AS "allInfo.allId",
+		  		 t2.box_type          AS "allDetail.boxType",
+		  		 t2.rfid              AS "allDetail.rfid",
+		  		 <!-- add-end by liuyaowen -->
+                 t2.box_no            AS "allDetail.boxNo",
+		         t4.route_id          AS "allInfo.routeId",
+		         t4.route_name        AS "allInfo.routeName",
+		         t3.create_date       AS "allInfo.createDate",
+		         t4.route_type        AS "allInfo.routeType",
+		         t5.escort_id         AS "escortNoOne.escortId",
+		         t5.escort_name       AS "escortNoOne.escortName",
+		         t5.idcard_no         AS "escortNoOne.idcardNo",
+		         t6.escort_id         AS "escortNoTwo.escortId",
+		         t6.escort_name       AS "escortNoTwo.escortName",
+		         t6.idcard_no         AS "escortNoTwo.idcardNo"
+		    FROM all_handover_info t3
+		    LEFT JOIN (SELECT DISTINCT store_handover_id, route_id, all_id, roffice_name
+			            FROM all_allocate_info tab_hand_id_in_info
+			            left join sys_office o
+			            on tab_hand_id_in_info.aoffice_id=o.id
+			            WHERE tab_hand_id_in_info.del_flag = '0'
+							
+							 <if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+								AND tab_hand_id_in_info.roffice_id = #{rOffice.id}
+							 </if>
+							 <if test="aOffice != null and aOffice.id != null and aOffice.id != ''">
+								AND (tab_hand_id_in_info.aoffice_id = #{aOffice.id}
+								${sqlMap.dsf})
+							 </if>
+							 <if test="status != null and status != ''">
+								AND tab_hand_id_in_info.status = #{status}
+							 </if>
+							 <if test="businessType != null and businessType != ''">
+								AND tab_hand_id_in_info.business_type = #{businessType}
+							</if>
+		            
+		            ) t1  ON t1.store_handover_id = t3.handover_id
+		    LEFT JOIN all_allocate_detail t2 ON t1.all_id = t2.all_id 
+							 <if test="scanFlagList != null and scanFlagList.size != 0">
+								AND t2.scan_flag in
+								<foreach collection="scanFlagList" item="scanFlagTag" separator="," open="(" close=")" index="index">
+								 	#{scanFlagTag}
+								</foreach>
+							 </if>
+		    LEFT JOIN sto_route_info t4 ON (t1.route_id = t4.route_id AND t4.del_flag = '0')
+		    LEFT JOIN sto_escort_info t5 ON t4.escort_id1 = t5.escort_id
+		    LEFT JOIN sto_escort_info t6 ON t4.escort_id2 = t6.escort_id
+	     where  t1.store_handover_id = t3.handover_id	        
+	     <!-- 主表：预约日期开始 -->
+	        <if test="searchDateStart != null">
+	            <if test="dbName == 'oracle'">and TO_CHAR(t3.create_date, 'yyyy-mm-dd') >= '${searchDateStart}'</if>
+                <if test="dbName == 'mysql'">and DATE_FORMAT(t3.create_date, '%Y-%m-%d') >= '${searchDateStart}'</if>
+	        </if>
+	        <!-- 主表：预约日期结束 -->
+	        <if test="searchDateEnd != null">
+	            <if test="dbName == 'oracle'">and '${searchDateEnd}' >= TO_CHAR(t3.create_date, 'yyyy-mm-dd')</if>
+                <if test="dbName == 'mysql'">and '${searchDateEnd}' >= DATE_FORMAT(t3.create_date, '%Y-%m-%d')</if>
+	        </if>
+	     		
+	     ORDER BY t3.create_date DESC
+	</select>
+	<update id="updateAllocateInfoStatusByRouteId">
+		UPDATE all_allocate_info  
+		SET
+			<if test="aOffice != null and aOffice.id != null and aOffice.id != ''">
+				aoffice_id = #{aOffice.id},
+			</if>
+			<if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+				aoffice_name = #{aOffice.name},
+			</if>
+			<if test="status != null and status != ''">
+				status = #{status},
+			</if>
+			<if test="storeHandoverId != null and storeHandoverId != ''">
+				store_handover_id = #{storeHandoverId},
+			</if>
+			<if test="acceptNumber != null">
+				accept_number = #{acceptNumber},
+			</if>
+			update_by = #{updateBy.id},
+			update_name = #{updateBy.name},
+			update_date = #{updateDate}
+		WHERE 
+			del_flag = '0'
+		 	<!-- 路线ID -->
+			AND route_id = '${routeId}'
+			<!-- 业务类型 -->
+			AND business_type = '${businessType}'
+			<!-- 业务状态 -->
+			AND status = '${status}'
+			<!-- 登记时间(开始) -->
+			<if test="dbName == 'oracle'">and TO_CHAR(create_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+            <if test="dbName == 'mysql'">and DATE_FORMAT(create_date, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+			<!-- 登记时间(结束) -->
+			<if test="dbName == 'oracle'">and '${searchDateEnd}' >= TO_CHAR(create_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+            <if test="dbName == 'mysql'">and '${searchDateEnd}' >= DATE_FORMAT(create_date, '%Y-%m-%d %H:%i:%S')</if>
+		
+	</update>
+	
+	<update id="updateStatusByHandoverId">
+		UPDATE all_allocate_info  
+		SET
+			<if test="status != null and status != ''">
+				status = #{status},
+			</if>
+			update_by = #{updateBy.id},
+			update_name = #{updateBy.name},
+			update_date = #{updateDate}
+		WHERE store_handover_id = #{storeHandoverId}
+	</update>
+	
+	<!-- 26 库外交接任务交接接口 根据交接ID，交接状态，出入库类型，业务类型，查询调拨箱子列表 -->
+	<select id="findBoxListByHandoverId" resultMap="AllAllocateInfoResult">
+		SELECT 
+			<include refid="allAllocateInfoBetweenColumns"/>
+		FROM 
+			<include refid="fromAllBetweenTables"/>
+		WHERE
+			t_aai.del_flag = '0' 
+			<if test="storeHandoverId != null and storeHandoverId != ''">
+				AND t_aai.store_handover_id = #{storeHandoverId}
+			</if>
+		
+			<if test="businessType != null and businessType != ''">
+				AND t_aai.business_type = #{businessType}
+			</if>
+	</select>
+	
+	<!-- 按流水号查询库间调拨信息 -->
+	<select id="getBoxCount" resultType="AllAllocateInfo">
+		select n.boxCount, t.tailBoxCount, m.paragraphBoxCount
+		  from 
+		  (select count(d.box_no) boxCount from all_allocate_info a, all_allocate_detail d,sto_box_info s
+			 <where>
+			 	a.del_flag = '0'
+			 	and  a.all_id = d.all_id
+			 	and d.box_no=s.box_no
+				 <include refid="whereConditionBoxCount"/>
+			 </where>
+		   ) n,
+		  (select count(d.box_no) tailBoxCount from all_allocate_info a, all_allocate_detail d,sto_box_info s
+			 <where>
+			 	a.del_flag = '0'
+			 	and  a.all_id = d.all_id
+			 	and d.box_no=s.box_no
+			 	and s.box_type='12'
+				 <include refid="whereConditionBoxCount"/>
+			 </where>
+		   ) t,
+		  (select count(d.box_no) paragraphBoxCount from all_allocate_info a, all_allocate_detail d,sto_box_info s
+			 <where>
+			 	a.del_flag = '0'
+			 	and  a.all_id = d.all_id
+			 	and d.box_no=s.box_no
+			 	and s.box_type='11'
+				 <include refid="whereConditionBoxCount"/>
+			 </where>
+		   ) m
+	</select>
+	
+	<sql id="whereConditionBoxCount">
+		<!-- 主表：登记时间(开始) -->
+		<if test="createTimeStart != null and createTimeStart != ''">
+			<if test="dbName == 'oracle'">and TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+			<if test="dbName == 'mysql'">and DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+		</if>
+		<!-- 主表：登记时间(结束) -->
+		<if test="createTimeEnd != null and createTimeEnd != ''">
+			<if test="dbName == 'oracle'">and '${searchDateEnd}' >= TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName == 'mysql'">and '${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%S')</if>
+		</if>
+		<!-- 主表：接收时间(开始) -->
+		<if test="acceptTimeStart != null and acceptTimeStart != ''">
+			<if test="dbName == 'oracle'">and TO_CHAR(a.accept_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+			<if test="dbName == 'mysql'">and DATE_FORMAT(a.accept_date, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+		</if>
+		<!-- 主表：接收时间(结束) -->
+		<if test="acceptTimeEnd != null and acceptTimeEnd != ''">
+			<if test="dbName == 'oracle'">and '${searchDateEnd}' >= TO_CHAR(a.accept_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName == 'mysql'">and '${searchDateEnd}' >= DATE_FORMAT(a.accept_date, '%Y-%m-%d %H:%i:%S')</if>
+		</if>
+		<!-- 主表：登记机构 -->
+		<if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+			and a.roffice_id = '${rOffice.id}'
+		</if>
+		<!-- 主表：接收机构 -->
+		<if test="aOffice != null and aOffice.id != null and aOffice.id != ''">
+			and a.aoffice_id = '${aOffice.id}'
+		</if>
+		<!-- 主表：业务类型:业务类型列表为空，业务类型不为空 -->
+		<if test="businessType != null and businessType != ''">
+			and a.business_type = '${businessType}'
+		</if>
+	</sql>
+	<!-- 根据线路ID获取到最近的流水 -->
+	<select id="getMaxdateByrouteId" resultMap="AllAllocateInfoResult">
+		select
+		 <include refid="allAllocateInfoColumns"/> 
+		from
+		(SELECT 
+		b.*
+		FROM 
+			all_allocate_info b 
+		WHERE
+			b.del_flag = '0' 
+		<if test="routeId != null and routeId != ''">
+			and b.route_id = '${routeId}'
+		</if>	
+		<if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+			and b.roffice_id = '${rOffice.id}'
+		</if>
+		<if test="status != null and status != ''">
+			and b.status = '${status}'
+		</if>
+		<!-- 主表：业务状态列表 -->
+		<if test="statuses != null and statuses.size != 0">
+			and b.status in 
+			<foreach collection="statuses" item="statusTag" separator="," open="(" close=")" index="">
+			 	#{statusTag}
+			</foreach>
+		</if>
+		<!-- 主表：业务类型:业务类型列表为空，业务类型不为空 -->
+		<if test="businessType != null and businessType != ''">
+			and b.business_type = '${businessType}'
+		</if>
+		<!-- 当天开始时间 -->
+		<if test="createTimeStart != null and createTimeStart != ''">
+				<if test="dbName == 'oracle'">and TO_CHAR(b.update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+                <if test="dbName == 'mysql'">and DATE_FORMAT(b.update_date, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>			
+		</if>
+		<!-- 当天结束时间 -->
+		<if test="createTimeEnd != null and createTimeEnd != ''">
+		    <if test="dbName == 'oracle'">and '${searchDateEnd}' >= TO_CHAR(b.update_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+            <if test="dbName == 'mysql'">and '${searchDateEnd}' >= DATE_FORMAT(b.update_date, '%Y-%m-%d %H:%i:%S')</if>
+		</if>
+		 order by b.update_date   desc ) a
+		 <if test = "dbName == 'oracle'">
+		 where rownum = '1'
+		 </if>
+		 <if test = "dbName == 'mysql'">
+		 limit 1
+		 </if>
+		
+	</select>
+	<!-- 根据HandoverID获取到OfficeId -->
+	<select id="getAllAllocateInfoByHandoverId" resultMap="AllAllocateInfoResult">
+		select 
+		 <include refid="allAllocateInfoColumns"/> 
+		FROM 
+			all_allocate_info a 
+		WHERE
+			a.del_flag = '0' 
+	<if test="storeHandoverId != null and storeHandoverId != ''">
+			and a.store_handover_id = #{storeHandoverId}
+	</if>
+		
+	</select>
+	<select id="getAllAllocateInfoByBoxNo" resultMap="AllAllocateInfoResult">
+		SELECT 
+			<include refid="allAllocateInfoColumns"/>
+		FROM 
+			all_allocate_info a,all_allocate_detail d
+		WHERE 
+			a.all_id=d.all_id 
+			and d.box_no = #{boxNo} 
+			and a.business_type='31'
+	</select>
+	
+	<select id="findReportListByDateFlag" resultMap="ReportCashBetweenResult">
+    SELECT B_TABLE.STR_DATE,
+           B_TABLE.GOODS_NAME,
+           B_TABLE.GOODS_ID,
+           B_TABLE.MONEY_NUMBER,
+           B_TABLE.MONEY_AMOUNT,
+           B_TABLE.INOUT_TYPE,
+           B_TABLE.AOFFICE_NAME,
+           B_TABLE.ROFFICE_NAME
+      FROM (SELECT <if test="dbName == 'oracle'">to_char(info.update_date, '${dateFlag}') AS STR_DATE,</if>
+                   <if test="dbName == 'mysql'"><if test="dateFlag == 'yyyy'">DATE_FORMAT(info.update_date, '%Y') AS STR_DATE,</if>
+                                                <if test="dateFlag == 'yyyy-mm'">DATE_FORMAT(info.update_date, '%Y-%m') AS STR_DATE,</if>
+                                                <if test="dateFlag == 'yyyy-mm-dd'">DATE_FORMAT(info.update_date, '%Y-%m-%d') AS STR_DATE,</if>
+                                                <if test="dateFlag == 'yyyy-IW'">DATE_FORMAT(info.update_date, '%Y-%u') AS STR_DATE,</if>
+                                                <if test="dateFlag == 'yyyy-Q'">CONCAT(YEAR(info.update_date),'-',QUARTER(info.update_date)) AS STR_DATE,</if></if>
+                   info.ROFFICE_ID AS OFFICE_ID,
+                   items.CONFIRM_FLAG AS INOUT_TYPE,
+                   goods.GOODS_NAME AS GOODS_NAME,
+                   goods.GOODS_ID AS GOODS_ID,
+                   sum(items.MONEY_NUMBER) AS MONEY_NUMBER,
+                   sum(items.MONEY_AMOUNT) AS MONEY_AMOUNT,
+                   ROFFICE_NAME AS ROFFICE_NAME,
+                   AOFFICE_NAME AS AOFFICE_NAME
+              FROM ALL_ALLOCATE_INFO  info,
+                   ALL_ALLOCATE_ITEMS items,
+                   STO_GOODS          goods
+                   <where>
+                       <!-- 主表：登记机构 -->
+			           <if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+			           	   AND info.ROFFICE_ID = '${rOffice.id}'
+		           	   </if>
+			           <if test="businessTypes == null and businessType != null and businessType != ''">
+			               AND info.business_type = '${businessType}'
+		               </if>
+		               <if test="inoutType != null and inoutType != ''">
+		                   AND items.confirm_flag = '${inoutType}'
+		               </if>
+		               <if test="businessTypes != null and businessTypes.size != 0">
+			               AND info.business_type in 
+			               <foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="">
+			 	               #{businessTypeTag}
+			               </foreach>
+		               </if>
+		               <!-- 主表：登记时间(开始) -->
+	        	       <if test="createTimeStart != null and createTimeStart != ''">
+		             	  <if test="dbName == 'oracle'">and TO_CHAR(info.create_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+		        	       <if test="dbName == 'mysql'">and DATE_FORMAT(info.create_date, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+	        	       </if>
+	         	       <!-- 主表：登记时间(结束) -->
+	        	       <if test="createTimeEnd != null and createTimeEnd != ''">
+			               <if test="dbName == 'oracle'">and '${searchDateEnd}' >= TO_CHAR(info.create_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+		    	           <if test="dbName == 'mysql'">and '${searchDateEnd}' >= DATE_FORMAT(info.create_date, '%Y-%m-%d %H:%i:%S')</if>
+	        	       </if>
+	        	       AND info.DEL_FLAG='0'
+		           </where>
+                   AND info.ALL_ID = items.ALL_ID
+                   AND goods.GOODS_ID = items.GOODS_ID
+                   GROUP BY <if test="dbName == 'oracle'">to_char(info.update_date, '${dateFlag}'),</if>
+                            <if test="dbName == 'mysql'"><if test="dateFlag == 'yyyy'">DATE_FORMAT(info.update_date, '%Y'),</if>
+                                                         <if test="dateFlag == 'yyyy-mm'">DATE_FORMAT(info.update_date, '%Y-%m'),</if>
+                                                         <if test="dateFlag == 'yyyy-mm-dd'">DATE_FORMAT(info.update_date, '%Y-%m-%d'),</if>
+                                                         <if test="dateFlag == 'yyyy-IW'">DATE_FORMAT(info.update_date, '%Y-%u'),</if>
+                                                         <if test="dateFlag == 'yyyy-Q'">CONCAT(YEAR(info.update_date),'-',QUARTER(info.update_date)),</if></if>
+                            info.ROFFICE_ID,
+                            items.CONFIRM_FLAG,
+                            goods.GOODS_NAME,
+                            goods.GOODS_ID,
+                            ROFFICE_NAME,
+                            AOFFICE_NAME
+                   ORDER BY STR_DATE) B_TABLE
+    LEFT JOIN SYS_OFFICE C_TABLE
+    ON B_TABLE.OFFICE_ID = C_TABLE.ID 
+	</select>
+	
+	<resultMap id="ReportCashBetweenResult" type="com.coffer.businesses.modules.allocation.v01.entity.AllAllocateInfo">
+	    <result column="rOfficeName" property="rOfficeName"/>
+	    <result column="aOfficeName" property="aOfficeName"/>
+	    <result column="goodsName" property="goodsName"/>
+	    <result column="inoutType" property="inoutType"/>
+	    <result column="strDate" property="strDate"/>
+	    <result column="moneyNumber" property="moneyNumber"/>
+	    <result column="moneyAmount" property="moneyAmount"/>
+	</resultMap>
+	
+	<select id="findBarGraphData" resultMap="GraphCashBetweenResult">
+	SELECT T_1.STR_DATE ,
+	       T_1.ROFFICE_NAME ,
+	       <if test="dbName == 'oracle'">nvl(T_7.MONEY_AMOUNT, 0) AS MONEY_AMOUNT,</if>
+           <if test="dbName == 'mysql'">ifnull(T_7.MONEY_AMOUNT, 0) AS MONEY_AMOUNT,</if>
+	       T_7.GOODS_ID
+	FROM (SELECT T_4.STR_DATE, T_5.ROFFICE_NAME, T_6.GOODS_ID
+	      FROM (SELECT DISTINCT <if test="dbName == 'oracle'">to_char(UPDATE_DATE, '${dateFlag}') AS STR_DATE</if>
+                                <if test="dbName == 'mysql'"><if test="dateFlag == 'yyyy'">DATE_FORMAT(UPDATE_DATE, '%Y') AS STR_DATE</if>
+                                                             <if test="dateFlag == 'yyyy-mm'">DATE_FORMAT(UPDATE_DATE, '%Y-%m') AS STR_DATE</if>
+                                                             <if test="dateFlag == 'yyyy-mm-dd'">DATE_FORMAT(UPDATE_DATE, '%Y-%m-%d') AS STR_DATE</if>
+                                                             <if test="dateFlag == 'yyyy-IW'">DATE_FORMAT(UPDATE_DATE, '%Y-%u') AS STR_DATE</if>
+                                                             <if test="dateFlag == 'yyyy-Q'">CONCAT(YEAR(UPDATE_DATE),'-',QUARTER(UPDATE_DATE)) AS STR_DATE</if></if>
+	            FROM ALL_ALLOCATE_INFO
+	            <where>
+	              <!-- 主表：登记机构 -->
+			      <if test="rOffice != null and rOffice.id != null and rOffice.id != '' and businessType != '23'">
+			          AND ROFFICE_ID = '${rOffice.id}'
+		          </if>
+		          <if test="rOffice != null and rOffice.id != null and rOffice.id != '' and businessType == '23'">
+			          AND AOFFICE_ID = '${rOffice.id}'
+		          </if>
+			      <if test="businessTypes == null and businessType != null and businessType != ''">
+			          AND business_type = '${businessType}'
+		          </if>
+		          <if test="businessTypes != null and businessTypes.size != 0">
+			          AND business_type in 
+			          <foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="">
+			 	          #{businessTypeTag}
+			          </foreach>
+		          </if>
+		          <!-- 主表：登记时间(开始) -->
+	        	  <if test="createTimeStart != null and createTimeStart != ''">
+		        	  <if test="dbName == 'oracle'">and TO_CHAR(create_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+		        	  <if test="dbName == 'mysql'">and DATE_FORMAT(create_date, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+	        	  </if>
+	         	  <!-- 主表：登记时间(结束) -->
+	        	  <if test="createTimeEnd != null and createTimeEnd != ''">
+			          <if test="dbName == 'oracle'">and '${searchDateEnd}' >= TO_CHAR(create_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+		    	      <if test="dbName == 'mysql'">and '${searchDateEnd}' >= DATE_FORMAT(create_date, '%Y-%m-%d %H:%i:%S')</if>
+	        	  </if>
+	        	  AND DEL_FLAG='0'
+		      </where> 
+	            ) T_4,
+	     (SELECT DISTINCT ROFFICE_NAME AS ROFFICE_NAME
+	      FROM ALL_ALLOCATE_INFO
+	          <where>
+	              <!-- 主表：登记机构 -->
+			      <if test="rOffice != null and rOffice.id != null and rOffice.id != '' and businessType != '23'">
+			          AND ROFFICE_ID = '${rOffice.id}'
+		          </if>
+		          <if test="rOffice != null and rOffice.id != null and rOffice.id != '' and businessType == '23'">
+			          AND AOFFICE_ID = '${rOffice.id}'
+		          </if>		          
+			      <if test="businessTypes == null and businessType != null and businessType != '' ">
+			          AND business_type = '${businessType}'
+		          </if>
+		          <if test="businessTypes != null and businessTypes.size != 0">
+			          AND business_type in 
+			          <foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="">
+			 	          #{businessTypeTag}
+			          </foreach>
+		          </if>
+		          <!-- 主表：登记时间(开始) -->
+	        	  <if test="createTimeStart != null and createTimeStart != ''">
+		        	  <if test="dbName == 'oracle'">and TO_CHAR(create_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+		        	  <if test="dbName == 'mysql'">and DATE_FORMAT(create_date, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+	        	  </if>
+	         	  <!-- 主表：登记时间(结束) -->
+	        	  <if test="createTimeEnd != null and createTimeEnd != ''">
+			          <if test="dbName == 'oracle'">and '${searchDateEnd}' >= TO_CHAR(create_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+		    	      <if test="dbName == 'mysql'">and '${searchDateEnd}' >= DATE_FORMAT(create_date, '%Y-%m-%d %H:%i:%S')</if>
+	        	  </if>
+	        	  AND DEL_FLAG='0'
+		      </where>) T_5,
+		      (SELECT DISTINCT GOODS_ID
+               FROM ALL_ALLOCATE_INFO info, ALL_ALLOCATE_ITEMS items WHERE info.ALL_ID = items.ALL_ID ) T_6
+               
+	          ) T_1
+
+	LEFT JOIN (SELECT  <if test="dbName == 'oracle'">to_char(info.UPDATE_DATE, '${dateFlag}') AS STR_DATE,</if>
+                       <if test="dbName == 'mysql'"><if test="dateFlag == 'yyyy'">DATE_FORMAT(info.update_date, '%Y') AS STR_DATE,</if>
+                                                    <if test="dateFlag == 'yyyy-mm'">DATE_FORMAT(info.update_date, '%Y-%m') AS STR_DATE,</if>
+                                                    <if test="dateFlag == 'yyyy-mm-dd'">DATE_FORMAT(info.update_date, '%Y-%m-%d') AS STR_DATE,</if>
+                                                    <if test="dateFlag == 'yyyy-IW'">DATE_FORMAT(info.update_date, '%Y-%u') AS STR_DATE,</if>
+                                                    <if test="dateFlag == 'yyyy-Q'">CONCAT(YEAR(info.update_date),'-',QUARTER(info.update_date)) AS STR_DATE,</if></if>
+	                   sum(MONEY_AMOUNT) AS MONEY_AMOUNT, ROFFICE_NAME,GOODS_ID
+               FROM ALL_ALLOCATE_INFO info, ALL_ALLOCATE_ITEMS items
+	<where>
+	    info.ALL_ID = items.ALL_ID
+	    <if test="inoutType != null and inoutType != ''">
+			and items.CONFIRM_FLAG = '${inoutType}'
+		</if>
+		<if test="businessTypes == null and businessType != null and businessType != ''">
+			AND info.business_type = '${businessType}'
+		</if>
+		<if test="businessTypes != null and businessTypes.size != 0">
+			AND info.business_type in 
+			<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="">
+			 	#{businessTypeTag}
+			</foreach>
+		</if>
+		AND info.del_flag='0'
+    </where>
+	GROUP BY <if test="dbName == 'oracle'">to_char(info.UPDATE_DATE, '${dateFlag}'),</if>
+             <if test="dbName == 'mysql'"><if test="dateFlag == 'yyyy'">DATE_FORMAT(info.update_date, '%Y'),</if>
+                                          <if test="dateFlag == 'yyyy-mm'">DATE_FORMAT(info.update_date, '%Y-%m'),</if>
+                                          <if test="dateFlag == 'yyyy-mm-dd'">DATE_FORMAT(info.update_date, '%Y-%m-%d'),</if>
+                                          <if test="dateFlag == 'yyyy-IW'">DATE_FORMAT(info.update_date, '%Y-%u'),</if>
+                                          <if test="dateFlag == 'yyyy-Q'">CONCAT(YEAR(info.update_date),'-',QUARTER(info.update_date)),</if></if>
+	         info.ROFFICE_NAME ,items.GOODS_ID) T_7
+	ON T_7.ROFFICE_NAME = T_1.ROFFICE_NAME AND T_1.STR_DATE = T_7.STR_DATE AND T_7.GOODS_ID = T_1.GOODS_ID
+	ORDER BY T_1.STR_DATE, T_1.ROFFICE_NAME	,T_7.GOODS_ID
+	</select>
+	
+	<select id="findLineGraphData" resultMap="GraphCashBetweenResult">
+	SELECT <if test="dbName == 'oracle'">to_char(UPDATE_DATE, '${dateFlag}') AS STR_DATE,</if>
+           <if test="dbName == 'mysql'"><if test="dateFlag == 'yyyy'">DATE_FORMAT(UPDATE_DATE, '%Y') AS STR_DATE,</if>
+                                        <if test="dateFlag == 'yyyy-mm'">DATE_FORMAT(UPDATE_DATE, '%Y-%m') AS STR_DATE,</if>
+                                        <if test="dateFlag == 'yyyy-mm-dd'">DATE_FORMAT(UPDATE_DATE, '%Y-%m-%d') AS STR_DATE,</if>
+                                        <if test="dateFlag == 'yyyy-IW'">DATE_FORMAT(UPDATE_DATE, '%Y-%u') AS STR_DATE,</if>
+                                        <if test="dateFlag == 'yyyy-Q'">CONCAT(YEAR(UPDATE_DATE),'-',QUARTER(UPDATE_DATE)) AS STR_DATE,</if></if>
+	<if test="businessType == '23'">
+	T_1.AOFFICE_NAME as ROFFICE_NAME
+	</if>
+	<if test="businessType != '23'">
+	T_1.ROFFICE_NAME as ROFFICE_NAME
+	</if>
+	FROM (SELECT * FROM ALL_ALLOCATE_INFO
+	<where>
+	    <!-- 主表：登记机构 -->
+		<if test="rOffice != null and rOffice.id != null and rOffice.id != '' and businessType == '23'">
+			AND AOFFICE_ID = '${rOffice.id}'
+		</if>
+		<if test="rOffice != null and rOffice.id != null and rOffice.id != '' and businessType != '23'">
+			AND ROFFICE_ID = '${rOffice.id}'
+		</if>
+		<if test="businessTypes == null and businessType != null and businessType != ''">
+			AND business_type = '${businessType}'
+		</if>
+		<if test="businessTypes != null and businessTypes.size != 0">
+			AND business_type in
+			<foreach collection="businessTypes" item="businessTypeTag"
+				separator="," open="(" close=")" index="">
+				#{businessTypeTag}
+			</foreach>
+		</if>
+		<!-- 主表：登记时间(开始) -->
+		<if test="createTimeStart != null and createTimeStart != ''">
+			<if test="dbName == 'oracle'">and TO_CHAR(create_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+			<if test="dbName == 'mysql'">and DATE_FORMAT(create_date, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+		</if>
+		<!-- 主表：登记时间(结束) -->
+		<if test="createTimeEnd != null and createTimeEnd != ''">
+			<if test="dbName == 'oracle'">and '${searchDateEnd}' >= TO_CHAR(create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName == 'mysql'">and '${searchDateEnd}' >= DATE_FORMAT(create_date,'%Y-%m-%d %H:%i:%S')</if>
+		</if>
+		AND del_flag='0'
+	</where>
+	) T_1
+	ORDER BY STR_DATE, ROFFICE_NAME
+	</select>
+	
+	<resultMap id="GraphCashBetweenResult" type="com.coffer.businesses.modules.allocation.v01.entity.AllAllocateInfo">
+	    <result column="rOfficeName" property="rOfficeName"/>
+	    <result column="strDate" property="strDate"/>
+	    <result column="moneyAmount" property="moneyAmount"/>
+	    <result column="goodsId" property="goodsId"/>
+	</resultMap>
+	
+	<select id="findAllocateByHandoverId" resultMap="AllAllocateInfoResult">
+		SELECT 
+			<include refid="allAllocateInfoColumns"/>
+		FROM ALL_ALLOCATE_INFO a
+		WHERE STORE_HANDOVER_ID = #{storeHandoverId}
+	</select>
+	
+	<!-- 通过allId更新对应主表信息（ATM库外清分入库确认接口用）修改人：sg 修改时间：2017-11-13 begin -->
+	<update id="updateAtm">
+		UPDATE all_allocate_info 
+		<trim prefix="set" suffixOverrides=",">
+		<if test="registerNumber != null">
+			register_number = #{registerNumber},
+		</if>
+		<if test="status != null and status != ''">
+			status = #{status},
+		</if>
+		<if test="storeHandoverId != null and storeHandoverId != ''">
+			store_handover_id = #{storeHandoverId},
+		</if>
+		<if test="updateBy != null and updateBy.id != null and updateBy.id != ''">
+			update_by = #{updateBy.id},
+		 </if>
+		 <if test="updateBy != null and updateBy.name != null and updateBy.name != ''">
+			update_name = #{updateBy.name},
+		 </if>
+		 <if test="updateDate != null and updateDate != ''">
+			update_date = #{updateDate},
+		 </if>
+		<if test="scanDate != null and scanDate != ''">
+			scan_date = #{scanDate}
+		</if>
+		</trim>
+	WHERE all_id = #{allId}
+	</update>
+	<!-- end -->
+	
+	<!-- 通过addPlanId(计划id) 查询对应的boxList详细信息(箱袋信息) 创建人：wxz 创建时间： 2017-11-15 begin -->
+	<select id="findByAddPlanId" resultType="Map">
+		SELECT
+			b.rfid AS "rfid",
+			b.box_no AS "boxNo"
+		FROM
+			all_allocate_info a
+		LEFT JOIN all_allocate_detail b ON a.all_id = b.all_id
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}	
+			AND a.route_id = #{routeId}
+			<!-- 主表：业务类型:业务类型列表为空，业务类型不为空 -->
+			<if test="businessTypes == null and businessType != null and businessType != ''">
+				and a.business_type = #{businessType}
+			</if>
+			<!-- 主表：业务状态 -->
+			<if test="status != null and status != ''">
+				and a.status = #{status}
+			</if>
+			<!-- 添加查询条件 创建人：xl 创建时间： 2017-11-22 begin -->
+			<if test="statuses != null and statuses.size != 0">
+				and a.status in
+				<foreach collection="statuses" item="statusTag" separator="," open="(" close=")" index="">
+					'${statusTag}'
+				</foreach>
+			</if>
+			<if test="scanFlagList != null and scanFlagList.size != 0">
+				and b.scan_flag in
+				<foreach collection="scanFlagList" item="scanFlagTag" separator="," open="(" close=")" index="">
+					'${scanFlagTag}'
+				</foreach>
+			</if>
+			<!-- end-->
+		</where>
+	</select>
+	<!-- end -->
+	
+	<!-- <select id = "findAllBusiness" resultMap = "">
+		SELECT 
+			<include refid="allAllocateInfoColumns"/>
+		FROM ALL_ALLOCATE_INFO A
+		<where>
+			A.DEL_FLAG = #{DEL_FLAG_NORMAL}
+			主表：业务状态
+	        <if test="status != null and status != ''">
+	            AND A.STATUS = '${status}'
+	        </if>
+	        主表：登记时间(开始)
+	        <if test="searchDateStart != null and searchDateStart != ''">
+	            <if test="dbName == 'oracle'">AND TO_CHAR(A.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+		        <if test="dbName == 'mysql'">AND DATE_FORMAT(A.CREATE_DATE, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>	            
+	        </if>
+	        主表：登记时间(结束)
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            <if test="dbName == 'oracle'">AND '${searchDateEnd}' >= TO_CHAR(A.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+		        <if test="dbName == 'mysql'">AND '${searchDateEnd}' >= DATE_FORMAT(A.CREATE_DATE, '%Y-%m-%d %H:%i:%S')</if>	            
+	        </if>
+	        主表：流水号
+			<if test="allId != null and allId != ''">
+				AND A.ALL_ID like '%${allId}%'
+			</if>
+			主表：登记机构
+			<if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+				AND A.ROFFICE_ID = '${rOffice.id}'
+			</if>
+			主表：接收机构
+			<if test="aOffice != null and aOffice.id != null and aOffice.id != ''">
+				AND A.AOFFICE_ID = '${aOffice.id}'
+			</if>
+			主表：登记机构名
+			<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+				AND A.ROFFICE_NAME = '${rOffice.name}'
+			</if>
+			主表：接收机构名
+			<if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+				AND A.AOFFICE_NAME = '${aOffice.name}'
+			</if>
+			主表：业务类型:业务类型列表为空，业务类型不为空
+			<if test="businessType != null and businessType != ''">
+				AND A.business_type = '${businessType}'
+			</if>
+			主表：业务类型列表
+			<if test="businessTypes != null and businessTypes.size != 0">
+				AND A.business_type in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="">
+				 	'${businessTypeTag}'
+				</foreach>
+			</if>
+			主表：业务状态
+			<if test="status != null and status != ''">
+				AND A.STATUS = '${status}'
+			</if>
+			主表：业务状态列表
+			<if test="statuses != null and statuses.size != 0">
+				AND A.STATUS in 
+				<foreach collection="statuses" item="statusTag" separator="," open="(" close=")" index="">
+				 	'${statusTag}'
+				</foreach>
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.create_date DESC
+			</otherwise>
+		</choose>
+	</select> -->
+		
+	<!-- 根据钞箱号获取加钞计划ID -->
+	<select id="getPlanIdByBoxNo" resultType="AllAllocateInfo">
+		SELECT 
+			a.route_id  AS "routeId"
+		FROM ALL_ALLOCATE_INFO a left join all_allocate_detail d on a.all_id = d.all_id 
+		<where>
+			a.DEL_FLAG = #{DEL_FLAG_NORMAL}
+			AND d.box_no=#{allAllocateDetail.boxNo}
+			<!-- 主表：业务类型:业务类型列表为空，业务类型不为空 -->
+			<if test="businessType != null and businessType != ''">
+				AND A.business_type = #{businessType}
+			</if>			
+		</where>
+			ORDER BY a.create_date DESC
+	</select>
+	
+	<!-- 查询钞箱出入库信息列表 -->
+	<select id="findAtmBoxInOutList" resultMap="AllAllocateInfoResult">
+		SELECT 
+			<include refid="allAllocateInfoColumns"/>
+		FROM ALL_ALLOCATE_INFO A LEFT JOIN SYS_OFFICE O ON A.ROFFICE_ID=O.ID
+		<where>
+			A.DEL_FLAG = #{DEL_FLAG_NORMAL}
+			<!-- 主表：业务状态 -->
+	        <if test="status != null and status != ''">
+	            AND A.STATUS = '${status}'
+	        </if>
+	        <!-- 主表：登记时间(开始) -->
+	        <if test="searchDateStart != null and searchDateStart != ''">
+	            <if test="dbName == 'oracle'">AND TO_CHAR(A.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+		        <if test="dbName == 'mysql'">AND DATE_FORMAT(A.CREATE_DATE, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>	            
+	        </if>
+	        <!-- 主表：登记时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            <if test="dbName == 'oracle'">AND '${searchDateEnd}' >= TO_CHAR(A.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+		        <if test="dbName == 'mysql'">AND '${searchDateEnd}' >= DATE_FORMAT(A.CREATE_DATE, '%Y-%m-%d %H:%i:%S')</if>	            
+	        </if>
+	        <!-- 主表：流水号 -->
+			<if test="allId != null and allId != ''">
+				AND A.ALL_ID like '%${allId}%'
+			</if>
+			<!-- 主表：登记机构 -->
+			<if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+				AND A.ROFFICE_ID = '${rOffice.id}'
+			</if>
+			<!-- 主表：接收机构 -->
+			<if test="aOffice != null and aOffice.id != null and aOffice.id != ''">
+				AND A.AOFFICE_ID = '${aOffice.id}'
+			</if>
+			<!-- 主表：登记机构名 -->
+			<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+				AND A.ROFFICE_NAME = '${rOffice.name}'
+			</if>
+			<!-- 主表：接收机构名 -->
+			<if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+				AND A.AOFFICE_NAME = '${aOffice.name}'
+			</if>
+			<!-- 主表：业务类型:业务类型列表为空，业务类型不为空 -->
+			<if test="businessType != null and businessType != ''">
+				AND A.business_type = '${businessType}'
+			</if>
+			<!-- 主表：业务类型列表 -->
+			<if test="businessTypes != null and businessTypes.size != 0">
+				AND A.business_type in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="">
+				 	'${businessTypeTag}'
+				</foreach>
+			</if>
+			<!-- 主表：路线 -->
+			<if test="routeId != null and routeId != ''">
+				AND A.route_id = '${routeId}'
+			</if>
+			<!-- 追加根据库房交接ID查询-->
+			<if test="storeHandoverId != null and storeHandoverId != ''">
+				AND A.store_handover_id = '${storeHandoverId}'
+			</if>
+			<!-- 主表：业务状态列表 -->
+			<if test="statuses != null and statuses.size != 0">
+				AND A.STATUS in 
+				<foreach collection="statuses" item="statusTag" separator="," open="(" close=")" index="">
+				 	'${statusTag}'
+				</foreach>
+			</if>
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.create_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+</mapper>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<taglib xmlns="http://java.sun.com/xml/ns/j2ee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-jsptaglibrary_2_0.xsd"
+	version="2.0">
+
+	<description>JSTL 1.1 functions library</description>
+	<display-name>JSTL functions sys</display-name>
+	<tlib-version>1.1</tlib-version>
+	<short-name>atm</short-name>
+	<uri>http://java.sun.com/jsp/jstl/functionss</uri>
+
+	<!-- atmBrandInfoList -->
+	<function>
+		<description>获取ATM品牌信息列表</description>
+		<name>getAtmBrandsinfoList</name>
+		<function-class>com.coffer.businesses.modules.atm.AtmCommonUtils</function-class>
+		<function-signature>java.util.List getAtmBrandsinfoList()</function-signature>
+		<example>${atm:getAtmBrandsinfoList}</example>
+	</function>
+
+	<!-- atmTypeInfoList -->
+	<function>
+		<description>获取ATM品牌信息列表</description>
+		<name>getAtmTypesinfoList</name>
+		<function-class>com.coffer.businesses.modules.atm.AtmCommonUtils</function-class>
+		<function-signature>java.util.List getAtmTypesinfoList()</function-signature>
+		<example>${atm:getAtmTypesinfoList()}</example>
+	</function>
+</taglib>

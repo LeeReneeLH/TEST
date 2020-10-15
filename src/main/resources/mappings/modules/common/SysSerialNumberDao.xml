@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.common.dao.SerialNumberDao">
+    
+	<sql id="serialNumberColumns">
+		a.id AS "id",
+		a.sequence_date AS "sequenceDate",
+		a.business_type AS "businessType",
+		a.sequence AS "sequence"
+	</sql>
+	
+	<sql id="serialNumberJoins">
+	</sql>
+    
+	<select id="findByBusinessType" resultType="SerialNumber">
+		SELECT 
+			<include refid="serialNumberColumns"/>
+		FROM sys_serial_number a
+		<include refid="serialNumberJoins"/>
+		WHERE a.sequence_date = #{sequenceDate}
+			and a.business_type = #{businessType}
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO sys_serial_number(
+			id,
+			sequence_date,
+			business_type,
+			sequence
+		) VALUES (
+			#{id},
+			#{sequenceDate},
+			#{businessType},
+			#{sequence}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE sys_serial_number SET 	
+			sequence_date = #{sequenceDate},
+			business_type = #{businessType},
+			sequence = #{sequence}
+		WHERE id = #{id}
+	</update>
+</mapper>

@@ -1,0 +1,6 @@
+.clear {clear:both;}
+.td {float: left; width:50%;}
+.headTable {width:100%;}
+.headTable td {border:1px solid; text-align: left;}
+.headTable .tr1 td {width: 50%; height: 140px; vertical-align: top;}
+.headTable .tr2 td {width: 25%; height: 60px;}

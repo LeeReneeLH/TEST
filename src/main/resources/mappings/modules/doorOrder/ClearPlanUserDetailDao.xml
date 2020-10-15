@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.doorOrder.v01.dao.ClearPlanUserDetailDao">
+
+	<sql id="clearPlanUserDetailColumns">
+		a.id AS "id",
+		a.plan_id AS "planId",
+		a.user_id AS "user.id",
+		a.user_name AS "user.name",
+		a.del_flag AS "delFlag"
+	</sql>
+
+	<sql id="clearPlanUserDetailJoins">
+	</sql>
+
+	<select id="get" resultType="ClearPlanUserDetail">
+		SELECT
+			<include refid="clearPlanUserDetailColumns"/>
+		FROM clear_plan_user_detail a
+		<include refid="clearPlanUserDetailJoins"/>
+		WHERE a.id = #{id}
+	</select>
+
+	<select id="findList" resultType="ClearPlanUserDetail">
+		SELECT
+			<include refid="clearPlanUserDetailColumns"/>
+		FROM clear_plan_user_detail a
+		<include refid="clearPlanUserDetailJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="planId != null and planId != ''">
+				AND a.plan_id = #{planId}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="findAllList" resultType="ClearPlanUserDetail">
+		SELECT
+			<include refid="clearPlanUserDetailColumns"/>
+		FROM clear_plan_user_detail a
+		<include refid="clearPlanUserDetailJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+
+	<insert id="insert">
+		INSERT INTO clear_plan_user_detail(
+			id,
+			plan_id,
+			user_id,
+			user_name,
+			del_flag
+		) VALUES (
+			#{id},
+			#{planId},
+			#{user.id},
+			#{user.name},
+			#{delFlag}
+		)
+	</insert>
+
+	<update id="update">
+		UPDATE clear_plan_user_detail SET
+			plan_id = #{planId},
+			user_id = #{user.id},
+			user_name = #{user.name},
+			del_flag = #{delFlag}
+		WHERE id = #{id}
+	</update>
+
+	<update id="delete">
+		UPDATE clear_plan_user_detail SET
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	<delete id="deleteByPlanId">
+		DELETE FROM  clear_plan_user_detail
+		WHERE plan_id = #{planId}
+	</delete>
+
+</mapper>

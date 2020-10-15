@@ -1,0 +1,354 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.doorOrder.v01.dao.BusinessTransactionStatementDao">
+    
+	<sql id="businessTransactionStatementColumns">
+		a.id AS "id",
+		a.in_batch AS "inBatch",
+		a.in_date AS "inDate",
+		a.start_time AS "startTime",
+		a.end_time AS "endTime",
+		a.cost_time AS "costTime",
+		a.cash_amount AS "cashAmount",
+		a.pack_amount AS "packAmount",
+		a.total_amount AS "totalAmount",
+		a.back_date AS "backDate",
+		a.clear_date AS "clearDate",
+		a.real_clear_amount AS "realClearAmount",
+		a.long_currency_money AS "longCurrencyMoney",
+		a.short_currency_money AS "shortCurrencyMoney",
+		a.error_check_condition AS "errorCheckCondition",
+		a.cust_confirm AS "custConfirm",
+		a.remarks AS "remarks",
+		door.id AS "door.id",
+        door.name AS "door.name",
+		eqp.series_number AS "equipmentInfo.seriesNumber",
+		eqp.id AS "equipmentInfo.id",
+		u9.login_name AS "user.loginName",
+		u9.name AS "user.name"
+	</sql>
+	
+	<sql id="businessTransactionStatementJoins">
+		LEFT JOIN sys_user u9 ON u9.id = a.user_id
+		LEFT JOIN equipment_info eqp ON eqp.id = a.eqpid
+		LEFT JOIN door_order_detail dod ON dod.tickertape = a.in_batch
+		LEFT JOIN sys_office door ON door.id = a.door_id
+	</sql>
+    
+	<select id="get" resultType="BusinessTransactionStatement">
+		SELECT 
+			<include refid="businessTransactionStatementColumns"/>
+		FROM business_transaction_statement a
+		<include refid="businessTransactionStatementJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="BusinessTransactionStatement">
+		SELECT 
+			<include refid="businessTransactionStatementColumns"/>
+		FROM business_transaction_statement a
+		<include refid="businessTransactionStatementJoins"/>
+		<where>
+			<!-- 门店 -->
+			<if test="door != null">
+				<if test="null != door.id and '' != door.id"> 
+					AND (a.door_id = #{door.id} or 
+						door.PARENT_IDS like  
+					<if test="dbName == 'oracle'">'%,' || #{door.id} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{door.id}, '%')</if>
+						)
+				</if>
+			</if>
+			<!-- 装运单号 -->
+			<if test="remarks != null and remarks != ''">
+				AND a.remarks like
+				<if test="dbName == 'oracle'">'%,' || #{remarks} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{remarks}, '%')</if>
+			</if>
+			<!-- 存款批次 -->
+			<if test="inBatch != null and inBatch != ''">
+				AND a.in_batch like
+				<if test="dbName == 'oracle'">'%,' || #{inBatch} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{inBatch}, '%')</if>
+			</if>
+			<!-- 存款机 -->
+			<if test="equipmentInfo != null">
+				<if test="null != equipmentInfo.id and '' != equipmentInfo.id">
+					AND eqp.series_number like
+					<if test="dbName == 'oracle'">'%,' || #{equipmentInfo.id} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{equipmentInfo.id}, '%')</if>
+				</if>
+			</if>
+			<!-- 店员 -->
+			<if test="user != null">
+				<if test="null != user.loginName and '' != user.loginName">
+					AND u9.login_name like
+					<if test="dbName == 'oracle'">'%,' || #{user.loginName} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{user.loginName}, '%')</if>
+				</if>
+			</if>
+			<!-- 存款日期 -->
+			<if test="inStartDate != null and inStartDate != ''">
+				AND
+				<if test="dbName == 'oracle'">TO_CHAR(a.in_date, 'yyyy-mm-dd hh24:mi:ss') >='${inStartDate}'</if>
+				<!--<if test="dbName=='mysql'">DATE_FORMAT(a.in_date, '%Y-%m-%d') >='${inStartDate}'</if>-->
+				<if test="dbName=='mysql'">DATE_FORMAT(a.in_date, '%Y-%m-%d') &gt;=DATE_FORMAT(#{inStartDate}, '%Y-%m-%d')</if>
+			</if>
+			<if test="inEndDate != null and inEndDate != ''">
+				AND
+				<if test="dbName == 'oracle'">'${inEndDate}' >= TO_CHAR(a.in_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<!--<if test="dbName=='mysql'">'${inEndDate}' >= DATE_FORMAT(a.in_date, '%Y-%m-%d')</if>-->
+				<if test="dbName=='mysql'">DATE_FORMAT(a.in_date, '%Y-%m-%d') &lt;=DATE_FORMAT(#{inEndDate}, '%Y-%m-%d')</if>
+			</if>
+			<!-- 上门收款日期 -->
+			<if test="backStartDate != null and backStartDate != ''">
+				AND
+				<if test="dbName == 'oracle'">TO_CHAR(a.back_date, 'yyyy-mm-dd hh24:mi:ss') >='${backStartDate}'</if>
+				<!--<if test="dbName=='mysql'">DATE_FORMAT(a.back_date, '%Y-%m-%d') >='${backStartDate}'</if>-->
+				<if test="dbName=='mysql'">DATE_FORMAT(a.back_date, '%Y-%m-%d') &gt;=DATE_FORMAT(#{backStartDate}, '%Y-%m-%d')</if>
+			</if>
+			<if test="backEndDate != null and backEndDate != ''">
+				AND
+				<if test="dbName == 'oracle'">'${backEndDate}' >= TO_CHAR(a.back_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<!--<if test="dbName=='mysql'">'${backEndDate}' >= DATE_FORMAT(a.back_date, '%Y-%m-%d')</if>-->
+				<if test="dbName=='mysql'">DATE_FORMAT(a.back_date, '%Y-%m-%d') &lt;=DATE_FORMAT(#{backEndDate}, '%Y-%m-%d')</if>
+			</if>
+			<!-- 清分日期 -->
+			<if test="clearStartDate != null and clearStartDate != ''">
+				AND
+				<if test="dbName == 'oracle'">TO_CHAR(a.clear_date, 'yyyy-mm-dd hh24:mi:ss') >='${clearStartDate}'</if>
+				<!--<if test="dbName=='mysql'">DATE_FORMAT(a.clear_date, '%Y-%m-%d') >='${clearStartDate}'</if>-->
+				<if test="dbName=='mysql'">DATE_FORMAT(a.clear_date, '%Y-%m-%d') &gt;=DATE_FORMAT(#{clearStartDate}, '%Y-%m-%d')</if>
+			</if>
+			<if test="clearEndDate != null and clearEndDate != ''">
+				AND
+				<if test="dbName == 'oracle'">'${clearEndDate}' >= TO_CHAR(a.clear_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<!--<if test="dbName=='mysql'">'${clearEndDate}' >= DATE_FORMAT(a.clear_date, '%Y-%m-%d')</if>-->
+				<if test="dbName=='mysql'">DATE_FORMAT(a.clear_date, '%Y-%m-%d') &lt;=DATE_FORMAT(#{clearEndDate}, '%Y-%m-%d')</if>
+			</if>
+			<if test="custConfirm != null and custConfirm != ''">
+				AND cust_confirm = #{custConfirm}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.cust_confirm asc,
+				a.in_date desc
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="BusinessTransactionStatement">
+		SELECT 
+			<include refid="businessTransactionStatementColumns"/>
+		FROM business_transaction_statement a
+		<include refid="businessTransactionStatementJoins"/>
+		<where>
+			
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO business_transaction_statement(
+			id,
+			eqpid,
+			door_id,
+			in_batch,
+			in_date,
+			start_time,
+			end_time,
+			cost_time,
+			user_id,
+			<if test="cashAmount != null and cashAmount != ''">
+				cash_amount,
+			</if>
+			<if test="packAmount != null and packAmount != ''">
+				pack_amount,
+			</if>
+			total_amount,
+			back_date,
+			clear_date,
+			real_clear_amount,
+			long_currency_money,
+			short_currency_money,
+			error_check_condition,
+			cust_confirm,
+			remarks,
+			create_by,
+			create_name,
+			create_date,
+			update_by,
+			update_name,
+			update_date
+		) VALUES (
+			#{id},
+			#{eqpid},
+			#{doorId},
+			#{inBatch},
+			#{inDate},
+			#{startTime},
+			#{endTime},
+			#{costTime},
+			#{user.id},
+			<if test="cashAmount != null and cashAmount != ''">
+				#{cashAmount},
+			</if>
+			<if test="packAmount != null and packAmount != ''">
+				#{packAmount},
+			</if>
+			#{totalAmount},
+			#{backDate},
+			#{clearDate},
+			#{realClearAmount},
+			#{longCurrencyMoney},
+			#{shortCurrencyMoney},
+			#{errorCheckCondition},
+			#{custConfirm},
+			#{remarks},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE business_transaction_statement SET
+			clear_date = #{clearDate},
+			real_clear_amount = #{realClearAmount},
+			long_currency_money = #{longCurrencyMoney},
+			short_currency_money = #{shortCurrencyMoney},
+			error_check_condition = #{errorCheckCondition},
+			cust_confirm = #{custConfirm},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		DELETE FROM business_transaction_statement
+		WHERE id = #{id}
+	</update>
+	<update id="confirm">
+		UPDATE business_transaction_statement SET
+			cust_confirm = #{param.CUST_CONFIRM_STATUS_CONFIRMED},
+			update_by = #{param.updateBy.id},
+			update_name = #{param.updateName},
+			update_date = #{param.updateDate}
+		WHERE id IN
+		<foreach collection="param.businessIds" index="index" item="item"
+				 separator="," open="(" close=")">
+			#{item}
+		</foreach>
+		AND cust_confirm = #{param.CUST_CONFIRM_STATUS_UNCONFIRMED}
+	</update>
+
+	<select id="getTransactionList" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.BusinessTransactionStatement">
+		SELECT
+			detail.tickertape AS 'inBatch',
+			detail.create_date AS 'inDate',
+			detail.start_time AS 'startTime',
+			detail.end_time AS 'endTime',
+			detail.cost_time AS 'costTime',
+			detail.amount AS 'totalAmount',
+			(case when plan.status = '1' then plan.update_date else null end) as 'backDate',
+			detail.remarks AS 'remarks',
+			office.id AS 'door.id',
+			office.NAME AS 'door.name',
+			eqp.series_number AS 'equipmentInfo.seriesNumber',
+			eqp.id AS 'equipmentInfo.id',
+			user.login_name AS 'user.loginName',
+			user.NAME AS 'user.name'
+		FROM
+			clear_add_money clear
+			LEFT JOIN door_order_detail detail ON clear.business_id = detail.tickertape -- 金额，存款明细（存款金额、凭条、存款时间、开始时间、结束时间、耗时）
+			LEFT JOIN equipment_info eqp ON clear.equipment_id = eqp.id -- 设备信息
+			LEFT JOIN sys_office office ON eqp.aoffice_id = office.id -- 门店信息
+			LEFT JOIN sys_office o on eqp.vinoffice_id = o.id -- 清分中心
+			LEFT JOIN sys_user user ON clear.create_by = user.id -- 存款人信息
+			LEFT JOIN clear_plan_info plan on detail.order_id = plan.plan_id -- 清机任务（清机时间）
+		WHERE
+			clear.type = '0'
+		<!-- 门店 -->
+		<if test="door != null">
+			<if test="null != door.id and '' != door.id">
+				AND (office.id = #{door.id} or
+				office.PARENT_IDS like
+				<if test="dbName == 'oracle'">'%,' || #{door.id} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{door.id}, '%')</if>
+				)
+			</if>
+		</if>
+		<!-- 装运单号 -->
+		<if test="remarks != null and remarks != ''">
+			AND detail.remarks like
+			<if test="dbName == 'oracle'">'%,' || #{remarks} || ',%'</if>
+			<if test="dbName == 'mysql'">CONCAT('%', #{remarks}, '%')</if>
+		</if>
+		<!-- 存款批次 -->
+		<if test="inBatch != null and inBatch != ''">
+			AND detail.tickertape like
+			<if test="dbName == 'oracle'">'%,' || #{inBatch} || ',%'</if>
+			<if test="dbName == 'mysql'">CONCAT('%', #{inBatch}, '%')</if>
+		</if>
+		<!-- 存款机 -->
+		<if test="equipmentInfo != null">
+			<if test="null != equipmentInfo.id and '' != equipmentInfo.id">
+				AND eqp.series_number like
+				<if test="dbName == 'oracle'">'%,' || #{equipmentInfo.id} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{equipmentInfo.id}, '%')</if>
+			</if>
+		</if>
+		<!-- 店员 -->
+		<if test="user != null">
+			<if test="null != user.loginName and '' != user.loginName">
+				AND user.login_name like
+				<if test="dbName == 'oracle'">'%,' || #{user.loginName} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{user.loginName}, '%')</if>
+			</if>
+		</if>
+		<!-- 存款日期 -->
+		<if test="inStartDate != null and inStartDate != ''">
+			AND
+			<if test="dbName == 'oracle'">TO_CHAR(detail.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${inStartDate}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(detail.create_date, '%Y-%m-%d') &gt;=DATE_FORMAT(#{inStartDate}, '%Y-%m-%d')</if>
+		</if>
+		<if test="inEndDate != null and inEndDate != ''">
+			AND
+			<if test="dbName == 'oracle'">'${inEndDate}' >= TO_CHAR(detail.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(detail.create_date, '%Y-%m-%d') &lt;=DATE_FORMAT(#{inEndDate}, '%Y-%m-%d')</if>
+		</if>
+		<!-- 上门收款日期 -->
+		<if test="backStartDate != null and backStartDate != ''">
+			AND
+			<if test="dbName == 'oracle'">TO_CHAR(plan.update_date, 'yyyy-mm-dd hh24:mi:ss') >='${backStartDate}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(plan.update_date, '%Y-%m-%d') &gt;=DATE_FORMAT(#{backStartDate}, '%Y-%m-%d')</if>
+		</if>
+		<if test="backEndDate != null and backEndDate != ''">
+			AND
+			<if test="dbName == 'oracle'">'${backEndDate}' >= TO_CHAR(plan.update_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(plan.update_date, '%Y-%m-%d') &lt;=DATE_FORMAT(#{backEndDate}, '%Y-%m-%d')</if>
+		</if>
+		${sqlMap.dsf}
+		GROUP BY
+			detail.tickertape
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+</mapper>

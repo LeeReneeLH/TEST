@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.clear.v03.dao.DayReportGuestDao">
+    
+	<sql id="dayReportGuestColumns">
+		a.id AS "id",
+		a.client_id AS "clientId",
+		a.client_name AS "clientName",
+		a.accounts_type AS "accountsType",
+		a.before_amount AS "beforeAmount",
+		a.in_count AS "inCount",
+		a.in_amount AS "inAmount",
+		a.out_count AS "outCount",
+		a.out_amount AS "outAmount",
+		a.total_amount AS "totalAmount",
+		a.report_date AS "reportDate",
+		a.windup_type AS "windupType",
+		a.reportMain_id AS "reportMainId",
+		a.del_flag AS "delFlag"
+	</sql>
+	
+	<sql id="dayReportGuestJoins">
+	</sql>
+    
+	<select id="get" resultType="DayReportGuest">
+		SELECT 
+			<include refid="dayReportGuestColumns"/>
+		FROM day_report_guest a
+		<include refid="dayReportGuestJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="DayReportGuest">
+		SELECT 
+			<include refid="dayReportGuestColumns"/>
+		FROM day_report_guest a
+		<include refid="dayReportGuestJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="DayReportGuest">
+		SELECT 
+			<include refid="dayReportGuestColumns"/>
+		FROM day_report_guest a
+		<include refid="dayReportGuestJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	
+	<select id="getAccountByAccountsType" resultType="DayReportGuest">
+		SELECT
+		<include refid="dayReportGuestColumns" />
+		FROM day_report_guest a
+		
+		left join day_report_main m
+			    on a.reportMain_id = m.report_id
+		
+		<include refid="dayReportGuestJoins" />
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		<!-- 业务类型 -->
+		<if test="accountsTypes != null and accountsTypes.size != 0">
+			AND accounts_type in 
+			<foreach collection="accountsTypes" item="accountsTypeTag" separator="," open="(" close=")" index="">
+			 	#{accountsTypeTag}
+			</foreach>
+		</if>
+		<!-- 机构ID -->
+		<if test="clientId != null and clientId != ''">
+			AND a.client_id = '${clientId}'
+		</if>
+		<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND
+			 <if test="dbName == 'oracle'">TO_CHAR(a.report_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+		 	 <if test="dbName == 'mysql'">DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			 <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.report_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			 <if test="dbName == 'mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.report_date,'%Y-%m-%d %H:%i:%s')</if>
+		</if>
+		<!-- 账务日结主表主键ID -->
+		<if test="reportMainId != null and reportMainId != ''">
+			AND a.reportMain_id = '${reportMainId}'
+		</if>
+		
+		<if test="office != null and office.id != null and office.id != ''">
+			AND m.OFFICE_ID = '${office.id}'
+			</if>
+		
+		order by a.report_date   desc
+	</select>
+	
+	<select id="findAccountByAccountsType" resultType="DayReportGuest">
+		SELECT
+		<include refid="dayReportGuestColumns" />
+		FROM day_report_guest a
+		
+		left join day_report_main b
+			    on a.reportMain_id = b.report_id
+		
+		<include refid="dayReportGuestJoins" />
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+			AND b.del_flag=#{DEL_FLAG_NORMAL}
+		<!-- 业务类型 -->
+		<if test="accountsType != null and accountsType != ''">
+			AND a.accounts_type = '${accountsType}'
+		</if>
+		<!-- 机构ID -->
+		<if test="clientId != null and clientId != ''">
+			AND a.client_id = '${clientId}'
+		</if>
+		<!-- 业务类型 -->
+		<if test="status != null and status != ''">
+			AND b.status = '${status}'
+		</if>
+		order by a.report_date   desc
+	</select>
+	
+	<select id="getAccountByreportMainId" resultType="DayReportGuest">
+		SELECT
+		<include refid="dayReportGuestColumns" />
+		FROM day_report_guest a
+		<include refid="dayReportGuestJoins" />
+		WHERE a.reportMain_id = #{reportMainId}
+		order by a.report_date   desc
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO day_report_guest(
+			id,
+			client_id,
+			client_name,
+			accounts_type,
+			before_amount,
+			in_count,
+			in_amount,
+			out_count,
+			out_amount,
+			total_amount,
+			report_date,
+			windup_type,
+			reportMain_id,
+			del_flag
+		) VALUES (
+			#{id},
+			#{clientId},
+			#{clientName},
+			#{accountsType},
+			#{beforeAmount},
+			#{inCount},
+			#{inAmount},
+			#{outCount},
+			#{outAmount},
+			#{totalAmount},
+			#{reportDate},
+			#{windupType},
+			#{reportMainId},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE day_report_guest SET 	
+			client_id = #{clientId},
+			client_name = #{clientName},
+			accounts_type = #{accountsType},
+			before_amount = #{beforeAmount},
+			in_count = #{inCount},
+			in_amount = #{inAmount},
+			out_count = #{outCount},
+			out_amount = #{outAmount},
+			total_amount = #{totalAmount},
+			report_date = #{reportDate}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE day_report_guest SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+</mapper>

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.clear.v03.dao.ClOutDetailDao">
+    
+	<sql id="clOutDetailColumns">
+		a.detail_id AS "detailId",
+		a.out_no AS "outNo",
+		a.currency AS "currency",
+		a.denomination AS "denomination",
+		a.unit_id AS "unitId",
+		a.count_wzq AS "countWzq",
+		a.count_csq AS "countCsq",
+		a.count_dqf AS "countDqf",
+		a.count_yqf AS "countYqf",
+		a.count_atm AS "countAtm",
+		a.count AS "totalCount",
+		a.total_amt AS "totalAmt",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createName",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_name AS "updateName",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag"
+	</sql>
+	
+	<!-- 按取款单号，商行取款明细列表 -->
+	<select id="findItemsList" resultType="com.coffer.businesses.modules.clear.v03.entity.ClOutDetail">
+	    SELECT 
+		  <include refid="clOutDetailColumns"/>
+	    FROM cl_out_detail a
+	    WHERE
+	      1=1
+	      and a.OUT_NO = #{outNo} 
+	      and a.DEL_FLAG='0'
+	    order by a.denomination
+	</select>  
+	
+	<!-- 明细表数据做成 -->
+	<insert id="insert">
+		INSERT INTO cl_out_detail(
+			detail_id,
+			out_no,
+			currency,
+			denomination,
+			unit_id,
+			count_wzq,
+			count_csq,
+			count_dqf,
+			count_yqf,
+			count_atm,
+			count,
+			total_amt,
+			create_by,
+			create_name,
+			create_date,
+			update_by,
+			update_name,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{outNo},
+			#{currency},
+			#{denomination},
+			#{unitId},
+			#{countWzq},
+			#{countCsq},
+			#{countDqf},
+			#{countYqf},
+			#{countAtm},
+			#{totalCount},
+			#{totalAmt},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	
+</mapper>

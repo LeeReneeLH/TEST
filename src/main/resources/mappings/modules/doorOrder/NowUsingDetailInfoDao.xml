@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.doorOrder.v01.dao.NowUsingDetailInfoDao">
+
+	<resultMap type="com.coffer.businesses.modules.doorOrder.v01.entity.NowUsingDetailInfo" id="nowUsingDetailInfo">
+		<id property="settlementBatch" column="depositBatches"/>
+		<result property="saveBatch" column="settleBatches"/>
+		<result property="saveTime" column="depositTime"/>
+		<result property="userId" column="clerk"/>
+		<result property="userName" column="clerkName"/>
+		<result property="equipmentId" column="equipmentId"/>
+		<result property="area" column="countyName"/>
+		<result property="moenyDate" column="depositTime"/>
+		<result property="businessType" column="BUSINESS_TYPE"/>
+		<result property="moneyType" column="moneyType"/>
+		<result property="hundred" column="hundred"/>
+		<result property="fifty" column="fifty"/>
+		<result property="twenty" column="twenty"/>
+		<result property="ten" column="ten"/>
+		<result property="five" column="five"/>
+		<result property="two" column="two"/>
+ 		<result property="one" column="one"/>
+ 		<result property="ofive" column="fiveCorners"/>
+ 		<result property="otwo" column="twoCorners"/>
+ 		<result property="oone" column="oneCorners"/>
+		<result property="paperAmount" column="paperAmount"/>
+		<result property="paperCount" column="paperCount"/>
+		<result property="forceAmount" column="forceAmount"/>
+		<result property="otherAmount" column="otherAmount"/>
+		<result property="totalAmount" column="amount"/>
+		<result property="belongTo" column="officeName"/>
+	</resultMap>
+	
+	<select id="findList" resultMap="nowUsingDetailInfo" parameterType="com.coffer.businesses.modules.doorOrder.v01.entity.NowUsingDetailInfo">
+		SELECT
+		d.ORDER_ID AS depositBatches,
+		d.RFID AS bagNo,
+		<!-- CONCAT(d.tickertape,"_",d.DETAIL_ID) AS settleBatches, -->
+		d.tickertape AS settleBatches,
+		u.LOGIN_NAME AS clerk,
+		u.`NAME` AS clerkName,
+		d.CREATE_DATE AS depositTime,
+		<if test="dbName=='oracle'">
+			NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.force} THEN a.DETAIL_AMOUNT else 0 END),0) AS forceAmount,
+			NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.paper} THEN a.DETAIL_AMOUNT else 0 END),0) AS paperAmount,
+			NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.other} THEN a.DETAIL_AMOUNT else 0 END),0) AS otherAmount,
+			NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.force} THEN a.DETAIL_AMOUNT else 0 END),0)+NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.paper} THEN a.DETAIL_AMOUNT else 0 END),0) AS amount,
+			NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.force} THEN a.COUNT_ZHANG else 0 END),0)+NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.paper} THEN a.COUNT_ZHANG else 0 END),0) AS paperCount,
+			NVL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.hundred} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS hundred,
+			NVL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.fifty} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS fifty,
+			NVL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.twenty} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS twenty,
+			NVL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.ten} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS ten,
+			NVL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.five} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS five,
+			NVL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.two} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS two,
+			NVL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.one} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS one,
+			NVL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.fiveCorners} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS fiveCorners,
+			NVL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.twoCorners} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS twoCorners,
+			NVL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.oneCorners} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS oneCorners,
+		</if>
+		<if test="dbName=='mysql'">
+			IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.force} THEN a.DETAIL_AMOUNT else 0 END),0) AS forceAmount,
+			IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.paper} THEN a.DETAIL_AMOUNT else 0 END),0) AS paperAmount,
+			IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.other} THEN a.DETAIL_AMOUNT else 0 END),0) AS otherAmount,
+			IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.force} THEN a.DETAIL_AMOUNT else 0 END),0)+IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.paper} THEN a.DETAIL_AMOUNT else 0 END),0) AS amount,
+			IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.force} THEN a.COUNT_ZHANG else 0 END),0)+IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.paper} THEN a.COUNT_ZHANG else 0 END),0) AS paperCount,
+			IFNULL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.hundred} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS hundred,
+			IFNULL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.fifty} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS fifty,
+			IFNULL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.twenty} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS twenty,
+			IFNULL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.ten} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS ten,
+			IFNULL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.five} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS five,
+			IFNULL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.two} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS two,
+			IFNULL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.one} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS one,
+			IFNULL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.fiveCorners} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS fiveCorners,
+			IFNULL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.twoCorners} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS twoCorners,
+			IFNULL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.oneCorners} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS oneCorners,
+		</if>
+		<!-- e.ID  -->
+		e.SERIES_NUMBER AS equipmentId,
+		do.NAME AS officeName,
+		pr.NAME AS 'countyName',
+		<!-- o.`NAME` AS officeName, -->
+		s.LABEL AS BUSINESS_TYPE,
+		'cny' as moneyType
+	FROM
+		door_order_detail d
+	LEFT JOIN door_order_amount a ON d.ID = a.DETAIL_ID
+	LEFT JOIN sys_dict s ON s.TYPE = 'save_method' AND s.`VALUE` = a.TYPE_ID
+	LEFT JOIN (
+		SELECT
+			ID,
+			`NAME`,
+			LOGIN_NAME
+		FROM
+			sys_user
+		WHERE
+			DEL_FLAG = 0
+	) u ON d.CREATE_BY = u.ID
+	LEFT JOIN door_order_info i ON i.ORDER_ID = d.ORDER_ID
+	LEFT JOIN equipment_info e ON i.EQUIPMENT_ID = e.ID
+	LEFT JOIN sys_office do ON do.ID = e.AOFFICE_ID
+  	LEFT JOIN sys_office pr ON pr.ID = do.PARENT_ID
+	LEFT JOIN (
+		SELECT
+			s1.ID,
+			s1.`NAME`,
+			s1.PARENT_ID,
+			s1.PARENT_IDS,
+			s2.COUNTY_CODE,
+			s2.COUNTY_NAME
+		FROM
+			sys_office s1
+		LEFT JOIN sys_county s2 ON s1.COUNTY_CODE = s2.COUNTY_CODE
+		WHERE
+			s2.COUNTY_NAME IS NOT NULL
+		AND s1.DEL_FLAG = 0
+		AND s2.DEL_FLAG = 0
+		AND s1.type = 8
+	) o ON e.AOFFICE_ID = o.ID
+	<where>
+		e.ID = #{equipmentId}
+		AND d.RFID = #{bagNo}
+		<if test="null != orderId and orderId != ''">
+			AND d.ORDER_ID = #{orderId}
+		</if>
+		AND e.DEL_FLAG = '0'
+		<!-- <if test="saveBatch != null and saveBatch != ''">
+			and d.ORDER_ID like CONCAT('%',#{saveBatch},'%')
+		</if> -->
+		<if test="saveTime != null and saveTime != ''">
+			and DATE_FORMAT(d.CREATE_DATE, '%Y-%m-%d') = DATE_FORMAT(#{saveTime},'%Y-%m-%d')
+		</if>
+		<if test="userId != null and userId != ''">
+			and u.NAME like CONCAT('%',#{userId},'%')
+		</if>
+		<if test="saveBatch != null and saveBatch != ''">
+			and d.tickertape like CONCAT('%', #{saveBatch},'%')
+		</if>
+		<!-- ${sqlMap.dsf} -->
+	</where>
+	GROUP BY
+		d.ORDER_ID,
+		d.RFID,
+		d.tickertape,
+		d.CREATE_BY,
+		d.CREATE_DATE,
+		s.LABEL
+	ORDER BY 
+		d.CREATE_DATE desc
+	</select>
+</mapper>

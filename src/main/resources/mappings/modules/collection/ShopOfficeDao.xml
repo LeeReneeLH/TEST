@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.collection.v03.dao.ShopOfficeDao">
+	<!-- 上门收款门店管理 -->
+	<sql id="storeOfficeColumns">
+		c.id  	AS "storeId",
+		c.code  AS "storeCode",
+		c.name  AS "storeNm",
+		a.id,
+		a.code,
+		a.code  AS "oldCode",
+		a.name,
+		a.enabled_flag  AS "enabledFlag",
+		a.master,
+		a.address, 
+		a.zip_code, 
+		a.phone, 
+		a.fax, 
+		a.email, 
+		a.remarks,
+		a.create_by AS "createBy.id",
+		a.create_date,
+		a.update_by AS "updateBy.id",
+		a.update_date,
+		a.del_flag
+	</sql>
+	
+	<sql id="ShopOfficeJoins">
+		LEFT JOIN door_store_office c ON c.id = a.store_id AND c.del_flag = '0'
+	</sql>
+
+	<!-- 主键查询，记录取得-->
+	<select id="get" resultType="ShopOffice">
+		SELECT
+			 <include refid="storeOfficeColumns"/> 
+		FROM door_shop_office a
+		<include refid="ShopOfficeJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<!-- 一览数据的取得-->
+	<select id="findList" resultType="ShopOffice">
+		SELECT 
+			<include refid="storeOfficeColumns"/>
+		FROM door_shop_office a
+		<include refid="ShopOfficeJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			
+			<!-- 商户 -->
+			<if test="storeId != null and storeId != ''">
+				AND a.store_id = #{storeId}
+			</if>
+			
+			<!-- 门店编码 -->
+			<if test="code != null and code != ''">
+				AND a.code = #{code}
+			</if>
+			
+			<!-- 门店名称 -->
+			<if test="name != null and name != ''">
+				AND a.name like '%${name}%'
+			</if>
+			
+			<!-- 启用标识 -->
+			<if test="enabledFlag != null and enabledFlag != ''">
+				AND a.enabled_flag = #{enabledFlag}
+			</if>
+			
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.code
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 数据插入-->
+	<insert id="insert">
+	INSERT INTO door_shop_office(
+			id, 
+			store_id, 
+			code, 
+			name,
+			enabled_flag,
+			master,
+			address, 
+			zip_code, 
+			phone, 
+			fax, 
+			email, 
+			create_by, 
+			create_date, 
+			update_by, 
+			update_date, 
+			remarks, 
+			del_flag
+		) VALUES (
+			#{id}, 
+			#{storeId}, 
+			#{code}, 
+			#{name}, 
+			#{enabledFlag},
+			#{master},  
+			#{address}, 
+			#{zipCode}, 
+			#{phone}, 
+			#{fax}, 
+			#{email}, 
+			#{createBy.id}, 
+			#{createDate}, 
+			#{updateBy.id}, 
+			#{updateDate}, 
+			#{remarks}, 
+			#{delFlag}
+		)
+	</insert>
+		
+		
+	<!-- 数据更新-->
+	<update id="update">
+		UPDATE door_shop_office SET 
+			enabled_flag = #{enabledFlag}, 
+			store_id = #{storeId}, 
+			code = #{code}, 
+			name = #{name}, 
+			master = #{master}, 
+			address = #{address}, 
+			zip_code = #{zipCode}, 
+			phone = #{phone}, 
+			fax = #{fax}, 
+			email = #{email}, 
+			update_by = #{updateBy.id}, 
+			update_date = #{updateDate}, 
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+
+	<!-- 数据删除-->
+	<update id="delete">
+		UPDATE door_shop_office SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id} 
+	</update>
+	
+	<!-- 门店编码检查-->
+	<select id="checkShopOfficeCode" resultType="Office">
+		SELECT
+			<include refid="storeOfficeColumns"/>
+		FROM door_shop_office a
+		<include refid="ShopOfficeJoins"/>
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		AND a.code = #{code}
+	</select>
+
+
+  <!-- 商户下拉列表 -->
+  <select id="findStoreSelect"  resultType="SelectItem">
+	SELECT id value,
+		   name label
+	FROM
+		door_store_office a
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<!-- 启用标识 -->
+			<if test="enabledFlag != null and enabledFlag != ''">
+				AND (a.enabled_flag = #{enabledFlag}
+				<if test="id != null and id != ''">
+				or a.id = #{id}
+			    </if>
+			    )
+			</if>
+
+		</where>
+	ORDER BY a.code
+  </select>
+
+	<!-- 查询当前门店下的有效用户 -->
+	<select id="getVaildCntByOfficeId" parameterType="String" resultType="Integer">
+		SELECT
+			COUNT(ID)
+		FROM
+			sys_guest
+		WHERE GOFFICE_ID = #{id} 
+		  AND DEL_FLAG='0'		
+	</select>
+	
+
+
+</mapper>

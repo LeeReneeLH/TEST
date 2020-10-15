@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.collection.v03.dao.StoreOfficeDao">
+	<!-- 上门收款商户管理 -->
+	<sql id="storeOfficeColumns">
+		a.id,
+		a.code,
+		a.code  AS "oldCode",
+		a.name,
+		a.enabled_flag  AS "enabledFlag",
+		a.master,
+		a.address, 
+		a.zip_code, 
+		a.phone, 
+		a.fax, 
+		a.email, 
+		a.remarks,
+		a.create_by AS "createBy.id",
+		a.create_date,
+		a.update_by AS "updateBy.id",
+		a.update_date,
+		a.del_flag
+	</sql>
+	
+	<!-- 主键查询，记录取得-->
+	<select id="get" resultType="StoreOffice">
+		SELECT	
+			 <include refid="storeOfficeColumns"/> 
+		FROM door_store_office a
+		WHERE a.id = #{id}
+	</select>
+	
+	<!-- 一览数据的取得-->
+	<select id="findList" resultType="StoreOffice">
+		SELECT 
+			<include refid="storeOfficeColumns"/>
+		FROM door_store_office a
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<!-- 商户编码 -->
+			<if test="code != null and code != ''">
+				AND a.code = #{code}
+			</if>
+			
+			<!-- 商户名称 -->
+			<if test="name != null and name != ''">
+				AND a.name like '%${name}%'
+			</if>
+			
+			<!-- 启用标识 -->
+			<if test="enabledFlag != null and enabledFlag != ''">
+				AND a.enabled_flag = #{enabledFlag}
+			</if>
+			
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.code
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 数据插入-->
+	<insert id="insert">
+	INSERT INTO door_store_office(
+			id, 
+			code, 
+			name,
+			enabled_flag,
+			master,
+			address, 
+			zip_code, 
+			phone, 
+			fax, 
+			email, 
+			create_by, 
+			create_date, 
+			update_by, 
+			update_date, 
+			remarks, 
+			del_flag
+		) VALUES (
+			#{id}, 
+			#{code}, 
+			#{name}, 
+			#{enabledFlag},
+			#{master},  
+			#{address}, 
+			#{zipCode}, 
+			#{phone}, 
+			#{fax}, 
+			#{email}, 
+			#{createBy.id}, 
+			#{createDate}, 
+			#{updateBy.id}, 
+			#{updateDate}, 
+			#{remarks}, 
+			#{delFlag}
+		)
+	</insert>
+		
+		
+	<!-- 数据更新-->
+	<update id="update">
+		UPDATE door_store_office SET 
+			enabled_flag = #{enabledFlag}, 
+			code = #{code}, 
+			name = #{name}, 
+			master = #{master}, 
+			address = #{address}, 
+			zip_code = #{zipCode}, 
+			phone = #{phone}, 
+			fax = #{fax}, 
+			email = #{email}, 
+			update_by = #{updateBy.id}, 
+			update_date = #{updateDate}, 
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+
+	<!-- 数据删除(商户)-->
+	<update id="delete">
+		UPDATE door_store_office SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id} 
+	</update>
+	
+	
+	<!-- 数据删除(门店)-->
+	<update id="shopDelete">
+		UPDATE door_shop_office SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE store_id = #{id} 
+	</update>
+	
+	
+	
+	<!-- 商户编码检查-->
+	<select id="checkStoreOfficeCode" resultType="Office">
+		SELECT
+			<include refid="storeOfficeColumns"/>
+		FROM door_store_office a
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		AND a.code = #{code}
+	</select>
+
+	
+	<!-- 查询当前商户和门店下的有效用户 -->
+	<select id="getVaildCntByOfficeId" parameterType="String" resultType="Integer">
+		SELECT
+			COUNT(ID)
+		FROM
+			door_cust_user
+		WHERE store_id =#{id}
+		 AND DEL_FLAG='0'
+					
+	</select>
+	
+	<!-- 门店启用标识的更新 -->
+	<update id="updShopEnabledFlag">
+		UPDATE door_shop_office SET 
+			enabled_flag = #{enabledFlag}
+		WHERE store_id = #{id} 
+		  AND DEL_FLAG = '0'
+	</update>
+	
+</mapper>

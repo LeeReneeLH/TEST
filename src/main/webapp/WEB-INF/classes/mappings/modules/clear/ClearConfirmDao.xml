@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.clear.v03.dao.ClearConfirmDao">
+    <!-- 清分接收主表 -->
+	<!-- 查询所有的信息字段 -->
+  	<sql id="orderClearInfoColumns">
+  		a.in_no            		AS "allInfo.inNo",
+		a.clear_office          AS "allInfo.clearOffice",
+		a.clear_office_nm       AS "allInfo.clearOfficeNm",
+		a.status              	AS "allInfo.status",
+		a.in_amount          	AS "allInfo.inAmount",
+		a.remarks           	AS "allInfo.remarks",
+		a.create_by        		AS "allInfo.createBy",
+		a.create_name      		AS "allInfo.createName",
+		a.create_date        	AS "allInfo.createDate",
+		a.update_by          	AS "allInfo.updateBy",
+		a.update_name        	AS "allInfo.updateName",
+		a.update_date       	AS "allInfo.updateDate",
+		a.register_office		AS "allInfo.registerOffice",
+		o1.name					AS "allInfo.registerOfficeNm",
+		a.register_by		    AS "allInfo.registerBy",
+		a.register_date		    AS "allInfo.registerDate",
+		d.name		    		AS "allInfo.registerName",
+		a.receive_date		    AS "allInfo.receiveDate",
+		e.name		    		AS "allInfo.receiveName"
+		
+	</sql>
+
+	<!-- 查询出的所有信息的字段，保存到关联的Entity里 -->
+	<resultMap id="OrderClearInfoResult" type="com.coffer.businesses.modules.clear.v03.entity.ClearConfirm">
+	    <id column="allInfo.inNo"             			property="inNo" />
+	    <result column="allInfo.clearOffice"    		property="rOffice.id"/>
+	    <result column="allInfo.clearOfficeNm"  		property="rOffice.name"/>
+	    <result column="allInfo.status"        			property="status"/>
+	    <result column="allInfo.inAmount"      			property="inAmount"/>
+	    <result column="allInfo.remarks"     			property="remarks"/>
+	    <result column="allInfo.createBy"     			property="createBy.id"/>
+	    <result column="allInfo.createName"    			property="createName"/>
+	    <result column="allInfo.createDate"    			property="createDate"/>
+	    <result column="allInfo.updateBy"     			property="updateBy.id"/>
+	    <result column="allInfo.updateName"  			property="updateName"/>
+	    <result column="allInfo.updateDate"    			property="updateDate"/>
+		<result column="allInfo.registerOffice"    		property="registerOffice"/>
+		<result column="allInfo.registerOfficeNm"    	property="registerOfficeNm"/>
+		<result column="allInfo.registerBy"    			property="registerBy"/>
+		<result column="allInfo.registerDate"    		property="registerDate"/>
+		<result column="allInfo.registerName"    		property="registerName"/>
+		<result column="allInfo.receiveDate"    		property="receiveDate"/>
+		<result column="allInfo.receiveName"    		property="receiveName"/>
+		
+	    <!--  预约清分明细 -->
+ 	    <collection column="allInfo.inNo" property="orderClearDetailList" javaType="ArrayList" select="com.coffer.businesses.modules.clear.v03.dao.OrderClearDetailDao.findItemsList" fetchType="lazy"/>
+
+	</resultMap>
+	
+	<sql id="orderClearJoins">
+		LEFT JOIN sys_user d ON d.id = a.register_by
+		LEFT JOIN sys_user e ON e.id = a.receive_by
+		left join sys_office o1 on a.register_office=o1.id
+		left join sys_office o2 on a.clear_office=o2.id
+	</sql>
+
+	
+	<!-- 按流水号查询主表信息 -->
+	<select id="get" resultMap="OrderClearInfoResult">
+		SELECT 
+			<include refid="orderClearInfoColumns"/>
+		FROM 
+			order_clear_main a 
+			<include refid="orderClearJoins"/>
+		WHERE
+			 a.in_no = #{inNo}
+	</select>
+
+	<!-- 获取多条主表信息 -->
+	<select id="findList" resultMap="OrderClearInfoResult">
+		SELECT 
+			<include refid="orderClearInfoColumns"/>
+		FROM order_clear_main A
+		<include refid="orderClearJoins"/>
+		<where>
+			A.DEL_FLAG = #{DEL_FLAG_NORMAL}
+
+	         <!-- 主表：登记时间(开始) -->
+	        <if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(a.register_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.register_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <!-- 主表：登记时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.register_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.register_date, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	        
+			<!-- 主表：登记机构 -->
+			<if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+				AND A.clear_office = '${rOffice.id}'
+			</if>
+			
+			
+			<!-- 主表：状态 -->
+			<if test="searchStatus != null and searchStatus != ''">
+				AND A.status = '${searchStatus}'
+			</if>
+			<!-- 数据范围过滤 -->
+			${sqlMap.dsf}
+			
+		</where>
+
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.register_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	
+	<!-- 状态的更新-->
+	<update id="updateStatus">
+		UPDATE order_clear_main SET 	
+			status = #{status},
+			receive_by = #{updateBy.id}, 
+			receive_name = #{updateBy.name},
+			receive_date = #{updateDate},
+			update_by = #{updateBy.id}, 
+			update_name = #{updateBy.name},
+			update_date = #{updateDate}
+		WHERE in_no = #{inNo}
+	</update>
+	
+	
+	
+</mapper>

@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoDictDao">
+
+	<sql id="stoDictColumns">
+		a.id AS "id",
+		a.label AS "label",
+		a.value AS "value",
+		a.type
+		AS "type",
+		a.description AS "description",
+		a.unit_val AS "unitVal",
+		a.sort AS "sort",
+		a.create_by AS "createBy.id",
+		a.ref_code AS "refCode",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag"
+	</sql>
+
+	<sql id="stoDictJoins">
+	</sql>
+
+	<select id="get" resultType="StoDict">
+		SELECT
+		<include refid="stoDictColumns" />
+		FROM sto_dict a
+		<include refid="stoDictJoins" />
+		WHERE a.id = #{id}
+	</select>
+
+	<select id="findList" resultType="StoDict">
+		SELECT
+		<include refid="stoDictColumns" />
+		FROM sto_dict a
+		<include refid="stoDictJoins" />
+		<where>
+			1 = 1
+			<!-- a.del_flag = #{DEL_FLAG_NORMAL} -->
+			<if test="description != null and description != ''">
+				and a.description like 
+				<!-- '%'||#{description}||'%' -->
+				<if test="dbName == 'oracle'">'%'||#{description}||'%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%',#{description},'%')</if>
+			</if>
+			<if test="type != null and type != ''">
+				and a.type = #{type}
+			</if>
+			<if test="value != null and value != ''">
+				and a.value = #{value}
+			</if>
+            <if test="unitVal != null">
+                and a.unit_val = #{unitVal}
+            </if>
+			<if test="delFlag != null and delFlag != ''">
+				and a.del_flag = #{delFlag}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.type, a.sort, a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="findAllList" resultType="StoDict">
+		SELECT
+		<include refid="stoDictColumns" />
+		FROM sto_dict a
+		<include refid="stoDictJoins" />
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.type, a.sort, a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 不考虑删除 条件-->
+	<select id="findAllListOutFlag" resultType="StoDict">
+		SELECT
+		<include refid="stoDictColumns" />
+		FROM sto_dict a
+		<include refid="stoDictJoins" />
+		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.type, a.sort, a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO sto_dict(
+		id,
+		label,
+		value,
+		type,
+		description,
+		unit_val,
+		sort,
+		create_by,
+		ref_code,
+		create_date,
+		update_by,
+		update_date,
+		remarks,
+		del_flag
+		) VALUES (
+		#{id},
+		#{label},
+		#{value},
+		#{type},
+		#{description},
+		#{unitVal},
+		#{sort},
+		#{createBy.id},
+		#{refCode},
+		#{createDate},
+		#{updateBy.id},
+		#{updateDate},
+		#{remarks},
+		#{delFlag}
+		)
+	</insert>
+
+	<update id="update">
+		UPDATE sto_dict SET
+		label = #{label},
+		value = #{value},
+		type = #{type},
+		description = #{description},
+		unit_val = #{unitVal},
+		sort = #{sort},
+		ref_code = #{refCode},
+		update_by = #{updateBy.id},
+		update_date = #{updateDate},
+		remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+
+	<update id="delete">
+		UPDATE sto_dict SET
+		update_by = #{updateBy.id},
+		update_date = #{updateDate},
+		del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+
+	<select id="findTypeList" resultType="StoDict">
+		SELECT
+		type AS "id",
+		description AS "label",
+		type AS "value"
+		FROM sto_dict
+		<!-- WHERE del_flag = #{DEL_FLAG_NORMAL} -->
+		GROUP BY type,description
+		ORDER BY 
+		<!-- nlssort(description,'NLS_SORT=SCHINESE_PINYIN_M') -->
+		<if test="dbName == 'oracle'"> NLSSORT(description,'NLS_SORT=SCHINESE_PINYIN_M')</if>
+		<if test="dbName == 'mysql'"> CONVERT (description USING gbk) COLLATE gbk_chinese_ci ASC</if>
+	</select>
+	<!-- 获取特定币种的面值标签 ======start -->
+	<select id="getDenLabel" resultType="java.lang.String">
+		select DEN_T.LABEL
+		from STO_DICT DEN_T
+		inner join STO_DICT CUR_T
+		on 
+		SUBSTR(DEN_T.TYPE, 1, 3) = CUR_T.REF_CODE 
+		
+		and DEN_T.TYPE like '%den'
+		and DEN_T.VALUE = #{denValue}
+		and CUR_T.VALUE = #{currencyValue}
+		and CUR_T.TYPE = 'currency'
+	</select>
+	<!-- 获取特定币种的面值标签 ======end -->
+
+	<!-- 盘点同步字典信息 -->
+	<select id="getStockCountDictBySearchDate" resultType="StoDict">
+		SELECT
+		<include refid="stoDictColumns" />
+		FROM sto_dict a
+		<if test="searchDate != null and searchDate != ''">
+			WHERE 
+			<!-- TO_CHAR(a.update_date,'yyyyMMddhh24missff3')  -->
+			<if test="dbName == 'oracle'">TO_CHAR(a.update_date,'yyyyMMddhh24missff6')</if>
+			<if test="dbName == 'mysql'">date_format(a.update_date,'%Y%m%d%H%i%S%f')</if>
+			&gt;
+			#{searchDate}
+		</if>
+		ORDER BY a.type, a.ref_code, a.sort
+	</select>
+    <!-- 获取币种的所有/单个面值 -->
+    <select id="findAllDenomination" resultType="StoDict">
+        SELECT
+        <include refid="stoDictColumns" />
+        FROM STO_DICT a
+        WHERE TYPE IN
+            <foreach collection="currencies" index="index" item="currency" open="(" separator="," close=")">
+                #{currency}
+            </foreach>
+            <if test="id != null and id != ''">
+              AND a.ID = #{id}
+            </if>
+        AND DEL_FLAG = ${delFlag.valid}
+    </select>
+	<!-- 恢复 ======start -->
+	<update id="revert">
+		UPDATE sto_dict SET
+		update_by = #{updateBy.id},
+		update_date = #{updateDate},
+		del_flag = #{DEL_FLAG_NORMAL}
+		WHERE id = #{id}
+	</update>
+	<!-- 恢复 ======end -->
+</mapper>

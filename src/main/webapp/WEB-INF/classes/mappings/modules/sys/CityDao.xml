@@ -1,0 +1,718 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.core.modules.sys.dao.CityDao">
+	<sql id="cityColumns">
+		A.ID,
+    	A.CITY_CODE,
+    	A.CITY_JSONCODE,
+    	A.CITY_NAME,
+    	A.LONGITUDE,
+    	A.LATITUDE,
+		A.PROVINCE_CODE,
+		A.create_by AS "createBy.id",
+		A.create_date,
+		A.update_by AS "updateBy.id",
+		A.update_date,
+		A.del_flag
+	</sql>
+	
+	<!-- 通过id查询有效记录 -->
+	<select id="get" resultType="com.coffer.core.modules.sys.entity.CityEntity">
+		SELECT <include refid="cityColumns"/>
+			FROM sys_city A
+			  WHERE A.ID = #{id}
+	</select>
+
+	<!-- 查询所有有效记录 -->
+	<select id="findList" resultType="com.coffer.core.modules.sys.entity.CityEntity">
+		SELECT <include refid="cityColumns"/>,T1.PRO_NAME
+			FROM sys_city A ,sys_province T1
+			<where>
+				A.PROVINCE_CODE = T1.PROVINCE_CODE
+				<if test="delFlag != null and delFlag != ''">
+					AND A.DEL_FLAG = #{delFlag}
+				</if>
+				<if test="cityCode != null and cityCode != ''">
+					AND A.CITY_CODE LIKE
+					<if test="dbName == 'oracle'">'%'|| #{cityCode} || '%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{cityCode}, '%')</if>
+				</if>
+				<if test="cityName != null and cityName != ''">
+					AND A.CITY_NAME = #{cityName}
+				</if>
+				<if test="provinceCode != null and provinceCode != ''">
+					AND A.PROVINCE_CODE = #{provinceCode}
+				</if>
+			</where>
+			<if test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</if>
+	</select>
+	
+	<!-- 插入记录 -->
+	<insert id="insert">
+		INSERT INTO sys_city(
+			ID,
+			CITY_CODE,
+			CITY_JSONCODE, 
+			CITY_NAME, 
+			LONGITUDE, 
+			LATITUDE,
+			PROVINCE_CODE, 
+			CREATE_BY, 
+			CREATE_DATE, 
+			UPDATE_BY, 
+			UPDATE_DATE, 
+			DEL_FLAG
+		) VALUES (
+			#{id}, 
+			#{cityCode},
+			#{cityJsonCode}, 
+			#{cityName}, 
+			#{longitude}, 
+			#{latitude},
+			#{provinceCode},
+			#{createBy.id}, 
+			#{createDate}, 
+			#{updateBy.id}, 
+			#{updateDate}, 
+			#{delFlag}
+		)
+	</insert>
+	
+	<!-- 更新记录 -->
+	<update id="update">
+		UPDATE sys_city SET 
+			CITY_CODE= #{cityCode},
+			CITY_JSONCODE=#{cityJsonCode}, 
+			CITY_NAME= #{cityName}, 
+			LONGITUDE = #{longitude}, 
+			LATITUDE = #{latitude},
+			PROVINCE_CODE= #{provinceCode}, 
+			UPDATE_BY = #{updateBy.id}, 
+			UPDATE_DATE = #{updateDate}
+		WHERE ID = #{id}
+	</update>
+	
+	<!-- 逻辑删除记录 -->
+	<update id="delete">
+		UPDATE sys_city SET 
+			DEL_FLAG = #{DEL_FLAG_DELETE}
+		<where>
+			<if test=" id != null and id != '' ">
+				AND ID = #{id}
+			</if>
+			<if test=" provinceCode != null and provinceCode != ''">
+				AND PROVINCE_CODE = #{provinceCode}
+			</if>
+		</where>
+	</update>
+	
+	<!-- 删除标识更改为有效 -->
+	<update id="revert">
+		UPDATE sys_city SET 
+			DEL_FLAG = #{DEL_FLAG_NORMAL}
+		WHERE ID = #{id}
+	</update>
+	
+	<!-- 查询当前条件下城市数量 -->
+	<select id="findCityCodeNum" resultType="int">
+		SELECT count(*) 
+		  	FROM sys_city
+		    	WHERE CITY_CODE=#{cityCode} AND DEL_FLAG='0'
+	</select>
+	
+	<!-- 查询当前条件下城市数量 -->
+	<select id="findCityJsonNum" resultType="int">
+		SELECT count(*) 
+		  	FROM sys_city
+		    	WHERE CITY_JSONCODE=#{cityJsonCode} AND DEL_FLAG='0'
+	</select>
+	
+	<sql id="officeCityMapColumns">
+	  A.ID,
+	  A.PARENT_ID,
+ 	  A.NAME,
+	  A.TYPE,
+	  A.CITY_CODE,
+	  A.LONGITUDE,
+	  A.LATITUDE
+	</sql>
+	
+	<sql id="cityMapColumns">
+      T2.CITY_NAME,
+	  T1.ID AS OFFICE_ID,
+	  T1.PARENT_ID,
+	  T1.NAME AS OFFICE_NAME,
+	  T1.TYPE,
+	  T2.LONGITUDE,
+	  T2.LATITUDE
+	</sql>
+	
+	<sql id="cityCondiColumns">
+	AND A.DEL_FLAG = '0'
+	AND A.CITY_CODE IS NOT NULL
+	<if test="dbName == 'mysql'">
+		AND A.CITY_CODE &lt;&gt; ''
+	</if>
+	</sql>
+	
+	<!-- 查询当前金库/网点的父/子机构城市信息 -->
+	<select id="findCityData" resultType="com.coffer.core.modules.sys.entity.CityEntity">
+		SELECT
+		  <include refid="cityMapColumns"></include>
+		 <!--  IF((T1.LONGITUDE &lt;&gt; '' AND T1.LONGITUDE IS NOT NULL),T1.LONGITUDE,T2.LONGITUDE) AS LONGITUDE,
+		  IF((T1.LATITUDE &lt;&gt; '' AND T1.LATITUDE IS NOT NULL),T1.LATITUDE,T2.LATITUDE) AS LATITUDE -->
+		FROM
+			(
+				SELECT
+				 <include refid="officeCityMapColumns"></include>
+				FROM
+				  sys_office A
+				WHERE
+				  (
+					A.ID = #{id}
+					OR A.ID = (
+					  SELECT
+						PARENT_ID
+					  FROM
+						sys_office
+					  WHERE
+						ID = #{id}
+				)
+				   OR A.PARENT_ID = #{id}
+			  )
+			   AND A.TYPE NOT IN ('0','6')
+			  <include refid="cityCondiColumns"></include>
+	 	) T1
+		LEFT JOIN SYS_CITY T2 ON T1.CITY_CODE = T2.CITY_CODE
+	</select>
+	
+	<!-- 查询当前人行的父/子机构以及同级人行的城市信息 -->
+	<select id="findCityGenData" resultType="com.coffer.core.modules.sys.entity.CityEntity">
+		SELECT
+			  <include refid="cityMapColumns"></include>
+			FROM
+				(
+					SELECT
+					 <include refid="officeCityMapColumns"></include>
+					FROM
+					  sys_office A
+					WHERE
+					  (
+						A.ID = #{id}
+						OR A.ID = (
+						  SELECT
+							PARENT_ID
+						  FROM
+							sys_office
+						  WHERE
+							ID = #{id}
+					)
+					   OR A.PARENT_ID = #{id}
+				  )
+				   AND A.TYPE NOT IN ('0','6')
+				  <include refid="cityCondiColumns"></include>
+				  
+				  UNION
+				  
+				  SELECT
+					 <include refid="officeCityMapColumns"></include>
+					FROM
+					  sys_office A
+					WHERE
+					   A.PARENT_ID = #{parentId}
+				   AND A.TYPE = '1'
+				  <include refid="cityCondiColumns"></include>
+		 	) T1
+			LEFT JOIN SYS_CITY T2 ON T1.CITY_CODE = T2.CITY_CODE
+	</select>
+	
+	<!-- 查询与清分中心有关的地图数据 -->
+	<select id="findClearCityData" resultType="com.coffer.core.modules.sys.entity.CityEntity">
+		SELECT
+		  <include refid="cityMapColumns"></include>
+		FROM
+			(
+				SELECT
+				  <include refid="officeCityMapColumns"></include>
+				FROM
+				  sys_office A
+			<where>
+					A.PARENT_ID = #{parentId}
+				AND A.TYPE = '3'
+				<include refid="cityCondiColumns"></include>
+			</where>
+			
+			UNION
+			
+			SELECT
+				<include refid="officeCityMapColumns"></include>
+				FROM
+				  sys_office A
+			<where>
+				(
+					A.ID = #{id}
+					OR A.ID = #{parentId}
+				)
+				AND A.TYPE IN ('1','6')
+				<include refid="cityCondiColumns"></include>
+			</where>
+	 	) T1
+		LEFT JOIN SYS_CITY T2 
+			ON T1.CITY_CODE=T2.CITY_CODE
+	</select>
+	
+	<!-- ADD BY qph 2018-01-18 -->
+	<!-- 查询与清分中心有关的地图数据(清分中心权限) -->
+	<select id="findClearCityDataByclear" resultType="com.coffer.core.modules.sys.entity.CityEntity">
+		SELECT
+		  <include refid="cityMapColumns"></include>
+		FROM
+			(
+				SELECT
+				  <include refid="officeCityMapColumns"></include>
+				FROM
+				  sys_office A
+			<where>
+					(A.PARENT_ID = #{parentId} OR A.ID = #{parentId})
+				AND A.TYPE IN ('1','3')
+				AND A.province_code = #{provinceCode}
+				<if test="dbName == 'mysql'">
+				AND A.city_code &lt;&gt; #{cityCode}
+				</if>
+				<if test="dbName == 'oracle'">
+				AND A.city_code != #{cityCode}
+				</if>
+				<include refid="cityCondiColumns"></include>
+			</where>
+			
+			UNION
+			
+			SELECT
+				<include refid="officeCityMapColumns"></include>
+				FROM
+				  sys_office A
+			<where>
+				(
+					A.ID = #{id}
+					OR A.ID = #{parentId}
+				)
+				AND A.TYPE IN ('6')
+				AND A.province_code = #{provinceCode}
+				<include refid="cityCondiColumns"></include>
+			</where>
+	 	) T1
+		LEFT JOIN SYS_CITY T2 
+			ON T1.CITY_CODE=T2.CITY_CODE
+	</select>
+	
+	<!-- ADD BY qph 2018-01-18 -->
+	<!-- 查询与清分中心有关的地图数据(平台权限) -->
+	<select id="findClearCityDataByPlat" resultType="com.coffer.core.modules.sys.entity.CityEntity">
+		SELECT
+		  <include refid="cityMapColumns"></include>
+		FROM
+			(
+				SELECT
+				  <include refid="officeCityMapColumns"></include>
+				FROM
+				  sys_office A
+			<where>
+				A.TYPE = '6'
+				AND A.province_code = #{provinceCode}
+				<if test="dbName == 'mysql'">
+				AND A.city_code &lt;&gt; #{cityCode}
+				</if>
+				<if test="dbName == 'oracle'">
+				AND A.city_code != #{cityCode}
+				</if>
+				<include refid="cityCondiColumns"></include>
+				
+			</where>
+			
+			UNION
+			
+			SELECT
+				<include refid="officeCityMapColumns"></include>
+				FROM
+				  sys_office A
+			<where>
+				(
+					A.ID = #{id}
+				)
+				AND A.TYPE IN ('7')
+				AND A.province_code = #{provinceCode}
+				<include refid="cityCondiColumns"></include>
+			</where>
+	 	) T1
+		LEFT JOIN SYS_CITY T2 
+			ON T1.CITY_CODE=T2.CITY_CODE
+	</select>
+	
+	
+		<!-- 查询与清分中心有关的地图数据(人民银行权限) -->
+	<select id="findClearCityDataByPeopleBank" resultType="com.coffer.core.modules.sys.entity.CityEntity">
+		SELECT
+		  <include refid="cityMapColumns"></include>
+		FROM
+			(
+				SELECT
+				  <include refid="officeCityMapColumns"></include>
+				FROM
+				  sys_office A
+			<where>
+				A.TYPE = '6'
+				AND A.province_code = #{provinceCode}
+				<include refid="cityCondiColumns"></include>
+			</where>
+	 	) T1
+		LEFT JOIN SYS_CITY T2 
+			ON T1.CITY_CODE=T2.CITY_CODE
+	</select>
+	
+	
+	<!-- ADD BY qph 2018-01-31 -->
+	<!-- 按省份过滤清分中心 -->
+	<select id="findClearCityDataByProvinceCode" resultType="com.coffer.core.modules.sys.entity.CityEntity">
+		SELECT
+		  <include refid="cityMapColumns"></include>
+		FROM
+			(
+				SELECT
+				  <include refid="officeCityMapColumns"></include>
+				FROM
+				  sys_office A
+			<where>
+					
+				A.TYPE IN ('1')
+				AND A.province_code = #{provinceCode}
+				AND PARENT_IDS LIKE
+				<if test="dbName == 'oracle'">'%'|| #{id} || '%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{id}, '%')</if>
+				<include refid="cityCondiColumns"></include>
+			</where>
+	 	) T1
+		LEFT JOIN SYS_CITY T2 
+			ON T1.CITY_CODE=T2.CITY_CODE
+	</select>
+	
+	
+	<!-- ADD BY qph 2018-02-01 -->
+	<!-- 获取省级人民银行 -->
+	<select id="findPeopleBankByProvinceCode" resultType="com.coffer.core.modules.sys.entity.Office">
+		select A.ID, A.NAME, A.PROVINCE_CODE
+ 				 FROM SYS_OFFICE A
+ 				WHERE A.TYPE = '1'
+ 				<if test="dbName == 'mysql'">
+ 				AND A.province_code = #{provinceCode}
+				AND (( A.PROVINCE_CODE &lt;&gt; ' ' and
+    				A.CITY_CODE = ' '))
+				</if>
+				<if test="dbName == 'oracle'">
+				AND A.province_code = #{provinceCode}
+				 AND (A.PROVINCE_CODE IS NOT NULL AND A.CITY_CODE IS NULL)
+				</if>
+	</select>
+	
+	
+	<!-- 查询与清分中心有关的地图数据(清分中心权限(在线)) -->
+	<select id="findOnlineClearCityDataByClear" resultType="com.coffer.core.modules.sys.entity.CityEntity">
+		SELECT
+		  T1.PROVINCE_CODE,
+       T1.CITY_CODE,
+       T1.ID        AS OFFICE_ID,
+       T1.PARENT_ID,
+       T1.NAME      AS OFFICE_NAME,
+       T1.TYPE,
+       T1.LONGITUDE,
+       T1.LATITUDE,
+       T1.ADDRESS
+		FROM
+			(
+				SELECT
+				 A.PROVINCE_CODE,
+				 A.ADDRESS,
+				  <include refid="officeCityMapColumns"></include>
+				FROM
+				  sys_office A
+			<where>
+				(A.PARENT_ID = #{parentId}OR A.ID = #{parentId})
+				AND A.TYPE IN ('1','3')
+				AND A.DEL_FLAG = '0'
+				<if test="dbName == 'mysql'">
+				AND (( A.LONGITUDE &lt;&gt; ' ' and
+    				A.LATITUDE &lt;&gt; ' '))
+				</if>
+				<if test="dbName == 'oracle'">
+				AND ( ( A.LONGITUDE != ' ' and
+    				A.LATITUDE != ' '))
+				</if>
+			</where>
+			
+			UNION
+			
+			SELECT
+				 A.PROVINCE_CODE,
+				 A.ADDRESS,
+				<include refid="officeCityMapColumns"></include>
+				
+				FROM
+				  sys_office A
+			<where>
+				A.ID = #{id}
+				AND A.TYPE IN ('6')
+				AND A.DEL_FLAG = '0'
+				<if test="dbName == 'mysql'">
+				AND ((A.PROVINCE_CODE IS NOT NULL
+				AND A.PROVINCE_CODE &lt;&gt; '') or ( A.LONGITUDE &lt;&gt; '' and
+    				A.LATITUDE &lt;&gt; ''))
+				</if>
+				<if test="dbName == 'oracle'">
+				AND ((A.PROVINCE_CODE IS NOT NULL
+				AND A.PROVINCE_CODE !=' ') or ( A.LONGITUDE != ' ' and
+    				A.LATITUDE != ' '))
+				</if>
+			</where>
+	 	) T1
+		
+	</select>
+	
+	<!-- 查询与清分中心有关的地图数据(平台权限(在线)) -->
+	<select id="findOnlineClearCityDataByPlat" resultType="com.coffer.core.modules.sys.entity.CityEntity">
+		SELECT
+		   T1.ID        AS OFFICE_ID,
+       T1.PARENT_ID,
+       T1.NAME      AS OFFICE_NAME,
+       T1.TYPE,
+       T1.LONGITUDE,
+       T1.LATITUDE,
+       T1.ADDRESS,
+       T1.PROVINCE_CODE,
+       T1.CITY_CODE
+		FROM
+			(
+				SELECT
+					A.PROVINCE_CODE,
+				 A.ADDRESS,
+				  <include refid="officeCityMapColumns"></include>
+				FROM
+				  sys_office A
+			<where>
+				A.TYPE = '6'
+			AND A.DEL_FLAG = '0'
+				<if test="dbName == 'mysql'">
+				AND ( A.LONGITUDE &lt;&gt; ' ' and
+    				A.LATITUDE &lt;&gt; ' ')
+				</if>
+				<if test="dbName == 'oracle'">
+				AND ( A.LONGITUDE != ' ' and
+    				A.LATITUDE != ' ')
+				</if>
+			</where>
+			
+			UNION
+			
+			SELECT
+				A.PROVINCE_CODE,
+				 A.ADDRESS,
+				<include refid="officeCityMapColumns"></include>
+				FROM
+				  sys_office A
+			<where>
+				(
+					A.ID = #{id}
+				)
+				AND A.TYPE IN ('7')
+				AND A.province_code = #{provinceCode}
+				AND A.DEL_FLAG = '0'
+				<if test="dbName == 'mysql'">
+				AND ((A.PROVINCE_CODE IS NOT NULL
+				AND A.PROVINCE_CODE &lt;&gt; '') or ( A.LONGITUDE &lt;&gt; '' and
+    				A.LATITUDE &lt;&gt; ''))
+				</if>
+				<if test="dbName == 'oracle'">
+				AND ((A.PROVINCE_CODE IS NOT NULL
+				AND A.PROVINCE_CODE !=' ') or ( A.LONGITUDE != ' ' and
+    				A.LATITUDE != ' '))
+				</if>
+			</where>
+	 	) T1
+	</select>
+	
+	<!-- 查询与当前人行有上缴业务往来的机构 -->
+	<select id="findGenChildCityData" resultType="com.coffer.core.modules.sys.entity.CityEntity">
+		SELECT
+		  T2.CITY_NAME,
+		  T1.ID AS OFFICE_ID,
+		  T1. NAME AS OFFICE_NAME,
+		  T1.type,
+		  T2.LONGITUDE,
+		  T2.LATITUDE
+		 <!--  IF((T1.LONGITUDE &lt;&gt; '' AND T1.LONGITUDE IS NOT NULL),T1.LONGITUDE,T2.LONGITUDE) AS LONGITUDE,
+		  IF((T1.LATITUDE &lt;&gt; '' AND T1.LATITUDE IS NOT NULL),T1.LATITUDE,T2.LATITUDE) AS LATITUDE -->
+
+		FROM
+			(
+				SELECT
+				  T_2.ID,
+				  T_2. NAME,
+				  T_2.PROVINCE_CODE,
+				  T_2.CITY_CODE,
+				  T_2.COUNTY_CODE,
+				  T_2.type,
+				  T_2.LONGITUDE,
+				  T_2.LATITUDE
+				FROM
+					(
+						SELECT
+							ROFFICE_ID 
+						FROM
+							pboc_all_allocate_info
+						WHERE
+							BUSINESS_TYPE IN ('50','51','52','53','54')
+						AND AOFFICE_ID = #{gentralId}
+						AND STATUS = '99'
+		 				AND DEL_FLAG = '0'
+						GROUP BY
+							ROFFICE_ID
+									
+					) T_1, sys_office T_2 
+				WHERE T_1.ROFFICE_ID = T_2.ID
+							   AND T_2.CITY_CODE IS NOT NULL
+							   AND T_2.CITY_CODE &lt;&gt; ''
+						
+					 	) T1
+		LEFT JOIN SYS_CITY T2 
+			ON T1.CITY_CODE=T2.CITY_CODE
+	</select>
+	
+	<!-- 查询与当前人行有下拨业务往来的机构 -->
+	<select id="findGenParCityData" resultType="com.coffer.core.modules.sys.entity.CityEntity">
+		SELECT
+		  T2.CITY_NAME,
+		  T1.ID AS OFFICE_ID,
+		  T1. NAME AS OFFICE_NAME,
+		  T1.type,
+		  T2.LONGITUDE,
+		  T2.LATITUDE
+		 <!--  IF((T1.LONGITUDE &lt;&gt; '' AND T1.LONGITUDE IS NOT NULL),T1.LONGITUDE,T2.LONGITUDE) AS LONGITUDE,
+		  IF((T1.LATITUDE &lt;&gt; '' AND T1.LATITUDE IS NOT NULL),T1.LATITUDE,T2.LATITUDE) AS LATITUDE -->
+
+		FROM
+			(
+				SELECT
+				  T_2.ID,
+				  T_2. NAME,
+				  T_2.PROVINCE_CODE,
+				  T_2.CITY_CODE,
+				  T_2.COUNTY_CODE,
+				  T_2.type,
+				  T_2.LONGITUDE,
+				  T_2.LATITUDE
+				FROM
+					(
+						SELECT
+							AOFFICE_ID
+						FROM
+							pboc_all_allocate_info
+						WHERE
+							BUSINESS_TYPE IN ('50','51','52','53','54')
+						AND ROFFICE_ID = #{gentralId}
+						AND STATUS = '99'
+		 				AND DEL_FLAG = '0'
+						GROUP BY
+							AOFFICE_ID
+					) T_1
+				, sys_office T_2 WHERE T_1.AOFFICE_ID = T_2.ID
+							     AND T_2.CITY_CODE IS NOT NULL
+							   AND T_2.CITY_CODE &lt;&gt; ''
+						
+					 	) T1
+		LEFT JOIN SYS_CITY T2 
+			ON T1.CITY_CODE=T2.CITY_CODE
+	</select>
+	
+	<select id="findCurCityOffice" resultType="com.coffer.core.modules.sys.entity.CityEntity">
+		SELECT
+		  T2.CITY_NAME,
+		  T1.ID AS OFFICE_ID,
+		  T1. NAME AS OFFICE_NAME,
+		  T2.LONGITUDE,
+		  T2.LATITUDE
+		  <!-- IF((T1.LONGITUDE &lt;&gt; '' AND T1.LONGITUDE IS NOT NULL),T1.LONGITUDE,T2.LONGITUDE) AS LONGITUDE,
+		  IF((T1.LATITUDE &lt;&gt; '' AND T1.LATITUDE IS NOT NULL),T1.LATITUDE,T2.LATITUDE) AS LATITUDE -->
+
+		FROM
+			(
+				SELECT
+				  ID,
+			 	  NAME,
+				  PROVINCE_CODE,
+				  CITY_CODE,
+				  COUNTY_CODE,
+				  LONGITUDE,
+				  LATITUDE
+				FROM
+				  sys_office
+				WHERE
+					ID = #{gentralId}
+			   AND	DEL_FLAG = '0'
+			   AND CITY_CODE IS NOT NULL
+			   AND CITY_CODE &lt;&gt; ''
+	 	) T1
+		LEFT JOIN SYS_CITY T2 
+			ON T1.CITY_CODE=T2.CITY_CODE
+	</select>
+	
+	<!-- 查询城市表有效数据 -->
+	<select id="findSelect2CityData" resultType="com.coffer.core.modules.sys.entity.CityEntity">
+		SELECT CITY_CODE,CITY_NAME
+		   FROM SYS_CITY
+		     WHERE PROVINCE_CODE=#{provinceCode} AND DEL_FLAG='0'
+		     ORDER BY 
+		 	  <if test="dbName == 'oracle'">NLSSORT(CITY_NAME,'NLS_SORT = SCHINESE_PINYIN_M')</if>
+			  <if test="dbName == 'mysql'">CONVERT(CITY_NAME USING gbk) COLLATE gbk_chinese_ci ASC</if>
+	</select>
+	
+	<!-- 查询城市名称 -->
+	<select id="findCityName" resultType="String">
+		SELECT CITY_NAME
+		   FROM SYS_CITY
+		     WHERE CITY_CODE=#{cityCode} AND DEL_FLAG='0'
+	</select>
+	
+	<!-- 查询城市地图json编码 -->
+	<select id="findCityJson" resultType="String">
+		SELECT CITY_JSONCODE
+		   FROM SYS_CITY
+		     WHERE CITY_CODE=#{cityCode} AND DEL_FLAG='0'
+	</select>
+	
+	<!-- 查询城市地图City编码(通过json) -->
+	<select id="findCityCodeByJson" resultType="String">
+		SELECT CITY_CODE
+		   FROM SYS_CITY
+		     WHERE CITY_JSONCODE=#{cityJsonCode} AND DEL_FLAG='0'
+	</select>
+	
+	<!-- 查询人行省份地图数据 -->
+	<select id="findGenBankCityDate" resultType="com.coffer.core.modules.sys.entity.CityEntity">
+		SELECT T2.CITY_NAME,
+				T2.LONGITUDE,
+				T2.LATITUDE,
+			T1.BANK_NUM
+			FROM (SELECT CITY_CODE, COUNT(CITY_CODE) AS BANK_NUM
+					FROM sys_office
+					  WHERE TYPE='4' AND DEL_FLAG='0'
+							AND PROVINCE_CODE=#{provinceCode} 
+							AND PARENT_IDS LIKE
+							<if test="dbName == 'oracle'">'%'|| #{id} || '%'</if>
+							<if test="dbName == 'mysql'">CONCAT('%', #{id}, '%')</if>
+							AND CITY_CODE IS NOT NULL
+							AND CITY_CODE &lt;&gt; ''
+						GROUP BY CITY_CODE) T1
+			LEFT JOIN SYS_CITY T2 
+			ON T1.CITY_CODE=T2.CITY_CODE
+	</select>
+</mapper>

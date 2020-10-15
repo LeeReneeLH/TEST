@@ -1,0 +1,29 @@
+{
+	"versionNo": "01",
+	"serviceNo": "19",
+	"officeId": "28900230",
+	"boxList": [
+		{
+			"boxNo": "0987654321",
+			"rfid": "12345678",
+			"outDate": ""
+		},
+		{
+			"boxNo": "9999999999",
+			"rfid": "11111111",
+			"outDate": ""
+		},
+		{
+			"boxNo": "6666666666",
+			"rfid": "44444444",
+			"outDate": "2017-07-20"
+		},
+		{
+			"boxNo": "5555555555",
+			"rfid": "55555555",
+			"outDate": ""
+		}
+	],
+	"userId": "262266a7530a4b5b8f3595b31c4c2e68",
+	"userName": "李四"
+}

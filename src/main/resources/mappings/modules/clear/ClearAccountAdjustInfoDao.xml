@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.coffer.businesses.modules.clear.v03.dao.ClearAccountAdjustInfoDao">
+
+	<sql id="clearAccountAdjustInfoDaoColumns">
+		a.accounts_id AS "accountsId",
+		a.cash_type AS "cashType",
+		a.pay_teller_by AS "payTellerBy",
+		a.pay_teller_name AS "payTellerName",
+		a.re_teller_by AS "reTellerBy",
+		a.re_teller_name AS "reTellerName",
+		a.adjust_money AS "adjustMoney",
+		a.office_id AS "office.id",
+		a.office_name AS "office.name",
+		a.remarks AS "remarks",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.update_name AS "updateName",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createName",
+		a.create_date AS "createDate",
+		a.del_flag AS "delFlag"
+	</sql>
+
+	<sql id="clearAccountAdjustInfoJoins">
+	</sql>
+
+	<select id="get" resultType="ClearAccountAdjustInfo">
+		SELECT
+		<include refid="clearAccountAdjustInfoDaoColumns" />
+		FROM CLEAR_ACCOUNTADJUST_INFO a
+		<include refid="clearAccountAdjustInfoJoins" />
+		WHERE a.accounts_id = #{accountsId}
+	</select>
+
+	<select id="findList" resultType="ClearAccountAdjustInfo">
+		SELECT
+		<include refid="clearAccountAdjustInfoDaoColumns" />
+		FROM CLEAR_ACCOUNTADJUST_INFO a
+		left join sys_office o 
+			on a.office_id=o.id
+		<include refid="clearAccountAdjustInfoJoins" />
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}	
+		<if test="payTellerBy != null and payTellerBy != '' ">
+			and a.pay_teller_by = #{payTellerBy} 		
+		</if>
+		<if test="reTellerBy != null and reTellerBy != '' ">
+			and a.re_teller_by = #{reTellerBy}
+		</if>		
+		<if test="cashType !=null  and cashType != '' ">
+			and a.cash_type = #{cashType}
+		</if>
+		<if test="searchTimeStart != null and searchTimeStart != '' ">
+			<!-- and TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') &gt;= #{searchTimeStart} -->
+			<if test="dbName == 'oracle'">AND TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') &gt;=
+				#{searchTimeStart}</if>
+			<if test="dbName == 'mysql'">AND date_format(a.create_date,'%Y-%m-%d %H:%i:%S') &gt;=
+				#{searchTimeStart}</if>
+		</if>
+		<if test="searchTimeEnd != null and searchTimeEnd != '' ">
+			<!-- and TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') &lt;= #{searchTimeEnd} -->
+			<if test="dbName == 'oracle'">AND TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') &lt;=
+				#{searchTimeEnd}</if>
+			<if test="dbName == 'mysql'">AND date_format(a.create_date,'%Y-%m-%d %H:%i:%S') &gt;=
+				#{searchTimeEnd}</if>
+		</if>
+		${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.create_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<insert id="insert">
+		INSERT INTO CLEAR_ACCOUNTADJUST_INFO(
+		accounts_id,
+		cash_type,
+		pay_teller_by,
+		pay_teller_name,
+		re_teller_by,
+		re_teller_name,
+		adjust_money,
+		remarks,
+		office_id,
+		office_name,
+		update_by,
+		update_name,
+		update_date,
+		create_by,
+		create_name,
+		create_date,
+		del_flag
+		) VALUES (
+		#{accountsId},
+		#{cashType},
+		#{payTellerBy},
+		#{payTellerName},
+		#{reTellerBy},
+		#{reTellerName},
+		#{adjustMoney},
+		#{remarks},
+		#{office.id},
+		#{office.name},
+		#{updateBy.id},
+		#{updateName},
+		#{updateDate},
+		#{createBy.id},
+		#{createName},
+		#{createDate},
+		#{delFlag}
+		)
+	</insert> 
+</mapper>

@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v02.dao.PbocStoStoresInfoDao">
+    
+	<sql id="PbocStoStoresInfoColumns">
+		a.sto_id AS "stoId",
+		a.goods_id AS "goodsId",
+		a.goods_name AS "goodsName",
+		a.sto_num AS "stoNum",
+		a.surplus_sto_num AS "surplusStoNum",
+		a.amount AS "amount",
+		a.office_id AS "office.id",
+		a.goods_type AS "goodsType",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createName",
+		a.create_date AS "createDate",
+		a.remarks AS "remarks",
+		o6.name AS "office.name"
+	</sql>
+	
+	<sql id="PbocStoStoresInfoJoins">
+		LEFT JOIN sys_office o6 ON o6.id = a.office_id
+	</sql>
+    
+	<select id="get" resultType="PbocStoStoresInfo">
+		SELECT 
+			<include refid="PbocStoStoresInfoColumns"/>
+		FROM pboc_sto_stores_info a
+		<include refid="PbocStoStoresInfoJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="PbocStoStoresInfo">
+		SELECT 
+			<include refid="PbocStoStoresInfoColumns"/>
+		FROM pboc_sto_stores_info a
+		<include refid="PbocStoStoresInfoJoins"/>
+		<where>
+			<!-- to_char(a.create_date,'yyyy-MM-dd') = to_char(#{createDate},'yyyy-MM-dd') -->
+			<if test="dbName == 'oracle'">to_char(a.create_date,'yyyy-MM-dd') = to_char(#{createDate},'yyyy-MM-dd')</if>
+			<if test="dbName == 'mysql'">date_format(a.create_date,'%Y-%m-%d')=date_format(#{createDate},'%Y-%m-%d')</if>
+			
+			<if test="goodsId != null and goodsId != ''">
+				AND a.goods_id = #{goodsId}
+			</if>
+			<if test="office != null">
+				AND a.office_id = #{office.id} 
+			</if>
+			<if test="currency != null and currency != ''">
+				AND a.goods_id like '${currency}%'
+			</if>
+			<if test="goodsType != null and goodsType != ''">
+				and a.goods_type = '${goodsType}'
+			</if>
+			<!-- 数据范围过滤 -->
+			${sqlMap.dsf}
+			<!-- 获取重空所有数据库存
+			OR (a.goods_type = '03' 
+			AND to_char(a.create_date,'yyyy-MM-dd') = to_char(#{createDate},'yyyy-MM-dd'))
+			 -->
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.goods_id
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="PbocStoStoresInfo">
+		SELECT 
+			<include refid="PbocStoStoresInfoColumns"/>
+		FROM pboc_sto_stores_info a
+		<include refid="PbocStoStoresInfoJoins"/>
+		<where>
+			
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO pboc_sto_stores_info(
+			sto_id,
+			goods_id,
+			goods_name,
+			sto_num,
+			surplus_sto_num,
+			amount,
+			office_id,
+			goods_type,
+			create_by,
+			create_name,
+			create_date,
+			remarks
+		) VALUES (
+			#{stoId},
+			#{goodsId},
+			#{goodsName},
+			#{stoNum},
+			#{surplusStoNum},
+			#{amount},
+			#{office.id},
+			#{goodsType},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{remarks}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE pboc_sto_stores_info SET 	
+			sto_id = #{stoId},
+			goods_id = #{goodsId},
+			goods_name = #{goodsName},
+			sto_num = #{stoNum},
+			surplus_sto_num = #{surplusStoNum},
+			amount = #{amount},
+			office_id = #{office.id},
+			goods_type = #{goodsType},
+			create_name = #{createName},
+			create_date = #{createDate},
+			remarks = #{remarks}
+		WHERE sto_id = #{stoId}
+	</update>
+	
+	<update id="delete">
+		DELETE FROM pboc_sto_stores_info
+		WHERE id = #{id}
+	</update>
+	
+	<select id="getMaxStoreDate" resultType="Date">
+		SELECT MAX(t.create_date)
+		FROM pboc_sto_stores_info t
+		WHERE t.office_id = #{office.id}
+		AND t.create_date &lt; #{createDate}
+	</select>
+	
+	<select id="getPbocStoStoresInfoByGoodsId" resultType="PbocStoStoresInfo">
+		SELECT 
+		<include refid="PbocStoStoresInfoSql"/>
+		FROM <include refid="rowNumsql"/> 
+		<if test="dbName == 'oracle'">WHERE  Rownum = 1</if>
+		<if test="dbName == 'mysql'">limit 1</if>
+	</select>
+	
+	<sql id="PbocStoStoresInfoSql">
+		b.sto_id AS "stoId",
+		b.goods_id AS "goodsId",
+		b.goods_name AS "goodsName",
+		b.sto_num AS "stoNum",
+		b.surplus_sto_num AS "surplusStoNum",
+		b.amount AS "amount",
+		b.office_id AS "office.id",
+		b.goods_type AS "goodsType",
+		b.create_by AS "createBy.id",
+		b.create_name AS "createName",
+		b.create_date AS "createDate",
+		b.remarks AS "remarks",
+		b.name AS "office.name"
+	</sql>
+	
+	<sql id="rowNumsql">
+		(SELECT a.*,o6.name
+		FROM pboc_sto_stores_info a
+		<include refid="PbocStoStoresInfoJoins"/>
+		WHERE a.goods_id = #{goodsId}
+		<if test="officeId != null and officeId != ''">
+				AND a.office_id = #{officeId} 
+		</if>
+		<if test="excludeZeroFg != null and excludeZeroFg != '' and excludeZeroFg = 'Y' ">
+				AND a.STO_NUM != 0
+		</if>
+		
+		<if test="dbName == 'oracle'">
+			AND to_char(a.create_date, 'yyyyMMdd') =
+       			(SELECT to_char(MAX(t.create_date), 'yyyyMMdd')
+          			FROM pboc_sto_stores_info t
+         				WHERE to_char(t.create_date, 'yyyyMMdd') &lt;= to_char(sysdate, 'yyyyMMdd')
+	         		<if test="officeId != null and officeId != ''">
+							AND t.office_id = #{officeId} 
+					</if>
+         	)
+		order by a.create_date desc) b
+		</if>
+		
+		<if test="dbName == 'mysql'">
+			AND date_format(a.create_date, '%Y%m%d') =
+       			(SELECT date_format(MAX(t.create_date), '%Y%m%d')
+          		FROM pboc_sto_stores_info t
+         		WHERE date_format(t.create_date, '%Y%m%d') &lt;= date_format(now(), '%Y%m%d')
+	         		<if test="officeId != null and officeId != ''">
+						AND t.office_id = #{officeId} 
+					</if>
+         	)
+		order by a.create_date desc) b
+			</if>
+		<!-- AND to_char(a.create_date, 'yyyyMMdd') =
+       		(SELECT to_char(MAX(t.create_date), 'yyyyMMdd')
+          	FROM pboc_sto_stores_info t
+         	WHERE to_char(t.create_date, 'yyyyMMdd') &lt;= to_char(sysdate, 'yyyyMMdd')
+	         	<if test="officeId != null and officeId != ''">
+					AND t.office_id = #{officeId} 
+				</if>
+         	)
+		order by a.create_date desc) b -->
+	</sql>
+	
+	
+</mapper>

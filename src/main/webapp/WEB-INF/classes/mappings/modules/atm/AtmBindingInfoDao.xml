@@ -1,0 +1,391 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.atm.v01.dao.AtmBindingInfoDao">
+
+	<resultMap id="atmBindingInfoResult" type="AtmBindingInfo">
+		<id property="bindingId" column="bindingId" />
+		<result property="atmNo" column="atmNo" />
+		<result property="atmAccount" column="atmAccount" />
+		<result property="addPlanId" column="addPlanId" />
+		<result property="atmClearSerial" column="atmClearSerial" />
+		<result property="addAmount" column="addAmount" />
+		<result property="amount" column="amount" />
+		<result property="coreAmount" column="coreAmount" />
+		<result property="status" column="status" />
+		<result property="createBy.id" column="createBy.id" />
+		<result property="createName" column="createName" />
+		<result property="createDate" column="createDate" />
+		<result property="recordingStatus" column="recordingStatus" />
+		<result property="updateBy.id" column="updateBy.id" />
+		<result property="updateName" column="updateName" />
+		<result property="updateDate" column="updateDate" />
+		<result property="escort1By" column="escort1By" />
+		<result property="escort1Name" column="escort1Name" />
+		<result property="escort2By" column="escort2By" />
+		<result property="escort2Name" column="escort2Name" />
+		
+		<result property="atmTypeName" column="atmTypeName"/>
+		
+		<result property="addDate" column="addDate"/>
+		<result property="clearDate" column="clearDate"/>
+		<result property="dataType" column="dataType"/>
+		
+		<collection property="abdL" ofType="AtmBindingDetail" fetchType="lazy">
+			<id property="detailId" column="abdL.detailId" />
+			<result property="bindingId" column="abdL.bindingId" />
+			<result property="idObj" column="abdL.idObj" />
+			<result property="boxNo" column="abdL.boxNo" />
+			<result property="createName" column="abdL.createName" />
+			<result property="updateName" column="abdL.updateName" />
+		</collection>
+	</resultMap>  
+    
+	<sql id="atmBindingInfoColumns">
+		a.binding_id AS "bindingId",
+		a.atm_no AS "atmNo",
+		a.atm_account AS "atmAccount",
+		a.add_plan_id AS "addPlanId",
+		a.atm_clear_serial AS "atmClearSerial",
+		a.amount AS "amount",
+		a.add_amount AS "addAmount",
+		a.core_amount AS "coreAmount",
+		a.status AS "status",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createName",
+		a.create_date AS "createDate",
+		a.recording_status AS "recordingStatus",
+		a.update_by AS "updateBy.id",
+		a.update_name AS "updateName",
+		a.update_date AS "updateDate",
+		a.escort1_by AS "escort1By",
+		a.escort1_name AS "escort1Name",
+		a.escort2_by AS "escort2By",
+		a.escort2_name AS "escort2Name",
+		a.add_date AS "addDate",
+		a.clear_date AS "clearDate",
+		a.data_type AS "dataType",
+		
+		d.detail_id AS "abdL.detailId",
+		d.binding_id AS "abdL.bindingId",
+		d.id_obj AS "abdL.idObj",
+		d.box_no AS "abdL.boxNo",
+		d.create_name AS "abdL.createName",
+		d.update_name AS "abdL.updateName",
+		
+		i.atm_type_name AS "atmTypeName"  
+	</sql>
+	
+	<sql id="atmBindingInfoJoins">
+		left join atm_binding_detail d ON a.binding_id = d.binding_id
+		left join atm_info i ON a.atm_no = i.atm_id
+		left join sys_office s ON s.id = i.toffice_id
+	</sql>
+    
+	<select id="get" resultMap="atmBindingInfoResult">
+		SELECT 
+			<include refid="atmBindingInfoColumns"/>
+		FROM atm_binding_info a
+		<include refid="atmBindingInfoJoins"/>
+		WHERE a.binding_id = #{bindingId} AND i.del_flag = '0'
+	</select>
+	
+	<select id="findList" resultMap="atmBindingInfoResult">
+		SELECT 
+			<include refid="atmBindingInfoColumns"/>
+		FROM atm_binding_info a
+		<include refid="atmBindingInfoJoins"/>
+		<where>
+			i.del_flag = '0'
+			<if test="status != null and status != ''">
+				AND a.status = #{status}
+			</if>
+			<if test="addPlanId != null and addPlanId != ''">
+				AND a.add_plan_id = #{addPlanId}
+			</if>
+			<if test="atmNo != null and atmNo != ''">
+				AND a.atm_no = #{atmNo}
+			</if>
+			<!-- 登记时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <!-- 登记时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'"> '${searchDateEnd}'>=DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	        <!-- 数据范围过滤    修改人：wxz 2017-11-23 begin-->
+			${sqlMap.dsf}
+			<!-- end -->
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultMap="atmBindingInfoResult">
+		SELECT 
+			<include refid="atmBindingInfoColumns"/>
+		FROM atm_binding_info a
+		<include refid="atmBindingInfoJoins"/>
+		<where>
+			
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 添加设备名称下拉列表(页面查询使用) 修改人：wxz 2017-11-23 begin-->
+	<select id="findByAtmName" resultType="AtmInfoMaintain">
+		SELECT
+			a.ATM_ID AS "atmId",
+			a.ATM_BRANDS_NO AS "atmBrandsNo",
+			a.ATM_BRANDS_NAME AS "atmBrandsName",
+			a.ATM_TYPE_NO AS "atmTypeNo",
+			a.ATM_TYPE_NAME AS "atmTypeName"
+		FROM
+			atm_info a
+			left join sys_office s ON s.id = a.toffice_id
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		<!-- 数据范围过滤    修改人：wxz 2017-12-26 begin-->
+			${sqlMap.dsf}
+		<!-- end -->
+		</where>	
+	</select>
+	<!-- end -->
+	
+	<insert id="insert">
+		INSERT INTO atm_binding_info(
+			binding_id,
+			atm_no,
+			atm_account,
+			add_plan_id,
+			atm_clear_serial,
+			amount,
+			add_amount,
+			core_amount,
+			status,
+			recording_status,
+			create_by,
+			create_name,
+			create_date,
+			update_by,
+			update_name,
+			update_date,
+			escort1_by,
+			escort1_name,
+			escort2_by,
+			escort2_name,
+			add_date,
+			clear_date,
+			data_type
+		) VALUES (
+			#{bindingId},
+			#{atmNo},
+			#{atmAccount},
+			#{addPlanId},
+			#{atmClearSerial},
+			#{amount},
+			#{addAmount},
+			#{coreAmount},
+			#{status},
+			#{recordingStatus},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate},
+			#{escort1By},
+			#{escort1Name},
+			#{escort2By},
+			#{escort2Name},
+			#{addDate},
+			#{clearDate},
+			#{dataType}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE atm_binding_info SET
+			atm_no = #{atmNo},
+			atm_account = #{atmAccount},
+			add_plan_id = #{addPlanId},
+			atm_clear_serial = #{atmClearSerial},
+			amount = #{amount},
+			add_amount = #{addAmount},
+			core_amount = #{coreAmount},
+			status = #{status},
+			create_by = #{createBy.id},
+			create_name = #{createName},
+			create_date = #{createDate},
+			recording_status = #{recordingStatus},
+			update_by = #{updateBy.id},
+			update_name = #{updateName},
+			update_date = #{updateDate},
+			escort1_by = #{escort1By},
+			escort1_name = #{escort1Name},
+			escort2_by = #{escort2By},
+			escort2_name = #{escort2Name},
+			add_date = #{addDate},
+			clear_date = #{clearDate},
+			data_type = #{dataType}
+		WHERE binding_id = #{id}
+	</update>
+	
+	<update id="delete">
+		DELETE FROM atm_binding_info
+		WHERE id = #{id}
+	</update>
+	
+	<select id="findByBoxNo" resultMap="atmBindingInfoResult">
+		SELECT 
+			<include refid="atmBindingInfoColumns"/>
+		FROM atm_binding_info a
+		<include refid="atmBindingInfoJoins"/>
+		WHERE 
+		a.binding_id = 
+		(SELECT 
+			a.binding_id AS "bindingId"
+		FROM atm_binding_info a
+		<include refid="atmBindingInfoJoins"/>
+		WHERE 
+		d.box_no = #{boxNo} AND 
+		a.status = '0')
+	</select>
+	<!-- 验证当前ATM机是否需要清机或重复清机 -->
+	<select id="validateATMIsOrNotClearing" resultMap="atmBindingInfoResult">
+	SELECT
+		<include refid="atmBindingInfoColumns"/>
+	FROM atm_binding_info a
+	<include refid="atmBindingInfoJoins"/>
+	WHERE 
+	<!-- 兼容mySql wzj 2017-12-8 begin -->
+	<if test="dbName == 'oracle'">to_char(a.create_date, 'yyyyMMddHH24mmssSSS')</if>
+	<if test="dbName == 'mysql'">DATE_FORMAT(a.create_date, '%Y%m%d%k%i%s')</if>
+	<!-- end -->
+		 = (
+			SELECT max(
+				<!-- 兼容mySql wzj 2017-12-8 begin -->
+			 	<if test="dbName == 'oracle'">TO_CHAR(m.create_date, 'yyyyMMddHH24mmssSSS')</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(m.create_date,'%Y%m%d%k%i%s')</if>
+				<!-- end -->
+				)
+	         FROM atm_binding_info m
+	         WHERE (m.atm_no = #{atmNo} OR m.atm_account = #{atmAccount})
+	           AND 
+	           	 <!-- 兼容mySql wzj 2017-12-8 begin -->
+	           	 <if test="dbName == 'oracle'"> 	
+	           	  TO_CHAR(SYSDATE, 'yyyyMMddHH24mmssSSS') >
+	              TO_CHAR(m.create_date, 'yyyyMMddHH24mmssSSS')
+	             </if>
+				 <if test="dbName=='mysql'">
+					DATE_FORMAT(now(),'%Y%m%d%k%i%s') >
+					DATE_FORMAT(m.create_date,'%Y%m%d%k%i%s')
+				 </if>   
+				 <!-- end -->  
+			)
+	</select>
+	<!-- 手动添加核心余额时 验证是该ATM是否可以修改核心清机金额 -->
+	<select id="validateATMCoreAmount" resultType="java.lang.Integer" >
+			select count(binding_id) from atm_binding_info a 
+			WHERE a.atm_account= #{atmAccount}
+				 AND a.status=#{status}
+				 AND a.core_amount IS NULL
+				 AND a.add_plan_id &lt; #{addPlanId}
+	</select>
+	<!-- LLF  清点使用 ATM机清点完成-->
+	<update id="updateStatus">
+		update atm_binding_info t
+   			set t.status = #{status}
+ 			where t.atm_no = #{atmNo}
+   			and t.add_plan_id = #{addPlanId}
+	</update>
+	 
+	  <!-- 修改核心清机金额 -->
+		<update id="updateATMCoreAmount">
+		update atm_binding_info t
+   			set t.core_amount = #{coreAmount} ,
+   			t.RECORDING_STATUS=#{recordingStatus}
+ 			where  t.atm_account= #{atmAccount}
+				 AND t.status=#{status}
+				 AND t.core_amount IS NULL 
+	</update>
+	
+	<select id="findAtmBindingList" resultType="AtmBindingInfo">
+		SELECT 
+			a.binding_id AS "bindingId",
+			a.atm_no AS "atmNo",
+			a.atm_account AS "atmAccount",
+			a.add_plan_id AS "addPlanId",
+			a.atm_clear_serial AS "atmClearSerial",
+			a.amount AS "amount",
+			a.add_amount AS "addAmount",
+			a.core_amount AS "coreAmount",
+			a.status AS "status",
+			a.create_by AS "createBy.id",
+			a.create_name AS "createName",
+			a.create_date AS "createDate",
+			a.recording_status AS "recordingStatus",
+			a.update_by AS "updateBy.id",
+			a.update_name AS "updateName",
+			a.update_date AS "updateDate",
+			a.escort1_by AS "escort1By",
+			a.escort1_name AS "escort1Name",
+			a.escort2_by AS "escort2By",
+			a.escort2_name AS "escort2Name",
+			a.add_date AS "addDate",
+			a.clear_date AS "clearDate",
+			a.data_type AS "dataType",
+			i.atm_type_name AS "atmTypeName"
+		FROM atm_binding_info a left join atm_info i ON a.atm_no = i.atm_id
+								left join sys_office s ON s.id = i.toffice_id
+		<where>
+			i.del_flag = '0'
+			<if test="status != null and status != ''">
+				AND a.status = #{status}
+			</if>
+			<if test="addPlanId != null and addPlanId != ''">
+				AND a.add_plan_id = #{addPlanId}
+			</if>
+			<if test="atmNo != null and atmNo != ''">
+				AND a.atm_no = #{atmNo}
+			</if>
+			<!-- 登记时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <!-- 登记时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'"> '${searchDateEnd}'>=DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	        ${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+</mapper>

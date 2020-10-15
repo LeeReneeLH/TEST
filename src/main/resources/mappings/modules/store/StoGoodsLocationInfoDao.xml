@@ -1,0 +1,590 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoGoodsLocationInfoDao">
+    
+	<resultMap type="com.coffer.businesses.modules.store.v01.entity.StoGoodsLocationInfo" id="StoGoodsLocationInfo">
+		<id column="ID" property="id" />
+		<result column="RFID" property="rfid" />
+		<result column="STORE_AREA_ID" property="storeAreaId" />
+		<result column="STORE_AREA_NAME" property="storeAreaName" />
+		<result column="STORE_AREA_TYPE" property="storeAreaType" />
+		<result column="GOODS_ID" property="goodsId" />
+		<result column="GOODS_NAME" property="goodsName" />
+		<result column="GOODS_TYPE" property="goodsType" />
+		<result column="GOODS_NUM" property="goodsNum" />
+		<result column="AMOUNT" property="amount" />
+		<result column="OFFICE_ID" property="officeId" />
+		<result column="IN_STORE_ALL_ID" property="inStoreAllId" />
+		<result column="OUT_STORE_ALL_ID" property="outStoreAllId" />
+		<result column="IN_STORE_DATE" property="inStoreDate" />
+		<result column="OUT_STORE_DATE" property="outStoreDate" />
+		<result column="DEL_FLAG" property="delFlag" />
+		<result column="CREATE_BY" property="createBy.id" />
+		<result column="CREATE_NAME" property="createName" />
+		<result column="CREATE_DATE" property="createDate" />
+		<result column="UPDATE_BY" property="updateBy.id" />
+		<result column="UPDATE_NAME" property="updateName" />
+		<result column="UPDATE_DATE" property="updateDate" />
+		<result column="STO_NUM" property="stoNum" />
+		<result column="AREA_MAX_DATE" property="areaMaxDate" />
+		<result column="AREA_MIN_DATE" property="areaMinDate" />
+	</resultMap>
+
+	
+	<sql id="Base_Column_List">
+		ID,
+		RFID,
+		STORE_AREA_ID,
+		GOODS_ID,
+		GOODS_TYPE,
+		GOODS_NUM,
+		AMOUNT,
+		OFFICE_ID,
+		IN_STORE_ALL_ID,
+		OUT_STORE_ALL_ID,
+		IN_STORE_DATE,
+		OUT_STORE_DATE,
+		DEL_FLAG,
+		CREATE_BY,
+		CREATE_NAME,
+		CREATE_DATE,
+		UPDATE_BY,
+		UPDATE_NAME,
+		UPDATE_DATE
+	</sql>
+	
+	<select id="findAreaStoreStatisticsInfoByAreaID" resultMap="StoGoodsLocationInfo">
+		SELECT 
+			STORE_AREA_ID AS ID, 
+			COUNT(STORE_AREA_ID) AS STO_NUM, 
+			MAX(IN_STORE_DATE) AS AREA_MAX_DATE,
+            MIN(IN_STORE_DATE) AS AREA_MIN_DATE
+		FROM STO_GOODS_LOCATION_INFO
+		WHERE (DEL_FLAG = '0' OR DEL_FLAG = '1')
+		    <if test="areaId != null and areaId !=''">
+			AND STORE_AREA_ID = #{areaId}
+			</if>
+		GROUP BY STORE_AREA_ID
+	</select>
+	
+	<select id="findList" resultMap="StoGoodsLocationInfo">
+		SELECT 
+			goodsInfo.ID AS ID,
+			goodsInfo.RFID AS RFID,
+			goodsInfo.STORE_AREA_ID AS STORE_AREA_ID,
+			goodsInfo.GOODS_ID AS GOODS_ID,
+			goodsInfo.GOODS_TYPE AS GOODS_TYPE,
+			goodsInfo.GOODS_NUM AS GOODS_NUM,
+			goodsInfo.AMOUNT AS AMOUNT,
+			goodsInfo.OFFICE_ID AS OFFICE_ID,
+			goodsInfo.IN_STORE_ALL_ID AS IN_STORE_ALL_ID,
+			goodsInfo.OUT_STORE_ALL_ID AS OUT_STORE_ALL_ID,
+			goodsInfo.IN_STORE_DATE AS IN_STORE_DATE,
+			goodsInfo.OUT_STORE_DATE AS OUT_STORE_DATE,
+			goodsInfo.DEL_FLAG AS DEL_FLAG,
+			goodsInfo.CREATE_BY AS CREATE_BY,
+			goodsInfo.CREATE_NAME AS CREATE_NAME,
+			goodsInfo.CREATE_DATE AS CREATE_DATE,
+			goodsInfo.UPDATE_BY AS UPDATE_BY,
+			goodsInfo.UPDATE_NAME AS UPDATE_NAME,
+			goodsInfo.UPDATE_DATE AS UPDATE_DATE,
+			areaInfo.STORE_AREA_NAME AS STORE_AREA_NAME,
+			areaInfo.STORE_AREA_TYPE AS STORE_AREA_TYPE,
+			stoGoos.GOODS_NAME AS GOODS_NAME
+		FROM STO_GOODS_LOCATION_INFO goodsInfo
+		LEFT JOIN STORE_AREA_SETTING_INFO areaInfo ON goodsInfo.STORE_AREA_ID = areaInfo.ID 
+		LEFT JOIN STO_GOODS stoGoos ON goodsInfo.GOODS_ID = stoGoos.goods_id 
+		WHERE 1=1
+			<!-- 区域ID -->
+		    <if test="storeAreaId != null and storeAreaId !=''">
+				AND goodsInfo.STORE_AREA_ID = #{storeAreaId}
+			</if>
+			<!-- 物品名称 -->
+			<if test="goodsName != null and goodsName !=''">
+				AND stoGoos.GOODS_NAME LIKE 
+				<!-- '%'||#{goodsName}||'%' -->
+				<if test="dbName == 'oracle'">'%'||#{goodsName}||'%'</if>
+				<if test="dbName == 'mysql'"> CONCAT('%', #{goodsName}, '%')</if>
+			</if>
+			<!-- 物品名称 -->
+			<if test="rfid != null and rfid !=''">
+				AND goodsInfo.RFID LIKE 
+				<!-- '%'||#{rfid}||'%' -->
+				<if test="dbName == 'oracle'">'%'||#{rfid}||'%'</if>
+				<if test="dbName == 'mysql'"> CONCAT('%', #{rfid}, '%')</if>
+			</if>
+			<!-- 区域名称 -->
+			<if test="storeAreaName != null and storeAreaName !=''">
+				AND areaInfo.STORE_AREA_NAME LIKE 
+				<!-- '%'||#{storeAreaName}||'%' -->
+				<if test="dbName == 'oracle'">'%'||#{storeAreaName}||'%'</if>
+				<if test="dbName == 'mysql'"> CONCAT('%', #{storeAreaName}, '%')</if>
+			</if>
+			<!-- 区域类型 -->
+			<if test="storeAreaType != null and storeAreaType !=''">
+				AND areaInfo.STORE_AREA_TYPE = #{storeAreaType}
+			</if>
+			<!-- 机构ID -->
+			<if test="officeId != null and officeId !=''">
+				AND goodsInfo.OFFICE_ID = #{officeId}
+			</if>
+			<if test="officeIdList != null and officeIdList.size != 0">
+				AND goodsInfo.OFFICE_ID in
+				<foreach collection ="officeIdList" item="item" separator="," open="(" close=")" index="index">
+					#{officeIdList[${index}]}
+				</foreach>
+			</if>
+			<!-- 入库时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				<!-- AND TO_CHAR(goodsInfo.IN_STORE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}' -->
+				<if test="dbName == 'oracle'">AND TO_CHAR(goodsInfo.IN_STORE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName == 'mysql'">AND date_format(goodsInfo.IN_STORE_DATE,'%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+			</if>
+			<!-- 入库时间(结束) -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				<!-- AND '${searchDateEnd}' >= TO_CHAR(goodsInfo.IN_STORE_DATE, 'yyyy-mm-dd hh24:mi:ss') -->
+				<if test="dbName == 'oracle'">AND '${searchDateEnd}' >= TO_CHAR(goodsInfo.IN_STORE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName == 'mysql'">AND '${searchDateEnd}' >=date_format(goodsInfo.IN_STORE_DATE,'%Y-%m-%d %H:%i:%S') </if>
+			</if>
+			<!-- 状态 -->
+			<if test="delFlag != null and delFlag != '' and (statusFlagList == null or statusFlagList.size == 0)">
+				AND goodsInfo.del_flag = #{delFlag}
+			</if>
+			<!-- 状态列表 -->
+			<if test="statusFlagList != null and statusFlagList.size != 0">
+	        	and goodsInfo.del_flag in
+            	<foreach collection="statusFlagList" item="item" separator="," open="(" close=")" index="index">
+		 			'${item}'
+				</foreach>
+			</if>
+			<choose>
+				<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+					ORDER BY ${page.orderBy}
+				</when>
+				<otherwise>
+					ORDER BY goodsInfo.del_flag ASC, areaInfo.STORE_AREA_TYPE ASC, areaInfo.STORE_AREA_NAME
+				</otherwise>
+			</choose>
+	</select>
+	
+	<select id="findListForInterface" resultMap="StoGoodsLocationInfo">
+		SELECT 
+			goodsInfo.ID AS ID,
+			goodsInfo.RFID AS RFID,
+			goodsInfo.STORE_AREA_ID AS STORE_AREA_ID,
+			goodsInfo.GOODS_ID AS GOODS_ID,
+			goodsInfo.GOODS_TYPE AS GOODS_TYPE,
+			goodsInfo.GOODS_NUM AS GOODS_NUM,
+			goodsInfo.AMOUNT AS AMOUNT,
+			goodsInfo.OFFICE_ID AS OFFICE_ID,
+			goodsInfo.IN_STORE_ALL_ID AS IN_STORE_ALL_ID,
+			goodsInfo.OUT_STORE_ALL_ID AS OUT_STORE_ALL_ID,
+			goodsInfo.IN_STORE_DATE AS IN_STORE_DATE,
+			goodsInfo.OUT_STORE_DATE AS OUT_STORE_DATE,
+			goodsInfo.DEL_FLAG AS DEL_FLAG,
+			goodsInfo.CREATE_BY AS CREATE_BY,
+			goodsInfo.CREATE_NAME AS CREATE_NAME,
+			goodsInfo.CREATE_DATE AS CREATE_DATE,
+			goodsInfo.UPDATE_BY AS UPDATE_BY,
+			goodsInfo.UPDATE_NAME AS UPDATE_NAME,
+			goodsInfo.UPDATE_DATE AS UPDATE_DATE,
+			areaInfo.STORE_AREA_NAME AS STORE_AREA_NAME,
+			areaInfo.STORE_AREA_TYPE AS STORE_AREA_TYPE,
+			stoGoos.GOODS_NAME AS GOODS_NAME
+		FROM STO_GOODS_LOCATION_INFO goodsInfo
+		LEFT JOIN STORE_AREA_SETTING_INFO areaInfo ON goodsInfo.STORE_AREA_ID = areaInfo.ID 
+		LEFT JOIN STO_GOODS stoGoos ON goodsInfo.GOODS_ID = stoGoos.goods_id 
+		WHERE 1=1
+			<!-- 区域ID -->
+		    <if test="storeAreaId != null and storeAreaId !=''">
+				AND goodsInfo.STORE_AREA_ID = #{storeAreaId}
+			</if>
+			<!-- 物品ID -->
+		    <if test="goodsId != null and goodsId !=''">
+				AND goodsInfo.GOODS_ID = #{goodsId}
+			</if>
+			<!-- 物品名称 -->
+			<if test="goodsName != null and goodsName !=''">
+				AND stoGoos.GOODS_NAME LIKE '%'||#{goodsName}||'%'
+			</if>
+			<!-- 箱号或RFID -->
+			<if test="rfid != null and rfid !=''">
+				AND goodsInfo.RFID = #{rfid}
+			</if>
+			<!-- 区域名称 -->
+			<if test="storeAreaName != null and storeAreaName !=''">
+				AND areaInfo.STORE_AREA_NAME LIKE '%'||#{storeAreaName}||'%'
+			</if>
+			<!-- 区域类型 -->
+			<if test="storeAreaType != null and storeAreaType !=''">
+				AND areaInfo.STORE_AREA_TYPE = #{storeAreaType}
+			</if>
+			<!-- 机构ID -->
+			<if test="officeId != null and officeId !=''">
+				AND goodsInfo.OFFICE_ID = #{officeId}
+			</if>
+			<!-- 入库时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				AND TO_CHAR(goodsInfo.IN_STORE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+				
+			</if>
+			<!-- 入库时间(结束) -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND '${searchDateEnd}' >= TO_CHAR(goodsInfo.IN_STORE_DATE, 'yyyy-mm-dd hh24:mi:ss')
+			</if>
+			<!-- 状态 -->
+			<if test="delFlag != null and delFlag != '' and (statusFlagList == null or statusFlagList.size == 0)">
+				AND goodsInfo.del_flag = #{delFlag}
+			</if>
+			<!-- 状态列表 -->
+			<if test="statusFlagList != null and statusFlagList.size != 0">
+	        	and goodsInfo.del_flag in
+            	<foreach collection="statusFlagList" item="item" separator="," open="(" close=")" index="index">
+		 			'${item}'
+				</foreach>
+			</if>
+			<choose>
+				<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+					ORDER BY ${page.orderBy}
+				</when>
+				<otherwise>
+					ORDER BY goodsInfo.del_flag ASC, areaInfo.STORE_AREA_TYPE ASC, areaInfo.STORE_AREA_NAME
+				</otherwise>
+			</choose>
+	</select>
+	
+	<select id="findGoodsListByGoodsIdAndDate" resultMap="StoGoodsLocationInfo">
+		SELECT 
+			goodsInfo.ID AS ID,
+			goodsInfo.RFID AS RFID,
+			goodsInfo.STORE_AREA_ID AS STORE_AREA_ID,
+			goodsInfo.GOODS_ID AS GOODS_ID,
+			goodsInfo.GOODS_TYPE AS GOODS_TYPE,
+			goodsInfo.GOODS_NUM AS GOODS_NUM,
+			goodsInfo.AMOUNT AS AMOUNT,
+			goodsInfo.OFFICE_ID AS OFFICE_ID,
+			goodsInfo.IN_STORE_ALL_ID AS IN_STORE_ALL_ID,
+			goodsInfo.OUT_STORE_ALL_ID AS OUT_STORE_ALL_ID,
+			goodsInfo.IN_STORE_DATE AS IN_STORE_DATE,
+			goodsInfo.OUT_STORE_DATE AS OUT_STORE_DATE,
+			goodsInfo.DEL_FLAG AS DEL_FLAG,
+			goodsInfo.CREATE_BY AS CREATE_BY,
+			goodsInfo.CREATE_NAME AS CREATE_NAME,
+			goodsInfo.CREATE_DATE AS CREATE_DATE,
+			goodsInfo.UPDATE_BY AS UPDATE_BY,
+			goodsInfo.UPDATE_NAME AS UPDATE_NAME,
+			goodsInfo.UPDATE_DATE AS UPDATE_DATE,
+			areaInfo.STORE_AREA_NAME AS STORE_AREA_NAME,
+			stoGoos.GOODS_NAME AS GOODS_NAME
+		FROM STO_GOODS_LOCATION_INFO goodsInfo
+		LEFT JOIN STORE_AREA_SETTING_INFO areaInfo ON goodsInfo.STORE_AREA_ID = areaInfo.ID 
+		LEFT JOIN STO_GOODS stoGoos ON goodsInfo.GOODS_ID = stoGoos.goods_id 
+		WHERE goodsInfo.DEL_FLAG = '0'
+			<!-- 物品名称 -->
+			<if test="goodsId != null and goodsId !=''">
+				AND goodsInfo.GOODS_ID=#{goodsId}
+			</if>
+			<!-- 入库时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				<!-- AND TO_CHAR(goodsInfo.IN_STORE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}' -->
+				<if test="dbName == 'oracle'">AND TO_CHAR(goodsInfo.IN_STORE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName == 'mysql'">AND date_format(goodsInfo.IN_STORE_DATE,'%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+			</if>
+			<!-- 入库时间(结束) -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				<!-- AND '${searchDateEnd}' >= TO_CHAR(goodsInfo.IN_STORE_DATE, 'yyyy-mm-dd hh24:mi:ss') -->
+				<if test="dbName == 'oracle'">AND '${searchDateEnd}' >= TO_CHAR(goodsInfo.IN_STORE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName == 'mysql'">AND '${searchDateEnd}' >=date_format(goodsInfo.IN_STORE_DATE,'%Y-%m-%d %H:%i:%S') </if>
+			</if>
+			<!-- 机构ID -->
+			<if test="officeId != null and officeId !=''">
+				AND goodsInfo.OFFICE_ID = #{officeId}
+			</if>
+			ORDER BY goodsInfo.IN_STORE_DATE ASC
+	</select>
+	
+	<select id="findMinDateAndCntByGoodsId" resultMap="StoGoodsLocationInfo">
+		SELECT MIN(IN_STORE_DATE) AS IN_STORE_DATE,
+		COUNT(GOODS_ID) AS GOODS_NUM
+		FROM STO_GOODS_LOCATION_INFO
+		WHERE DEL_FLAG = '0'
+		<!-- 物品名称 -->
+		<if test="goodsId != null and goodsId !=''">
+			AND GOODS_ID=#{goodsId}
+		</if>
+		<!-- 机构ID -->
+		<if test="officeId != null and officeId !=''">
+			AND OFFICE_ID = #{officeId}
+		</if>
+		GROUP BY GOODS_ID
+	</select>
+	
+	<select id="get" resultMap="StoGoodsLocationInfo">
+		SELECT 
+			<include refid="Base_Column_List"></include>
+		FROM STO_GOODS_LOCATION_INFO
+		WHERE ID = #{id}
+		ORDER BY CREATE_DATE ASC
+	</select>
+	
+	<select id="getByAllIDAndRfid" resultMap="StoGoodsLocationInfo">
+		SELECT 
+			goodsInfo.ID AS ID,
+			goodsInfo.RFID AS RFID,
+			goodsInfo.STORE_AREA_ID AS STORE_AREA_ID,
+			goodsInfo.GOODS_ID AS GOODS_ID,
+			goodsInfo.GOODS_TYPE AS GOODS_TYPE,
+			goodsInfo.GOODS_NUM AS GOODS_NUM,
+			goodsInfo.AMOUNT AS AMOUNT,
+			goodsInfo.OFFICE_ID AS OFFICE_ID,
+			goodsInfo.IN_STORE_ALL_ID AS IN_STORE_ALL_ID,
+			goodsInfo.OUT_STORE_ALL_ID AS OUT_STORE_ALL_ID,
+			goodsInfo.IN_STORE_DATE AS IN_STORE_DATE,
+			goodsInfo.OUT_STORE_DATE AS OUT_STORE_DATE,
+			goodsInfo.DEL_FLAG AS DEL_FLAG,
+			goodsInfo.CREATE_BY AS CREATE_BY,
+			goodsInfo.CREATE_NAME AS CREATE_NAME,
+			goodsInfo.CREATE_DATE AS CREATE_DATE,
+			goodsInfo.UPDATE_BY AS UPDATE_BY,
+			goodsInfo.UPDATE_NAME AS UPDATE_NAME,
+			goodsInfo.UPDATE_DATE AS UPDATE_DATE,
+			areaInfo.STORE_AREA_NAME AS STORE_AREA_NAME,
+			areaInfo.STORE_AREA_TYPE AS STORE_AREA_TYPE,
+			stoGoos.GOODS_NAME AS GOODS_NAME
+		FROM STO_GOODS_LOCATION_INFO goodsInfo
+		LEFT JOIN STORE_AREA_SETTING_INFO areaInfo ON goodsInfo.STORE_AREA_ID = areaInfo.ID 
+		LEFT JOIN STO_GOODS stoGoos ON goodsInfo.GOODS_ID = stoGoos.goods_id
+		WHERE RFID = #{rfid}
+		<if test="inStoreAllId != null and inStoreAllId !=''">
+			AND goodsInfo.IN_STORE_ALL_ID=#{inStoreAllId}
+		</if>
+		<if test="outStoreAllId != null and outStoreAllId !=''">
+			AND goodsInfo.OUT_STORE_ALL_ID=#{outStoreAllId}
+		</if>
+	</select>
+	
+	<select id="getCountByRfid" resultType="java.lang.Integer">
+		SELECT 
+			Count(RFID) AS RFIDCNT
+		FROM STO_GOODS_LOCATION_INFO
+		WHERE DEL_FLAG = '0' 
+		      AND RFID=#{rfid}
+		      <!-- 机构ID -->
+			<if test="officeId != null and officeId !=''">
+				AND OFFICE_ID = #{officeId}
+			</if>
+	</select>
+	
+	<select id="getGoodsCountByOfficeIdAndAreaType" resultType="java.lang.Integer">
+		SELECT 
+			Count(goodInfo.GOODS_ID) AS RFIDCNT
+		FROM STO_GOODS_LOCATION_INFO goodInfo, STORE_AREA_SETTING_INFO areaInfo
+		WHERE (goodInfo.DEL_FLAG = '0' or goodInfo.DEL_FLAG = '1')
+			AND areaInfo.DEL_FLAG = '0' 
+			AND areaInfo.ID = goodInfo.STORE_AREA_ID
+			AND areaInfo.STORE_AREA_TYPE = #{storeAreaType}
+			AND goodInfo.OFFICE_ID=#{officeId}
+	</select>
+	<!-- 查询库区下未使用物品数量 -->
+	<select id="getGoodsCountByAreaId" resultType="java.lang.Integer">
+		SELECT 
+			Count(GOODS_ID) AS RFIDCNT
+		FROM STO_GOODS_LOCATION_INFO
+		WHERE (DEL_FLAG = '0' OR DEL_FLAG = '1')
+			AND STORE_AREA_ID = #{areaId}
+	</select>
+	<!-- 查询库区下已预订物品数量 -->
+	<select id="getReservedGoodsCountByAreaId" resultType="java.lang.Integer">
+		SELECT 
+			Count(GOODS_ID) AS RFIDCNT
+		FROM STO_GOODS_LOCATION_INFO
+		WHERE DEL_FLAG = '1'
+			AND STORE_AREA_ID = #{storeAreaId}
+	</select>
+	<!-- 更新库区下未使用物品为清理状态 -->
+	<update id="updateUnUsedGoodsStatusByLocationId">
+		UPDATE STO_GOODS_LOCATION_INFO
+		SET DEL_FLAG = #{delFlag},
+		UPDATE_BY = #{updateBy.id},
+		UPDATE_NAME = #{updateBy.name},
+		UPDATE_DATE = #{updateDate}
+		WHERE DEL_FLAG = '0'
+			AND id = #{id}
+	</update>
+	
+	<!-- LLF 2016-06-14 人行出入库任务查询统计入库库区信息 -->
+	<select id="findStoreAreaByInStoreId" resultType="map">
+		SELECT
+  			DISTINCT 
+  			goods.IN_STORE_ALL_ID AS "serialorderNo",
+  			area.STORE_AREA_NAME AS "storeAreaName",
+  			area.STORE_AREA_TYPE AS "storeAreaType"
+		FROM
+  			STO_GOODS_LOCATION_INFO goods,
+ 			STORE_AREA_SETTING_INFO area
+		WHERE
+  			goods.STORE_AREA_ID = area.ID
+  			AND goods.IN_STORE_ALL_ID IN 
+  			<foreach collection="allList" item="item" separator="," open="(" close=")" index="index">
+		 			'${item.allId}'
+			</foreach>
+	</select>
+	
+	<insert id="insert" >
+		INSERT INTO STO_GOODS_LOCATION_INFO(
+			ID,
+			RFID,
+			STORE_AREA_ID,
+			GOODS_ID,
+			GOODS_TYPE,
+			GOODS_NUM,
+			AMOUNT,
+			OFFICE_ID,
+			IN_STORE_ALL_ID,
+			OUT_STORE_ALL_ID,
+			IN_STORE_DATE,
+			OUT_STORE_DATE,
+			CREATE_BY,
+			CREATE_NAME,
+			CREATE_DATE,
+			UPDATE_BY,
+			UPDATE_NAME,
+			UPDATE_DATE,
+			DEL_FLAG
+		) VALUES (
+			#{id},
+			#{rfid},
+			#{storeAreaId},
+			#{goodsId},
+			#{goodsType},
+			#{goodsNum},
+			#{amount},
+			#{officeId},
+			#{inStoreAllId},
+			#{outStoreAllId},
+			#{inStoreDate},
+			#{outStoreDate},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="updateOutStoreGoodsStatusByRfid">
+		UPDATE STO_GOODS_LOCATION_INFO
+		SET DEL_FLAG = #{delFlag},
+		<if test="outStoreAllId != null">
+			OUT_STORE_ALL_ID = #{outStoreAllId},
+		</if>
+		
+		<if test="outStoreDate != null">
+			OUT_STORE_DATE = #{outStoreDate},
+		</if>
+			UPDATE_BY = #{updateBy.id},
+			UPDATE_NAME = #{updateBy.name},
+			UPDATE_DATE = #{updateDate}
+		WHERE DEL_FLAG <![CDATA[<>]]> #{delFlag} and DEL_FLAG <![CDATA[<>]]> '3' and DEL_FLAG <![CDATA[<>]]> '4'
+		      AND RFID = #{rfid}
+		     <!-- 机构ID -->
+			<if test="officeId != null and officeId !=''">
+				AND OFFICE_ID = #{officeId}
+			</if>
+	</update>
+	
+	<update id="updateReserveGoodsStatus">
+		UPDATE STO_GOODS_LOCATION_INFO
+		SET DEL_FLAG = #{delFlag},
+		UPDATE_BY = #{updateBy.id},
+		UPDATE_NAME = #{updateBy.name},
+		UPDATE_DATE = #{updateDate}
+		WHERE ID=#{id}
+	</update>
+	<update id="updateReserveGoodsStatusByRfid">
+		UPDATE STO_GOODS_LOCATION_INFO
+		SET DEL_FLAG = #{delFlag},
+		UPDATE_BY = #{updateBy.id},
+		UPDATE_NAME = #{updateBy.name},
+		UPDATE_DATE = #{updateDate}
+		WHERE rfid=#{rfid}
+			and DEL_FLAG  <![CDATA[<>]]> '3' and DEL_FLAG <![CDATA[<>]]> '4'
+			<!-- 机构ID -->
+			<if test="officeId != null and officeId !=''">
+				AND OFFICE_ID = #{officeId}
+			</if>
+	</update>
+    <update id="updateRfidStoreArea">
+        update STO_GOODS_LOCATION_INFO
+        <set>
+            <if test="storeAreaId != null">
+                STORE_AREA_ID = #{storeAreaId},
+            </if>
+            <if test="goodsId != null and goodsId != ''">
+                GOODS_ID = #{goodsId},
+            </if>
+            <if test="updateBy != null and updateBy.id != null and updateBy.id != ''">
+                UPDATE_BY = #{updateBy.id},
+            </if>
+            <if test="updateBy != null and updateBy.name != null and updateBy.name != ''">
+                UPDATE_NAME = #{updateBy.name},
+            </if>
+            <if test="updateDate != null">
+                UPDATE_DATE = #{updateDate},
+            </if>
+        </set>
+        where RFID = #{rfid}
+        <!-- 机构ID -->
+		<if test="officeId != null and officeId !=''">
+			AND OFFICE_ID = #{officeId}
+		</if>
+    </update>
+    <!-- 初始化库区 或倒库用  将 物品审定为 清理库区 -->
+	<delete id="deleteByRfidAndOfficeId">
+		update STO_GOODS_LOCATION_INFO
+		set DEL_FLAG='4'
+		where RFID = #{rfid}
+		<if test="officeId != null and officeId !=''">
+			AND OFFICE_ID = #{officeId}
+		</if>
+	</delete>
+	
+	<update id="updateRfidInfo">
+		update STO_GOODS_LOCATION_INFO
+		set RFID = #{dstRfid,jdbcType=VARCHAR},
+			UPDATE_BY = #{userId,jdbcType=VARCHAR},
+			UPDATE_NAME = #{userName,jdbcType=VARCHAR},
+			UPDATE_DATE = #{updateDate,jdbcType=OTHER}
+		where RFID = #{srcRfid,jdbcType=VARCHAR}
+	</update>
+	
+	<update id="update">
+        update STO_GOODS_LOCATION_INFO
+        <set>
+			<if test="updateBy != null">
+				UPDATE_BY = #{updateBy.id,jdbcType=VARCHAR},
+			</if>
+			<if test="updateName != null">
+				UPDATE_NAME = #{updateBy.name,jdbcType=VARCHAR},
+			</if>
+			<if test="updateDate != null">
+				UPDATE_DATE = #{updateDate,jdbcType=OTHER},
+			</if>
+			<if test="delFlag != null">
+				DEL_FLAG = #{delFlag,jdbcType=VARCHAR},
+			</if>
+          
+		</set>
+		where RFID = #{rfid,jdbcType=VARCHAR}
+			<if test="officeId != null and officeId !=''">
+				AND OFFICE_ID = #{officeId,jdbcType=VARCHAR}
+			</if>
+			<!--  ADD-START  原因：增加主键过滤条件  add by wangbaozhong  2018/05/23 -->
+			<if test="id != null and id !=''">
+				AND id = #{id,jdbcType=VARCHAR}
+			</if>
+			<!--  ADD-END  原因：增加主键过滤条件  add by wangbaozhong  2018/05/23 -->
+    </update>
+</mapper>

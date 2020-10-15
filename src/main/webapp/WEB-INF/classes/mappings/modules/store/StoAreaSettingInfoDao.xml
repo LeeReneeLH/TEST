@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoAreaSettingInfoDao">
+    
+	<resultMap type="com.coffer.businesses.modules.store.v01.entity.StoAreaSettingInfo" id="StoAreaSettingInfo">
+		<id column="ID" property="id" />
+		<result column="STORE_AREA_NAME" property="storeAreaName" />
+		<result column="STORE_AREA_TYPE" property="storeAreaType" />
+		<result column="OFFICE_ID" property="officeId" />
+		<result column="X_POSITION" property="xPosition" />
+		<result column="Y_POSITION" property="yPosition" />
+		<result column="ROW_CNT" property="rowCnt" />
+		<result column="COL_CNT" property="colCnt" />
+		<result column="MAX_CAPABILITY" property="maxCapability" />
+		<result column="ACTUAL_STORAGE" property="actualStorage" />
+		<result column="SURPLUS_STORAGE" property="surplusStorage" />
+		<result column="MAX_SAVE_DAYS" property="maxSaveDays" />
+		<result column="MIN_SAVE_DAYS" property="minSaveDays" />
+		<result column="DEL_FLAG" property="delFlag" />
+		<result column="REMARKS" property="remarks" />
+		<result column="CREATE_BY" property="createBy.id" />
+		<result column="CREATE_NAME" property="createName" />
+		<result column="CREATE_DATE" property="createDate" />
+		<result column="UPDATE_BY" property="updateBy.id" />
+		<result column="UPDATE_NAME" property="updateName" />
+		<result column="UPDATE_DATE" property="updateDate" />
+		<result column="GOODS_ID" property="goodsId" />
+		<result column="SORT_KEY" property="sortKey" />
+		<result column="GOODS_CNT" property="goodsCnt" />
+	</resultMap>
+	
+	<sql id="Base_Column_List">
+		ID,
+		STORE_AREA_NAME,
+		STORE_AREA_TYPE,
+		OFFICE_ID,
+		X_POSITION,
+		Y_POSITION,
+		ROW_CNT,
+		COL_CNT,
+		MAX_CAPABILITY,
+		MAX_SAVE_DAYS,
+		MIN_SAVE_DAYS,
+		DEL_FLAG,
+		REMARKS,
+		CREATE_BY,
+		CREATE_NAME,
+		CREATE_DATE,
+		UPDATE_BY,
+		UPDATE_NAME,
+		UPDATE_DATE,
+		GOODS_ID,
+		SORT_KEY
+	</sql>
+	
+	<select id="findList" resultMap="StoAreaSettingInfo" >
+		SELECT locationGroup.GOODS_CNT,
+			<include refid="Base_Column_List"></include>
+		FROM STORE_AREA_SETTING_INFO settingInfo
+		LEFT JOIN (
+						SELECT COUNT(locationInfo.ID) AS GOODS_CNT, locationInfo.STORE_AREA_ID AS STORE_AREA_ID
+				          FROM STO_GOODS_LOCATION_INFO locationInfo
+				         WHERE locationInfo.DEL_FLAG = '0'
+				            OR locationInfo.DEL_FLAG = '1' group by locationInfo.STORE_AREA_ID
+				       ) locationGroup ON locationGroup.STORE_AREA_ID = settingInfo.id
+		WHERE 1=1
+		<if test="officeId != null and officeId != ''">
+			AND OFFICE_ID = #{officeId}
+		</if>
+		<if test="officeIdList != null and officeIdList.size != 0">
+			AND OFFICE_ID in
+			<foreach collection ="officeIdList" item="item" separator="," open="(" close=")" index="index">
+				#{officeIdList[${index}]}
+			</foreach>
+		</if>
+		<if test="storeAreaName != null and storeAreaName != ''">
+			AND STORE_AREA_NAME LIKE 
+			<!-- '%'||#{storeAreaName}||'%' -->
+			<if test="dbName == 'oracle'">'%'||#{storeAreaName}||'%'</if>
+			<if test="dbName == 'mysql'">CONCAT('%', #{storeAreaName}, '%')</if>
+		</if>
+		<if test="storeAreaType != null and storeAreaType != ''">
+			AND STORE_AREA_TYPE = #{storeAreaType}
+		</if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY STORE_AREA_TYPE, X_POSITION ASC, Y_POSITION ASC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAreaActualStorageList" resultMap="StoAreaSettingInfo" >
+		SELECT ID,
+	       STORE_AREA_NAME,
+	       STORE_AREA_TYPE,
+	       MAX_CAPABILITY,
+	       CASE
+	         WHEN ACTUAL_STORAGE IS　NULL THEN
+	          0
+	         ELSE
+	          ACTUAL_STORAGE
+	       END ACTUAL_STORAGE,
+	       CASE
+	         WHEN ACTUAL_STORAGE IS　NULL THEN
+	          MAX_CAPABILITY
+	         WHEN MAX_CAPABILITY - ACTUAL_STORAGE <![CDATA[<=]]> 0 THEN 
+              0
+	         ELSE
+	          MAX_CAPABILITY - ACTUAL_STORAGE
+	       END SURPLUS_STORAGE,
+	       X_POSITION,
+	       Y_POSITION,
+	       SORT_KEY
+	  	FROM (
+			SELECT areaInfo.ID,
+	                areaInfo.STORE_AREA_NAME,
+	                areaInfo.STORE_AREA_TYPE,
+	                areaInfo.X_POSITION,
+	                areaInfo.MAX_CAPABILITY,
+	                areaInfo.Y_POSITION,
+	                areaInfo.GOODS_ID,
+	                areaInfo.SORT_KEY,
+	                (SELECT COUNT(goodsInfo.STORE_AREA_ID)
+	                   FROM STO_GOODS_LOCATION_INFO goodsInfo
+	                  WHERE goodsInfo.STORE_AREA_ID = areaInfo.Id
+	                    AND (goodsInfo.DEL_FLAG = '0' or goodsInfo.DEL_FLAG = '1')
+	                  GROUP BY goodsInfo.STORE_AREA_ID) AS ACTUAL_STORAGE
+	          FROM STORE_AREA_SETTING_INFO areaInfo
+			WHERE areaInfo.DEL_FLAG = '0'
+				<if test="officeId != null and officeId != ''">
+					AND areaInfo.OFFICE_ID = #{officeId}
+				</if>
+				<if test="id != null and id != ''">
+					AND areaInfo.ID = #{id}
+				</if>
+				<if test="goodsId != null and goodsId != ''">
+					AND areaInfo.GOODS_ID = #{goodsId}
+				</if>
+				<if test="storeAreaType != null and storeAreaType != ''">
+					AND areaInfo.STORE_AREA_TYPE = #{storeAreaType}
+				</if>
+			)
+		<choose>
+			<when test="orderBy !=null and orderBy != ''">
+				ORDER BY #{orderBy}
+			</when>
+			<otherwise>
+				<!-- 按库位最大保存能力排序
+				ORDER BY ACTUAL_STORAGE ASC,
+				          MAX_CAPABILITY DESC,
+				          X_POSITION     ASC,
+				          Y_POSITION     ASC
+				           -->
+				<!-- 按 排序键及剩余库位排序 -->
+				ORDER BY SORT_KEY ASC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="getByStoreAreaId" resultMap="StoAreaSettingInfo">
+		SELECT 
+			<include refid="Base_Column_List"></include>
+		FROM STORE_AREA_SETTING_INFO
+		WHERE ID=#{id}
+	</select>
+	
+	<insert id="insert" >
+		INSERT INTO STORE_AREA_SETTING_INFO(
+			ID,
+			STORE_AREA_NAME,
+			STORE_AREA_TYPE,
+			OFFICE_ID,
+			X_POSITION,
+			Y_POSITION,
+			ROW_CNT,
+			COL_CNT,
+			MAX_CAPABILITY,
+			MAX_SAVE_DAYS,
+			MIN_SAVE_DAYS,
+			DEL_FLAG,
+			REMARKS,
+			CREATE_BY,
+			CREATE_NAME,
+			CREATE_DATE,
+			UPDATE_BY,
+			UPDATE_NAME,
+			UPDATE_DATE,
+			SORT_KEY
+		) VALUES (
+			#{id},
+			#{storeAreaName},
+			#{storeAreaType},
+			#{officeId},
+			#{xPosition},
+			#{yPosition},
+			#{rowCnt},
+			#{colCnt},
+			#{maxCapability},
+			#{maxSaveDays},
+			#{minSaveDays},
+			#{delFlag},
+			#{remarks},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate},
+			#{sortKey}
+			
+		)
+	</insert>
+	
+	<update id="update" >
+		UPDATE STORE_AREA_SETTING_INFO
+		<set>
+			<if test="storeAreaName != null">
+				STORE_AREA_NAME = #{storeAreaName},
+			</if>
+			<if test="maxCapability != null">
+				MAX_CAPABILITY = #{maxCapability},
+			</if>
+			<if test="maxSaveDays != null">
+				MAX_SAVE_DAYS = #{maxSaveDays},
+			</if>
+			<if test="minSaveDays != null">
+				MIN_SAVE_DAYS = #{minSaveDays},
+			</if>
+			<if test="remarks != null">
+				REMARKS = #{remarks},
+			</if>
+			<if test="sortKey != null">
+				SORT_KEY = #{sortKey},
+			</if>
+			<if test="goodsId != null">
+				GOODS_ID = #{goodsId},
+			</if>
+			<if test="delFlag != null">
+				DEL_FLAG = #{delFlag},
+			</if>
+			UPDATE_BY = #{updateBy.id},
+			UPDATE_NAME = #{updateBy.name},
+			UPDATE_DATE = #{updateDate}
+		</set>
+		WHERE ID=#{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE STORE_AREA_SETTING_INFO
+		SET DEL_FLAG = #{delFlag},
+		UPDATE_BY = #{updateBy.id},
+		UPDATE_NAME = #{updateBy.name},
+		UPDATE_DATE = #{updateDate}
+		WHERE ID=#{id}
+	</update>
+	
+	<update id="deleteAllByOfficeIdAndAreaType">
+		DELETE FROM STORE_AREA_SETTING_INFO
+		WHERE OFFICE_ID = #{officeId}
+			AND STORE_AREA_TYPE = #{storeAreaType}
+	</update>
+
+    <sql id="Area_Goods_Num_Column_List">
+        a.ID                 AS "area.ID",
+        a.STORE_AREA_NAME    AS "area.storeAreaName",
+        a.OFFICE_ID          AS "area.officeId",
+        g.GOODS_ID           AS "goods.goodsId",
+        COUNT( g.GOODS_NUM ) AS "goods.goodsNum",
+        d.GOODS_NAME         AS "goods.goodsName"
+    </sql>
+
+	<resultMap id="areaAndGoodsNumInfo" type="com.coffer.businesses.modules.store.v01.entity.StoAreaSettingInfo">
+		<id column="area.ID"                property="id" />
+		<result column="area.storeAreaName" property="storeAreaName" />
+		<result column="area.officeId"        property="officeId" />
+		<!-- 调缴详细信息 -->
+		<association property="goodsLocationInfoList" javaType="com.coffer.businesses.modules.store.v01.entity.StoGoodsLocationInfo">
+			<result column="goods.goodsId"   property="goodsId" />
+			<result column="goods.goodsNum"  property="goodsNum" />
+			<result column="goods.goodsName" property="goodsName" />
+		</association>
+	</resultMap>
+
+	<select id="findAreaAndGoodsNumList" resultMap="areaAndGoodsNumInfo">
+		SELECT
+		<include refid="Area_Goods_Num_Column_List"></include>
+		FROM STORE_AREA_SETTING_INFO a
+		      LEFT JOIN STO_GOODS_LOCATION_INFO g ON a.ID = g.STORE_AREA_ID AND g.DEL_FLAG <![CDATA[<>]]> '2' 
+		      											AND g.DEL_FLAG <![CDATA[<>]]> '3' 
+		      											AND g.DEL_FLAG <![CDATA[<>]]> '4'
+		      LEFT JOIN STO_GOODS d ON g.GOODS_ID = d.GOODS_ID AND d.DEL_FLAG = '0'
+		WHERE a.DEL_FLAG = '0'
+		<if test="officeId != null and officeId != ''">
+			AND a.OFFICE_ID = #{officeId}
+		</if>
+		GROUP BY
+		a.ID,
+		a.STORE_AREA_NAME,
+		a.OFFICE_ID,
+		g.GOODS_ID,
+		d.GOODS_NAME
+		ORDER BY a.STORE_AREA_NAME, g.GOODS_ID
+	</select>
+</mapper>

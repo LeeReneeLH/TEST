@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.doorOrder.v01.dao.DoorOrderExceptionDao">
+    
+	<sql id="doorOrderExceptionColumns">
+		a.id AS "id",
+		a.eqp_id AS "eqpId",
+		a.bag_no AS "bagNo",
+		a.ticker_tape AS "tickerTape",
+		a.total_amount AS "totalAmount",
+		a.status AS "status",
+		a.business_type AS "businessType",
+		a.currency AS "currency",
+		a.user_id AS "user.id",
+		u9.name AS "userName",
+		a.door_id AS "doorId",
+		so.name AS "doorName",
+		a.exception_reason AS "exceptionReason",
+		a.exception_type AS "exceptionType",
+		a.batch_no AS "batchNo",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.del_flag AS "delFlag",
+		a.remarks AS "remarks",
+		st.type_name AS "businessTypeName",
+		a.start_time AS "startTime",
+		a.end_time AS "endTime",
+		a.cost_time AS "costTime",
+		e.SERIES_NUMBER AS seriesNumber
+	</sql>
+	
+	<sql id="doorOrderExceptionJoins">
+		LEFT JOIN sys_user u9 ON u9.id = a.user_id
+		LEFT JOIN sys_office so ON a.door_id = so.ID
+		LEFT JOIN ( select  distinct s.type_code,s.type_name, s.MERCHANT_ID from  save_type s ) st ON st.type_code = a.business_type AND  st.MERCHANT_ID =  so.PARENT_ID
+		LEFT JOIN equipment_info e ON e.id = a.eqp_id
+	</sql>
+	
+	<resultMap id="doorOrderExceptionResult" type="DoorOrderException">
+		<id property="id" column="id" />
+		<result property="eqpId" column="eqpId" />
+		<result property="bagNo" column="bagNo" />
+		<result property="tickerTape" column="tickerTape" />
+		<result property="totalAmount" column="totalAmount" />
+		<result property="status" column="status" />
+		<result property="businessType" column="businessType" />
+		<result property="currency" column="currency" />
+		<result property="doorId" column="doorId" />
+		<result property="doorName" column="doorName" />
+		<result property="userName" column="userName" />
+		<result property="user.id" column="user.id" />
+		<result property="exceptionReason" column="exceptionReason" />
+		<result property="exceptionType" column="exceptionType" />
+		<result property="batchNo" column="batchNo" />
+		<result property="businessTypeName" column="businessTypeName" />
+		<result property="seriesNumber" column="seriesNumber" />
+		<result property="startTime" column="startTime"/>
+		<result property="endTime" column="endTime"/>
+		<result property="costTime" column="costTime"/>
+		<result property="createBy.id" column="createBy.id" />
+		<result property="createDate" column="createDate" />
+		<result property="updateBy.id" column="updateBy.id" />
+		<result property="updateDate" column="updateDate" />
+		<result property="delFlag" column="delFlag" />
+		<result property="remarks" column="remarks" />
+		<!-- 外连 主表对应门店集合 -->
+		<collection property="exceptionDetailList" ofType="DoorOrderExceptionDetail">
+			<id property="detailId" column="detailId" />
+			
+			<result property="id" column="deid" />
+			<result property="type" column="type" />
+			<result property="count" column="count" />
+			<result property="denomination" column="denomination" />
+			<result property="amount" column="amount" />
+		</collection>
+	</resultMap>
+
+	<select id="get" resultMap="doorOrderExceptionResult">
+		SELECT
+		<include refid="doorOrderExceptionColumns" />,
+		b.detail_id AS "detailId",
+		b.id AS "deid",
+		b.type AS "type",
+		b.count AS "count",
+		b.denomination AS "denomination",
+		b.amount AS "amount"
+		FROM
+		door_order_exception a
+		LEFT JOIN door_order_exception_detail b ON b.id = a.id AND b.del_flag = '0'
+		<include refid="doorOrderExceptionJoins"/>
+		WHERE a.id = #{id}
+		AND a.del_flag = '0'
+		ORDER BY  b.ROW_NO
+	</select>
+    
+	<select id="findList" resultType="DoorOrderException">
+		SELECT 
+			<include refid="doorOrderExceptionColumns"/>
+		FROM door_order_exception a
+		<include refid="doorOrderExceptionJoins"/>
+		<!-- 机构过滤等-->	
+		LEFT JOIN sys_office o2 ON o2.ID = a.door_id
+		${sqlMap.dsf2}
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="eqpId != null and eqpId != ''">
+				AND e.SERIES_NUMBER LIKE
+				<if test="dbName == 'oracle'">'%'||#{eqpId}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{eqpId}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{eqpId},'%')</if>
+			</if>
+			<if test="doorId != null and doorId != ''">
+				and a.door_id = #{doorId}
+			</if>
+			<if test="remarks != null and remarks != ''">
+				AND a.remarks LIKE
+				<if test="dbName == 'oracle'">'%'||#{remarks}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{remarks}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{remarks},'%')</if>
+			</if>
+			<if test="status != null and status != ''">
+				and a.status = #{status}
+			</if>
+			<if test="bagNo != null and bagNo != ''">
+				AND a.BAG_NO LIKE
+				<if test="dbName == 'oracle'">'%'||#{bagNo}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{bagNo}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{bagNo},'%')</if>
+			</if>
+			<if test="tickerTape  != null and tickerTape  != ''">
+				AND a.ticker_tape LIKE
+				<if test="dbName == 'oracle'">'%'||#{tickerTape}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{tickerTape}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{tickerTape},'%')</if>
+			</if>
+			 <!--   开始时间 -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				AND 
+				<if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+			</if>
+			<!-- 截止时间 -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND 
+				<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+			</if>	
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			ORDER BY A.status asc,
+			 a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="DoorOrderException">
+		SELECT 
+			<include refid="doorOrderExceptionColumns"/>
+		FROM door_order_exception a
+		<include refid="doorOrderExceptionJoins"/>
+		<where>
+			
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO door_order_exception(
+			id,
+			eqp_id,
+			bag_no,
+			ticker_tape,
+			total_amount,
+			status,
+			business_type,
+			currency,
+			user_id,
+			user_name,
+			door_id,
+			door_name,
+			exception_reason,
+		    exception_type,
+		    batch_no,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			del_flag,
+			start_time,
+			end_time,
+			cost_time,
+			remarks
+		) VALUES (
+			#{id},
+			#{eqpId},
+			#{bagNo},
+			#{tickerTape},
+			#{totalAmount},
+			#{status},
+			#{businessType},
+			#{currency},
+			#{user.id},
+			#{userName},
+			#{doorId},
+			#{doorName},
+			#{exceptionReason},
+			#{exceptionType},
+			#{batchNo},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{delFlag},
+			#{startTime},
+			#{endTime},
+			#{costTime},
+			#{remarks}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE door_order_exception SET 	
+			eqp_id = #{eqpId},
+			bag_no = #{bagNo},
+			ticker_tape = #{tickerTape},
+			total_amount = #{totalAmount},
+			status = #{status},
+			business_type = #{businessType},
+			currency = #{currency},
+			door_id = #{doorId},
+			door_name = #{doorName},
+			exception_reason = #{exceptionReason},
+			exception_type = #{exceptionType},
+			batch_no = #{batchNo},
+			user_id = #{user.id},
+			user_name = #{userName},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			start_time = #{startTime},
+			end_time = #{endTime},
+			cost_time = #{costTime},
+			del_flag = #{delFlag},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE door_order_exception SET
+		del_flag = "1"
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 查询门店人员  gzd-->
+	<select id="getPerson" resultType="User">
+		SELECT 
+			ss.id,
+			ss.name
+		FROM sys_office so1 
+		INNER JOIN sys_office so2 ON so1.id=so2.parent_id
+		INNER JOIN sys_office so3 ON so3.parent_id=so2.id
+		INNER JOIN sys_user ss ON ss.office_id IN (so1.id,so2.id,so3.id) 
+		WHERE so3.id = #{doorId} 
+			  AND ss.user_type = '42' 
+			  AND ss.del_flag = '0'
+			  AND so1.del_flag = '0'
+			  AND so2.del_flag = '0'
+			  AND so3.del_flag = '0'
+	</select>
+	
+	<!-- 查询存款备注（七位码）  gzd 2019-12-12-->
+	<select id="getRemarks" resultType="Office">
+		SELECT 
+			so2.code
+		FROM sys_office so1 
+		INNER JOIN sys_office so2 ON so1.id=so2.parent_id 
+		WHERE so1.id = #{doorId}
+			  AND so1.del_flag = '0'
+			  AND so2.del_flag = '0'
+			  AND so2.type = '10'
+	</select>
+	
+	
+	<!-- 获取存款异常表不同状态总数   ZXK start -->
+	<select id="getDoorExceptionCount" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.OfficeAmount">
+		SELECT 
+			IFNULL(SUM(case when a.`status` = 0 THEN 1 ELSE 0 END),0) AS registerCount,
+			IFNULL(SUM(case when a.`status` = 1 THEN 1 ELSE 0 END),0) AS exceptionCount,
+			IFNULL(SUM(case when a.`status` = 2 THEN 1 ELSE 0 END),0) AS processedCount
+			from door_order_exception a
+			<include refid="doorOrderExceptionJoins"/>
+			<!-- LEFT JOIN sys_office A ON A.ID = d.door_id -->
+			<!-- 机构过滤等-->	
+		   LEFT JOIN sys_office o2 ON o2.ID = a.door_id
+		    ${sqlMap.dsf2}
+			<where>
+			   a.DEL_FLAG = #{DEL_FLAG_NORMAL}
+				<!-- 创建时间(开始) -->
+				<if test="searchDateStart != null and searchDateStart != ''">
+					AND 
+					<if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+					<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+				</if>
+				<!-- 创建时间(结束) -->
+				<if test="searchDateEnd != null and searchDateEnd != ''">
+					AND 
+					<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+					<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+				</if>	
+				${sqlMap.dsf}
+			</where>
+	</select>
+	<!-- 获取存款异常表不同状态总数   ZXK  end -->
+</mapper>

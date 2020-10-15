@@ -1,0 +1,70 @@
+@charset "utf-8";
+/* CSS Document */
+.container{width:300px;float:left;clear:both;}
+.container-left{width:700px;float:left;clear:both;}
+b{
+	white-space: nowrap;
+	width: 190px;
+	float: left;
+	text-overflow: ellipsis;
+	overflow: hidden;color:#085ed5;
+}
+strong{color:#085ed5;}
+.step_title {
+	float: left;
+	width: 290px;
+	padding: 10px;
+	border-radius: 10px;
+	background-color: #8CBBEA;
+	color: #fff;
+	line-height: 25px;
+	font-size: 14px;
+	position: relative;
+	z-index: 100;
+	border: 5px solid #ecf0f3;
+}
+.step {
+	float: left;
+	width: 290px;
+	padding: 10px;
+	border-radius: 10px;
+	
+	background-image:url(../../../../../images/rfid_life_cycle_Info_bg.jpg);
+	background-repeat:repeat-x;
+
+
+	color: #000;
+	line-height: 25px;
+	font-size: 14px;
+	position: relative;
+	z-index: 100;
+	border: 5px solid #8cbbea;
+}
+.step span,.step_title span{color:#000;}
+.step span{width:80px;text-align:right;float:left;}
+.step_title span{width:100px;text-align:right;float:left;}
+.target_turn_down{
+	background-image: url(../../../../../images/target_turn_down.png);
+	background-position:center bottom;
+	background-repeat: no-repeat;
+	width: 290px;
+	height:50px;
+}
+.target_turn_right{
+	background-image: url(../../../../../images/target_turn_right.png);
+	background-position:right center;
+	background-repeat: no-repeat;
+	width: 50px;
+	height:170px;
+	float:left;
+}
+.target_turn_down_left{
+background-image: url(../../../../../images/target_turn_down_left.png);
+	background-position:center center;
+	background-repeat: no-repeat;
+	width: 600px;
+	height:61px;
+	float:left;
+}
+.target_turn_down{float:left;clear:both;}
+.text-center{font-size:18px;font-weight:bold;text-align:center;}

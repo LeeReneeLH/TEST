@@ -1,0 +1,40 @@
+{
+	"versionNo": "01",
+	"serviceNo": "26",
+	"inoutType": "1",
+	"officeId": "28900225",
+	"handoverId": "0bc0a118d45942aabae04c80cd941cee",
+	"routeId": "20170719111447308",
+	"handoverList": [
+		{
+			"id": "20170721144602456",
+			"name": "胡彦飞",
+			"handType": "1"
+		},
+		{
+			"id": "20170721144632968",
+			"name": "饶仁涛",
+			"handType": "1"
+		}
+	],
+	"acceptList": [
+		{
+			"id": "20170721144055007",
+			"name": "马志红",
+			"handType": "1"
+		},
+		{
+			"id": "20170721143925207",
+			"name": "黄千亦",
+			"handType": "1"
+		}
+	],
+	"managerList": [
+		{
+			"id": "28900225005",
+			"reason": "0"
+		}
+	],
+	"userId": "ff8ae8fb874b4babb1c23d2b296bdec5",
+	"userName": "马志红"
+}

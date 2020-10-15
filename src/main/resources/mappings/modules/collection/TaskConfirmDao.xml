@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.collection.v03.dao.TaskConfirmDao">
+
+	<sql id="taskConfirmColumns">
+		a.id AS "id",
+		a.order_id AS "orderId",
+		a.door_id AS "doorId",
+		a.door_name AS "doorName",
+		a.amount AS "amount",
+		a.accept_by AS "acceptBy",
+		a.accept_date AS "acceptDate",
+		a.status AS "status",
+		case when  a.allot_status = '1' then '4' else a.allot_status end   AS "allotStatus",
+		a.allot_man_no AS "allotManNo",
+		g.name AS "allotManName",
+		a.allot_date AS "allotDate",
+		a.clear_man_no AS "clearManNo",
+		a.total_count AS "totalCount",
+		f.escort_name AS "clearManName",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.del_flag AS "delFlag",
+		a.order_date AS "orderDate",
+		a.rfid AS "rfid",
+		a.method AS "method",
+		<!-- b.name AS "acceptName", -->
+		c.name AS "updateName",
+		d.name AS "createName",
+		a.office_id AS "office.id",
+		o.name AS "office.name"
+	</sql>
+	
+	<sql id="taskConfirmJoins">
+		<!-- LEFT JOIN sys_user b ON b.id = a.accept_by -->
+		LEFT JOIN sys_office o ON o.id = a.office_id
+		LEFT JOIN sys_user c ON c.id = a.update_by AND c.del_flag = #{DEL_FLAG_NORMAL}
+		LEFT JOIN sys_user d ON d.id = a.create_by AND d.del_flag = #{DEL_FLAG_NORMAL}
+		LEFT JOIN STO_ESCORT_INFO f ON f.ESCORT_ID = a.clear_man_no AND f.del_flag = #{DEL_FLAG_NORMAL}
+		LEFT JOIN sys_user g ON g.id = a.allot_man_no AND g.del_flag = #{DEL_FLAG_NORMAL}
+	</sql>
+    
+	<select id="get" resultType="TaskConfirm">
+		SELECT 
+			<include refid="taskConfirmColumns"/>
+		FROM door_order_info a
+		<include refid="taskConfirmJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="TaskConfirm">
+		SELECT 
+			<include refid="taskConfirmColumns"/>
+		FROM door_order_info a
+		<include refid="taskConfirmJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			AND a.allot_status != '0' AND a.status &lt;= '3'
+			<if test="clearManNo != null and clearManNo != ''">
+				AND a.clear_man_no =  #{clearManNo}
+			</if>
+			<!-- AND b.del_flag = #{DEL_FLAG_NORMAL} -->
+			<if test="acceptBy != null and acceptBy != ''">
+				AND a.accept_by = #{acceptBy }
+			</if>
+			<if test="searchDoorId != null and searchDoorId != ''">
+				AND a.door_id = #{searchDoorId}
+			</if>
+			<if test="rfid != null and rfid != ''">
+				AND a.rfid = #{rfid}
+			</if>
+			<if test="searchAllotStatus != null and searchAllotStatus != ''">
+				AND case when a.allot_status='1' then '4' else a.allot_status end = #{searchAllotStatus}
+			</if>
+			<if test="searchClearManNo != null and searchClearManNo != ''">
+				AND a.clear_man_no = #{searchClearManNo}
+			</if>
+			<if test="office != null and office.id != null and office.id != ''">
+				AND a.office_id = #{office.id}
+			</if>
+			<if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(a.ALLOT_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.ALLOT_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.ALLOT_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'"> '${searchDateEnd}'>=DATE_FORMAT(a.ALLOT_DATE, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.order_id DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 分配状态的更新-->
+	<update id="updateAllotStatus">
+		UPDATE door_order_info SET 	
+			ALLOT_STATUS = #{allotStatus},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			order_date = #{orderDate}
+		WHERE id = #{id}
+	</update>
+
+	<!-- 状态的更新-->
+	<update id="updateStatus">
+		UPDATE door_order_info SET 	
+			STATUS = #{status}
+		WHERE id = #{id}
+	</update>
+
+</mapper>

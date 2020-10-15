@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.doorOrder.v01.dao.SaveTypeDao">
+
+  <sql id="save_typeColumns">
+  		a.id AS "id",
+		a.type_code AS "typeCode",
+		a.type_name AS "typeName",
+		a.merchant_id AS "merchantId",
+		o1.name AS "merchantName",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createName",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_name AS "updateName",
+		a.update_date AS "updateDate",
+		a.remarks AS  "remarks",
+		a.del_flag AS "delFlag"
+	</sql>
+
+	<sql id="saveTypeJoins">
+		LEFT JOIN sys_office o1 ON a.merchant_id = o1.id
+	</sql>
+
+	<select id="get" resultType="SaveType">
+		SELECT 
+			<include refid="save_typeColumns"/>
+		FROM save_type a
+		<include refid="saveTypeJoins"/>
+		WHERE a.id = #{id}
+	</select>
+		
+	<insert id="insert">
+		INSERT INTO save_type(
+			id,		
+			type_code,
+			type_name,
+			merchant_id,
+			merchant_name,
+			create_by,
+			create_name,
+			create_date,
+			update_Date,
+			remarks,
+			del_flag
+		) VALUES (		
+			#{id},
+			#{typeCode},
+			#{typeName},
+			#{merchantId},
+			#{merchantName},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="delete">
+		UPDATE save_type
+			SET del_Flag = #{DEL_FLAG_DELETE}
+		WHERE  id= #{id}
+	</update>
+	
+	<select id="findList" resultType="SaveType">
+		SELECT 
+			<include refid="save_typeColumns"/>
+		FROM save_type a
+		<include refid="saveTypeJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="typeCode != null and typeCode != ''">
+				and a.type_code = #{typeCode}
+			</if>
+			<if test="typeName != null and typeName != ''">
+				and a.type_name like
+				<if test="dbName == 'mysql'">concat('%',#{typeName},'%')</if>
+				<if test="dbName == 'oracle'">'%'||#{typeName}||'%'</if>			
+			</if> 
+			<if test="merchantName != null and merchantName != ''">
+				and o1.name like 
+				<if test="dbName == 'mysql'">concat('%',#{merchantName},'%')</if>
+				<if test="dbName == 'oracle'">'%'||#{merchantName}||'%'</if>
+			</if>
+			<if test="merchantId != null and merchantId != ''">
+				and a.merchant_id = #{merchantId}
+			</if>
+			<!-- 数据范围过滤 -->
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<update id="update">
+		UPDATE save_type SET 
+			id=#{id},
+			type_code=#{typeCode},
+			type_name=#{typeName},
+			merchant_id=#{merchantId},
+			merchant_name=#{merchantName},
+			update_by=#{updateBy.id},
+			update_name=#{updateName},
+			update_Date=#{updateDate},
+			remarks=#{remarks},
+			del_Flag=#{delFlag}
+		WHERE id=#{id}
+	</update>
+	<select id="getByTypeCodeAndMerchantId" resultType="SaveType">
+        SELECT
+            <include refid="save_typeColumns"/>
+        FROM
+            SAVE_TYPE A
+            <include refid="saveTypeJoins"/>
+        WHERE
+            A.TYPE_CODE = #{typeCode}
+            AND A.MERCHANT_ID = #{merchantId}
+            AND A.DEL_FLAG = ${delFlag.valid}
+    </select>
+</mapper>
+	

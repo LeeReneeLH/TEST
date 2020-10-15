@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.clear.v03.dao.ClErrorInfoDao">
+    
+	<sql id="clErrorInfoColumns">
+		a.error_no AS "errorNo",
+		a.cust_no AS "custNo",
+		a.cust_name AS "custName",
+		a.operate_type AS "operateType",
+		a.error_type AS "errorType",
+		a.currency AS "currency",
+		a.denomination AS "denomination",
+		a.count AS "count",
+		a.sno AS "sno",
+		a.version_error AS "versionError",
+		a.status AS "status",
+		a.check_man_no AS "checkManNo",
+		a.check_man_name AS "checkManName",
+		a.clear_man_no AS "clearManNo",
+		a.clear_man_name AS "clearManName",
+		a.makesure_man_no AS "makesureManNo",
+		a.makesure_man_name AS "makesureManName",
+		a.find_time AS "findTime",
+		a.station_no AS "stationNo",
+		a.bus_type AS "busType",
+		a.error_money AS "errorMoney",
+		a.sub_error_type AS "subErrorType",
+		a.seel_org AS "seelOrg",
+		a.seel_chap AS "seelChap",
+		a.seel_date AS "seelDate",
+		a.strip_chap AS "stripChap",
+		a.stroke_count AS "strokeCount",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createName",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_name AS "updateName",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.authorize_by          AS "authorizeBy",
+		a.authorize_name		AS "authorizeName",
+		a.authorize_date		AS "authorizeDate",
+		a.authorize_reason		AS "authorizeReason",
+		a.office_id	AS "office.id",
+		a.office_name AS "office.name"
+	</sql>
+	
+	<sql id="clErrorInfoJoins">
+	</sql>
+    
+	<select id="get" resultType="ClErrorInfo">
+		SELECT 
+			<include refid="clErrorInfoColumns"/>
+		FROM CL_ERROR_INFO a
+		<include refid="clErrorInfoJoins"/>
+		WHERE a.error_no = #{errorNo}
+	</select>
+	
+	<select id="findList" resultType="ClErrorInfo">
+		SELECT 
+			<include refid="clErrorInfoColumns"/>
+		FROM CL_ERROR_INFO a
+		left join sys_office o 
+			on a.office_id=o.id
+		<include refid="clErrorInfoJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="errorNo != null and errorNo != ''">
+				AND a.error_no LIKE 
+					<if test="dbName == 'oracle'">'%'||#{errorNo}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{errorNo}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{errorNo},'%')</if>
+			</if>
+			<if test="subErrorType != null and subErrorType != ''">
+				AND a.sub_error_type =#{subErrorType}
+			</if>
+			<!-- 追加根据客户查询 修改人:sg 修改日期:2017-12-12 begin-->
+			<if test="custNo != null and custNo != ''">
+				AND a.cust_no =#{custNo}
+			</if>
+			<!-- end -->
+			<if test="errorType != null and errorType != ''">
+				AND a.error_type =#{errorType}
+			</if>
+			<if test="denomination != null and denomination != ''">
+				AND a.denomination =#{denomination}
+			</if>
+			<if test="busType != null and busType != ''">
+				AND a.bus_type =#{busType}
+			</if>
+			<if test="status != null and status != ''">
+				AND a.status = #{status}
+			</if>
+			<if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'"> '${searchDateEnd}'>=DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	        
+	         <!-- add-start by QPH 2017-11-14 -->
+			<if test="office != null and office.id != null and office.id != ''">
+				AND A.OFFICE_ID = '${office.id}'
+			</if>
+			<!-- end -->
+	        ${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.create_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="ClErrorInfo">
+		SELECT 
+			<include refid="clErrorInfoColumns"/>
+		FROM CL_ERROR_INFO a
+		<include refid="clErrorInfoJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO CL_ERROR_INFO(
+			error_no,
+			cust_no,
+			cust_name,
+			operate_type,
+			error_type,
+			currency,
+			denomination,
+			count,
+			sno,
+			version_error,
+			status,
+			check_man_no,
+			check_man_name,
+			clear_man_no,
+			clear_man_name,
+			makesure_man_no,
+			makesure_man_name,
+			find_time,
+			station_no,
+			bus_type,
+			error_money,
+			sub_error_type,
+			seel_org,
+			seel_chap,
+			seel_date,
+			strip_chap,
+			stroke_count,
+			create_by,
+			create_name,
+			create_date,
+			update_by,
+			update_name,
+			update_date,
+			remarks,
+			del_flag,
+			<!-- add-start by QPH 2017-11-14 -->
+			office_id,
+		    office_name
+		    <!-- end -->
+		) VALUES (
+			#{errorNo},
+			#{custNo},
+			#{custName},
+			#{operateType},
+			#{errorType},
+			#{currency},
+			#{denomination},
+			#{count},
+			#{sno},
+			#{versionError},
+			#{status},
+			#{checkManNo},
+			#{checkManName},
+			#{clearManNo},
+			#{clearManName},
+			#{makesureManNo},
+			#{makesureManName},
+			#{findTime},
+			#{stationNo},
+			#{busType},
+			#{errorMoney},
+			#{subErrorType},
+			#{seelOrg},
+			#{seelChap},
+			#{seelDate},
+			#{stripChap},
+			#{strokeCount},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate},
+			#{remarks},
+			#{delFlag},
+			<!-- add-start by QPH 2017-11-14 -->
+			#{office.id},
+			#{office.name}
+		    <!-- end -->
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE CL_ERROR_INFO SET 	
+			error_no = #{errorNo},
+			cust_no = #{custNo},
+			cust_name = #{custName},
+			operate_type = #{operateType},
+			error_type = #{errorType},
+			currency = #{currency},
+			denomination = #{denomination},
+			count = #{count},
+			sno = #{sno},
+			version_error = #{versionError},
+			status = #{status},
+			check_man_no = #{checkManNo},
+			check_man_name = #{checkManName},
+			clear_man_no = #{clearManNo},
+			clear_man_name = #{clearManName},
+			makesure_man_no = #{makesureManNo},
+			makesure_man_name = #{makesureManName},
+			find_time = #{findTime},
+			station_no = #{stationNo},
+			bus_type = #{busType},
+			error_money = #{errorMoney},
+			sub_error_type = #{subErrorType},
+			seel_org = #{seelOrg},
+			seel_chap = #{seelChap},
+			seel_date = #{seelDate},
+			strip_chap = #{stripChap},
+			stroke_count = #{strokeCount},
+			create_name = #{createName},
+			update_by = #{updateBy.id},
+			update_name = #{updateName},
+			update_date = #{updateDate},
+			remarks = #{remarks},
+			authorize_by = #{authorizeBy.id},
+			authorize_name = #{authorizeBy.name},
+			authorize_date = #{authorizeDate},
+			authorize_reason = #{authorizeReason}
+		WHERE error_no = #{errorNo}
+	</update>
+	
+	<update id="delete">
+		UPDATE CL_ERROR_INFO SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE error_no = #{errorNo}
+	</update>
+	
+	<!-- <select id="checkClTask" resultType="ClTaskMain">
+		SELECT a.task_no AS "taskNo"
+		FROM cl_task_main a,cl_task_detail b 
+		<where>
+			<if test="taskTypes != null and taskTypes.size != 0">
+	            AND a.task_type in
+	            <foreach collection="taskTypes" item="taskType" separator="," open="(" close=")" index="index">
+	            	#{taskTypes[${index}]}
+	            </foreach>
+	        </if>
+			<if test="dbName == 'oracle'">
+				AND TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd') = '${findTimeDate}'
+				AND '${findTimeSec}'>=TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss')
+			</if>
+			<if test="dbName=='mysql'">
+				AND DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d')='${findTimeDate}'
+				AND '${findTimeSec}'>=DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s')
+			</if>
+			AND b.emp_no=#{clearManNo}
+			AND a.denomination=#{denomination}
+			AND a.bus_type=#{busType}
+		</where>
+	</select> -->
+	
+	<select id="findClearList" resultType="ClErrorInfo">
+  		select 
+  			SUM(CASE WHEN a.denomination = '01' THEN a.count  ELSE 0 END) as cl01,
+      		SUM(CASE WHEN a.denomination = '02' THEN a.count  ELSE 0 END) as cl02,
+            SUM(CASE WHEN a.denomination = '03' THEN a.count  ELSE 0 END) as cl03,
+         	SUM(CASE WHEN a.denomination = '04' THEN a.count  ELSE 0 END) as cl04,
+            SUM(CASE WHEN a.denomination = '05' THEN a.count  ELSE 0 END) as cl05,
+      		SUM(CASE WHEN a.denomination = '06' THEN a.count  ELSE 0 END) as cl06,
+            SUM(CASE WHEN a.denomination = '07' THEN a.count  ELSE 0 END) as cl07,
+            SUM(CASE WHEN a.denomination = '08' THEN a.count  ELSE 0 END) as cl08,
+       		SUM(CASE WHEN a.denomination = '09' THEN a.count  ELSE 0 END) as cl09,
+            SUM(CASE WHEN a.denomination = '10' THEN a.count  ELSE 0 END) as cl10,
+            SUM(CASE WHEN a.denomination = '01' THEN a.error_money ELSE 0 END) as ccl01,
+            SUM(CASE WHEN a.denomination = '02' THEN a.error_money ELSE 0 END) as ccl02,
+            SUM(CASE WHEN a.denomination = '03' THEN a.error_money ELSE 0 END) as ccl03,
+            SUM(CASE WHEN a.denomination = '04' THEN a.error_money ELSE 0 END) as ccl04,
+            SUM(CASE WHEN a.denomination = '05' THEN a.error_money ELSE 0 END) as ccl05,
+       		SUM(CASE WHEN a.denomination = '06' THEN a.error_money ELSE 0 END) as ccl06,
+            SUM(CASE WHEN a.denomination = '07' THEN a.error_money ELSE 0 END) as ccl07,
+            SUM(CASE WHEN a.denomination = '08' THEN a.error_money ELSE 0 END) as ccl08,
+       		SUM(CASE WHEN a.denomination = '09' THEN a.error_money ELSE 0 END) as ccl09,
+            SUM(CASE WHEN a.denomination = '10' THEN a.error_money ELSE 0 END) as ccl10,
+            SUM(a.error_money) as errorMoney
+         from cl_error_info a
+         	where a.del_flag = #{DEL_FLAG_NORMAL}
+           	<if test="custNo != null and custNo != ''">
+				AND a.cust_no =#{custNo}
+			</if>
+			<if test="status != null and status != ''">
+				AND a.status =  #{status}
+			</if>
+            <!-- 主表：登记时间(开始) -->
+	       <if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'"> '${searchDateEnd}'>=DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	</select>
+</mapper>

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.clear.v03.dao.CenterAccountsDetailDao">
+    
+	<sql id="centerAccountsDetailColumns">
+		a.detail_id AS "detailId",
+		a.accounts_id AS "accountsId",
+		a.currency AS "currency",
+		a.denomination AS "denomination",
+		a.unit AS "unit",
+		a.total_count AS "totalCount",
+		a.total_amount AS "totalAmount",
+		a.del_flag AS "delFlag"
+	</sql>
+	
+	<sql id="centerAccountsDetailJoins">
+	</sql>
+    
+	<select id="get" resultType="CenterAccountsDetail">
+		SELECT 
+			<include refid="centerAccountsDetailColumns"/>
+		FROM center_accounts_detail a
+		<include refid="centerAccountsDetailJoins"/>
+		WHERE a.detail_id = #{detailId}
+	</select>
+	
+	<select id="findList" resultType="CenterAccountsDetail">
+		SELECT 
+			<include refid="centerAccountsDetailColumns"/>
+		FROM center_accounts_detail a
+		<include refid="centerAccountsDetailJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	<!-- 查询一个机构所有明细 -->
+	<select id="findItemsList" resultType="CenterAccountsDetail">
+		SELECT 
+			<include refid="centerAccountsDetailColumns"/>
+		FROM center_accounts_detail a
+		<include refid="centerAccountsDetailJoins"/>
+		<where>
+			a.accounts_id = #{accountsId} 
+		</where>
+		<choose>
+			
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="CenterAccountsDetail">
+		SELECT 
+			<include refid="centerAccountsDetailColumns"/>
+		FROM center_accounts_detail a
+		<include refid="centerAccountsDetailJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO center_accounts_detail(
+			detail_id,
+			accounts_id,
+			currency,
+			denomination,
+			unit,
+			total_count,
+			total_amount,
+			del_flag
+		) VALUES (
+			#{detailId},
+			#{accountsId},
+			#{currency},
+			#{denomination},
+			#{unit},
+			#{totalCount},
+			#{totalAmount},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE center_accounts_detail SET 	
+			detail_id = #{detailId},
+			accounts_id = #{accountsId},
+			currency = #{currency},
+			denomination = #{denomination},
+			unit = #{unit},
+			total_count = #{totalCount},
+			total_amount = #{totalAmount}
+		WHERE a.detail_id = #{detailId}
+	</update>
+	
+	<update id="delete">
+		UPDATE center_accounts_detail SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE a.detail_id = #{detailId}
+	</update>
+	
+</mapper>

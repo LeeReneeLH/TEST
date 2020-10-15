@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoStoresInfoDao">
+    
+	<sql id="stoStoresInfoColumns">
+		a.sto_id AS "stoId",
+		a.goods_id AS "goodsId",
+		a.goods_name AS "goodsName",
+		a.sto_num AS "stoNum",
+		a.surplus_sto_num AS "surplusStoNum",
+		a.amount AS "amount",
+		a.office_id AS "office.id",
+		a.goods_type AS "goodsType",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createName",
+		a.create_date AS "createDate",
+		a.remarks AS "remarks",
+		o6.name AS "office.name"
+	</sql>
+	
+	<sql id="stoStoresInfoJoins">
+		LEFT JOIN sys_office o6 ON o6.id = a.office_id
+	</sql>
+    
+	<select id="get" resultType="StoStoresInfo">
+		SELECT 
+			<include refid="stoStoresInfoColumns"/>
+		FROM sto_stores_info a
+		<include refid="stoStoresInfoJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	 <select id="findList" resultType="StoStoresInfo">
+	   SELECT 
+			<include refid="stoStoresInfoColumns"/>
+		FROM sto_stores_info a
+		<include refid="stoStoresInfoJoins"/>
+		<where>
+			<!-- to_char(a.create_date,'yyyy-MM-dd') = to_char(#{createDate},'yyyy-MM-dd') -->
+			<if test="dbName == 'oracle'">to_char(a.create_date,'yyyy-MM-dd') = to_char(#{createDate},'yyyy-MM-dd')</if>
+			<if test="dbName == 'mysql'"> date_format(a.create_date,'%Y-%m-%d') = date_format(#{createDate},'%Y-%m-%d')</if>
+			<if test="goodsId != null and goodsId != ''">
+				AND a.goods_id = #{goodsId}
+			</if>
+			<if test="office != null">
+				AND a.office_id = #{office.id} 
+			</if>
+			<if test="currency != null and currency != ''">
+				AND a.goods_id like '${currency}%'
+			</if>
+			<if test="goodsType != null and goodsType != ''">
+				and a.goods_type = '${goodsType}'
+			</if>
+			<!-- 数据范围过滤 -->
+			${sqlMap.dsf}
+			<!-- 获取重空所有数据库存
+			OR (a.goods_type = '03' 
+			AND to_char(a.create_date,'yyyy-MM-dd') = to_char(#{createDate},'yyyy-MM-dd'))
+			 -->
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.goods_id
+			</otherwise>
+		</choose>
+   
+	</select>
+	
+	<select id="findAllList" resultType="StoStoresInfo">
+		SELECT 
+			<include refid="stoStoresInfoColumns"/>
+		FROM sto_stores_info a
+		<include refid="stoStoresInfoJoins"/>
+		<where>
+			
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO sto_stores_info(
+			sto_id,
+			goods_id,
+			goods_name,
+			sto_num,
+			surplus_sto_num,
+			amount,
+			office_id,
+			goods_type,
+			create_by,
+			create_name,
+			create_date,
+			remarks
+		) VALUES (
+			#{stoId},
+			#{goodsId},
+			#{goodsName},
+			#{stoNum},
+			#{surplusStoNum},
+			#{amount},
+			#{office.id},
+			#{goodsType},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{remarks}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE sto_stores_info SET 	
+			sto_id = #{stoId},
+			goods_id = #{goodsId},
+			goods_name = #{goodsName},
+			sto_num = #{stoNum},
+			surplus_sto_num = #{surplusStoNum},
+			amount = #{amount},
+			office_id = #{office.id},
+			goods_type = #{goodsType},
+			create_name = #{createName},
+			create_date = #{createDate},
+			remarks = #{remarks}
+		WHERE sto_id = #{stoId}
+	</update>
+	
+	<update id="delete">
+		DELETE FROM sto_stores_info
+		WHERE id = #{id}
+	</update>
+	
+	<select id="getMaxStoreDate" resultType="Date">
+		SELECT MAX(t.create_date)
+		FROM sto_stores_info t
+		WHERE t.office_id = #{office.id}
+		AND t.create_date &lt; #{createDate}
+	</select>
+	
+	<select id="getStoStoresInfoByGoodsId" resultType="StoStoresInfo">
+		SELECT 
+		<include refid="stoStoresInfoSql"/>
+		FROM <include refid="rowNumsql"/> 
+		<if test="dbName == 'oracle'">WHERE  Rownum = 1</if>
+		<if test="dbName == 'mysql'">limit 1</if>
+	</select>
+	
+	<sql id="stoStoresInfoSql">
+		b.sto_id AS "stoId",
+		b.goods_id AS "goodsId",
+		b.goods_name AS "goodsName",
+		b.sto_num AS "stoNum",
+		b.surplus_sto_num AS "surplusStoNum",
+		b.amount AS "amount",
+		b.office_id AS "office.id",
+		b.goods_type AS "goodsType",
+		b.create_by AS "createBy.id",
+		b.create_name AS "createName",
+		b.create_date AS "createDate",
+		b.remarks AS "remarks",
+		b.name AS "office.name"
+	</sql>
+	
+	<sql id="rowNumsql">
+		(SELECT a.*,o6.name
+		FROM sto_stores_info a
+		<include refid="stoStoresInfoJoins"/>
+		WHERE a.goods_id = #{goodsId}
+		<if test="officeId != null and officeId != ''">
+				AND a.office_id = #{officeId} 
+		</if>
+		<if test="excludeZeroFg != null and excludeZeroFg != '' and excludeZeroFg = 'Y' ">
+				AND a.STO_NUM != 0
+		</if>
+		<!-- AND to_char(a.create_date, 'yyyyMMdd') =
+       		(SELECT to_char(MAX(t.create_date), 'yyyyMMdd')
+          	FROM sto_stores_info t
+         	WHERE to_char(t.create_date, 'yyyyMMdd') &lt;= to_char(sysdate, 'yyyyMMdd') AND t.office_id =#{officeId} )
+		order by a.create_date desc) b -->
+		
+		<if test="dbName == 'oracle'">
+		AND to_char(a.create_date, 'yyyyMMdd') =
+       		(SELECT to_char(MAX(t.create_date), 'yyyyMMdd')
+          	FROM sto_stores_info t
+         	WHERE to_char(t.create_date, 'yyyyMMdd') &lt;= to_char(sysdate, 'yyyyMMdd') AND t.office_id =#{officeId} )
+		order by a.create_date desc) b
+		</if>
+		
+		<if test="dbName == 'mysql'">
+		AND date_format(a.create_date, '%Y%m%d') =
+       		(SELECT date_format(MAX(t.create_date), '%Y%m%d')
+          	FROM sto_stores_info t
+         	WHERE date_format(t.create_date, '%Y%m%d') &lt;= date_format(now(), '%Y%m%d') AND t.office_id =#{officeId} )
+		order by a.create_date desc) b
+		</if>
+	</sql>
+	
+	<resultMap type="com.coffer.businesses.modules.report.v01.entity.StoInfoReportEntity" id="StoInfoReportEntityResult">
+		<result column="TOTAL_AMOUNT" property="totalAmount"/>
+		<result column="CREATE_DATE" property="strDate"/>
+		<!-- 登记机构 -->
+		<association property="office" column="OFFICE_ID" javaType="Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get"/>
+	</resultMap>
+	
+	<select id="getGraphData" parameterType="com.coffer.businesses.modules.report.v01.entity.StoInfoReportEntity" resultMap="StoInfoReportEntityResult">
+		 
+		 		SELECT T_1.CREATE_DATE AS CREATE_DATE,
+       					T_1.GOODS_NAME AS GOODS_NAME,
+       					
+       					<!-- NVL(T_6.TOTAL_AMOUNT, 0) AS TOTAL_AMOUNT -->
+       					<if test="dbName == 'oracle'">NVL(T_6.TOTAL_AMOUNT, 0) AS TOTAL_AMOUNT</if>
+						<if test="dbName == 'mysql'"> ifnull(T_6.TOTAL_AMOUNT,0) AS TOTAL_AMOUNT</if>
+  				FROM (SELECT T_4.CREATE_DATE, T_5.GOODS_NAME
+          				FROM (SELECT DISTINCT 
+          							<!-- TO_CHAR(CREATE_DATE, '${filterCondition}')  -->
+          							<if test="dbName == 'oracle'">TO_CHAR(CREATE_DATE, '${filterCondition}')</if>
+									<if test="dbName == 'mysql'">
+										<if test="filterCondition == 'yyyy'">
+		          						 	DATE_FORMAT(CREATE_DATE, '%Y') 
+		        						</if>
+		        						<if test="filterCondition == 'yyyy-mm'">
+		         	 					 	DATE_FORMAT(CREATE_DATE, '%Y-%m')
+		        						</if>
+		        						<if test="filterCondition == 'yyyy-Q'">
+		         	 					 	CONCAT(YEAR(CREATE_DATE),'-',quarter(CREATE_DATE)) 
+		        						</if>
+		        						<if test="filterCondition == 'yyyy-IW'">
+		          						 	DATE_FORMAT(CREATE_DATE,'%Y-%u') 
+		        						</if>
+		        						<if test="filterCondition == 'yyyy-mm-dd'">
+		          						 	DATE_FORMAT(CREATE_DATE,'%Y-%m-%d')
+		        						</if>
+									</if>
+          							AS CREATE_DATE
+                  				FROM STO_STORES_INFO
+                  				<where>
+			               			<!-- 时间(开始) -->
+					        		<if test="searchDateStart != null and searchDateStart != ''">
+					            		<!-- AND TO_CHAR(CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') >= '${searchDateStart}' -->
+					            		<if test="dbName == 'oracle'">AND TO_CHAR(CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') >= '${searchDateStart}'</if>
+										<if test="dbName == 'mysql'">AND date_format(CREATE_DATE,'%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+					        		</if>
+					        		<!--  时间(结束) -->
+					        		<if test="searchDateEnd != null and searchDateEnd != ''">
+					            		<!-- AND '${searchDateEnd}' >= TO_CHAR(CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') -->
+					            		<if test="dbName == 'oracle'">AND '${searchDateEnd}' >= TO_CHAR(CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS')</if>
+										<if test="dbName == 'mysql'">AND '${searchDateEnd}' >=date_format(CREATE_DATE,'%Y-%m-%d %H:%i:%S') </if>
+					        		</if>
+					        		<!-- 机构id -->
+					        		<if test="officeId != null and officeId != ''">
+					            		AND OFFICE_ID = #{officeId}
+					        		</if>
+				           		</where>) T_4,
+               		(SELECT DISTINCT GOODS_NAME 
+               			FROM STO_STORES_INFO
+               				<where>
+						        <!-- 机构id -->
+						        <if test="officeId != null and officeId != ''">
+						            AND OFFICE_ID = #{officeId}
+						        </if>
+				        	</where>) T_5) T_1
+ 				LEFT JOIN (SELECT AA.GOODS_NAME GOODS_NAME,
+                   			AA.CREATE_DATE,
+                    		SUM(AA.AMOUNT) AS TOTAL_AMOUNT
+               				FROM (SELECT cc.office_id,
+                            			cc.goods_name,
+                            			sum(AMOUNT) AS AMOUNT,
+                           			<!-- TO_CHAR(cc.CREATE_DATE, '${filterCondition}')   -->
+                           			<if test="dbName == 'oracle'">TO_CHAR(cc.CREATE_DATE, '${filterCondition}') </if>
+									<if test="dbName == 'mysql'">
+										<if test="filterCondition == 'yyyy'">
+		          						 	DATE_FORMAT(cc.CREATE_DATE, '%Y') 
+		        						</if>
+		        						<if test="filterCondition == 'yyyy-mm'">
+		         	 					 	DATE_FORMAT(cc.CREATE_DATE, '%Y-%m')
+		        						</if>
+		        						<if test="filterCondition == 'yyyy-Q'">
+		         	 					 	CONCAT(YEAR(cc.CREATE_DATE),'-',quarter(cc.CREATE_DATE)) 
+		        						</if>
+		        						<if test="filterCondition == 'yyyy-IW'">
+		          						 	DATE_FORMAT(cc.CREATE_DATE,'%Y-%u') 
+		        						</if>
+		        						<if test="filterCondition == 'yyyy-mm-dd'">
+		          						 	DATE_FORMAT(cc.CREATE_DATE,'%Y-%m-%d')
+		        						</if>
+									</if>
+                           			
+                           			AS CREATE_DATE
+                       				FROM STO_STORES_INFO CC,
+                           			 (SELECT OFFICE_ID,
+                                    		MAX(CREATE_DATE) AS CREATE_DATE,
+                                    		GOODS_NAME
+                               				FROM STO_STORES_INFO
+                                		<where>
+                    						<!--   时间(开始) -->
+                  								<if test="searchDateStart != null and searchDateStart != ''">
+                      								<!-- AND TO_CHAR(CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') >= '${searchDateStart}' -->
+                      								<if test="dbName == 'oracle'">AND TO_CHAR(CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') >= '${searchDateStart}'</if>
+													<if test="dbName == 'mysql'">AND date_format(CREATE_DATE,'%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+                  								</if>
+                 							<!--   时间(结束) -->
+                  								<if test="searchDateEnd != null and searchDateEnd != ''">
+                     				 				<!-- AND '${searchDateEnd}' >= TO_CHAR(CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') -->
+                     				 				<if test="dbName == 'oracle'">AND '${searchDateEnd}' >= TO_CHAR(CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS')</if>
+													<if test="dbName == 'mysql'">AND '${searchDateEnd}' >=date_format(CREATE_DATE,'%Y-%m-%d %H:%i:%S') </if>
+					        					</if>
+					     		 			<!--   机构id -->
+					        					<if test="officeId != null and officeId != ''">
+					            					AND  OFFICE_ID = #{officeId}
+					        					</if>
+										</where>
+                            		  GROUP BY 
+                            		 <!--  TO_CHAR(CREATE_DATE, '${filterCondition}'), -->
+                            		  <if test="dbName == 'oracle'">TO_CHAR(CREATE_DATE, '${filterCondition}'),</if>
+									  <if test="dbName == 'mysql'">
+									   	<if test="filterCondition == 'yyyy'">
+		          							 DATE_FORMAT(CREATE_DATE, '%Y'), 
+		        						</if>
+		        						<if test="filterCondition == 'yyyy-mm'">
+		         	 						 DATE_FORMAT(CREATE_DATE, '%Y-%m'),
+		        						</if>
+		        						<if test="filterCondition == 'yyyy-Q'">
+		         	 						 CONCAT(YEAR(CREATE_DATE),'-',quarter(CC.CREATE_DATE)), 
+		        						</if>
+		        						<if test="filterCondition == 'yyyy-IW'">
+		          							 DATE_FORMAT(CREATE_DATE,'%Y-%u'), 
+		        						</if>
+		        						<if test="filterCondition == 'yyyy-mm-dd'">
+		          							 DATE_FORMAT(CREATE_DATE,'%Y-%m-%d'),
+		        						</if>
+									  </if>
+                                       OFFICE_ID,
+                                       GOODS_NAME) BB
+                     	 where CC.CREATE_DATE = BB.CREATE_DATE
+                         and CC.OFFICE_ID = BB.OFFICE_ID
+                         and CC.GOODS_NAME = BB.GOODS_NAME
+                         GROUP BY CC.OFFICE_ID,
+                               CC.GOODS_NAME,
+                               
+                               <!-- TO_CHAR(CC.CREATE_DATE, '${filterCondition}') -->
+                               <if test="dbName == 'oracle'">TO_CHAR(CC.CREATE_DATE, '${filterCondition}')</if>
+							   <if test="dbName == 'mysql'">
+							   		 
+		        					 <if test="filterCondition == 'yyyy'">
+		          						 DATE_FORMAT(CC.CREATE_DATE, '%Y') 
+		        					</if>
+		        					<if test="filterCondition == 'yyyy-mm'">
+		         	 					 DATE_FORMAT(CC.CREATE_DATE, '%Y-%m')
+		        					</if>
+		        					<if test="filterCondition == 'yyyy-Q'">
+		         	 					 CONCAT(YEAR(CC.CREATE_DATE),'-',quarter(CC.CREATE_DATE)) 
+		        					</if>
+		        					<if test="filterCondition == 'yyyy-IW'">
+		          						 DATE_FORMAT(CC.CREATE_DATE,'%Y-%u') 
+		        					</if>
+		        					<if test="filterCondition == 'yyyy-mm-dd'">
+		          						 DATE_FORMAT(CC.CREATE_DATE,'%Y-%m-%d')
+		        					</if>
+		   
+							   
+							   </if>
+                               ) AA
+              GROUP BY AA.GOODS_NAME, AA.CREATE_DATE) T_6
+   		 ON (T_6.GOODS_NAME = T_1.GOODS_NAME AND
+      		 T_6.CREATE_DATE = T_1.CREATE_DATE)
+  	     ORDER BY T_1.CREATE_DATE, T_1.GOODS_NAME ASC
+		 
+	</select>
+	
+	<select id="findListGraph" parameterType="com.coffer.businesses.modules.store.v01.entity.StoStoresInfoEntity" resultType="StoStoresInfoEntity">
+			SELECT T_4.GOODS_ID AS "GOODSID",
+       			T_6.GOODS_NAME AS "GOODSNAME",
+       			
+       			<!-- NVL(T_3.STO_NUM, 0) AS "STONUM", -->
+       			<if test="dbName == 'oracle'">NVL(T_3.STO_NUM, 0) AS "STONUM",</if>
+				<if test="dbName == 'mysql'"> ifnull(T_3.STO_NUM,0) AS "STONUM",</if>
+				
+       			<!-- NVL(T_3.SURPLUS_STO_NUM, 0) AS "SURPLUSSTONUM", -->
+       			<if test="dbName == 'oracle'">NVL(T_3.SURPLUS_STO_NUM, 0) AS "SURPLUSSTONUM",</if>
+				<if test="dbName == 'mysql'"> ifnull(T_3.SURPLUS_STO_NUM,0) AS "SURPLUSSTONUM",</if>
+       			
+      	 		<!-- NVL(T_3.AMOUNT, 0) AS "TOTAL_AMOUNT", -->
+      	 		<if test="dbName == 'oracle'">NVL(T_3.AMOUNT, 0) AS "TOTAL_AMOUNT",</if>
+				<if test="dbName == 'mysql'"> ifnull(T_3.AMOUNT,0) AS "TOTAL_AMOUNT",</if>
+				
+       			T_4.OFFICE_ID AS "OFFICE.ID",
+       			T_5.NAME AS "OFFICE.NAME",
+       			T_5.NAME AS "OFFICE_N"
+  			FROM (SELECT T_1.OFFICE_ID, T_2.GOODS_ID
+          			FROM (SELECT OFFICE_ID, MAX(CREATE_DATE)
+                  			FROM STO_STORES_INFO INFO
+                  			<where> 
+         			<if test = "office != null">
+         			 	<if test = "office.id != null and office.id!= ''" >
+            				AND OFFICE_ID = #{office.id} 
+            		 	</if> 
+            		 </if> 
+         			</where>
+                 			GROUP BY OFFICE_ID) T_1,
+               
+               			(SELECT GOODS_ID, MAX(CREATE_DATE)
+                  			FROM STO_STORES_INFO INFO
+                  			<where> 
+         			<if test = "office != null">
+         			 	<if test = "office.id != null and office.id!= ''" >
+            				AND OFFICE_ID = #{office.id} 
+            		 	</if> 
+            		 </if> 
+         			</where>
+                 			GROUP BY GOODS_ID) T_2 
+         				 ) T_4
+
+  			LEFT JOIN (SELECT A.STO_ID,
+                    			A.GOODS_ID,
+                    			A.GOODS_NAME,
+                    			A.STO_NUM,
+                    			A.SURPLUS_STO_NUM,
+                    			A.AMOUNT,
+                    			A.OFFICE_ID,
+                    			A.GOODS_TYPE,
+                    			A.CREATE_BY,
+                    			A.CREATE_NAME,
+                    			A.CREATE_DATE,
+                    			A.REMARKS
+             
+               			FROM (SELECT MAX(T1.CREATE_DATE) CREATE_DATE,
+                            			T1.OFFICE_ID,
+                            			T1.GOODS_ID
+                       			FROM STO_STORES_INFO T1
+                       			<where> 
+         						 	<if test = "office != null">
+         			 					<if test = "office.id != null and office.id!= ''" >
+            								AND T1.OFFICE_ID = #{office.id} 
+            		 					</if> 
+            		 				</if> 
+         					   </where>
+                      			GROUP BY T1.OFFICE_ID, T1.GOODS_ID) T3
+             
+               			LEFT JOIN STO_STORES_INFO A
+                 			ON A.GOODS_ID = T3.GOODS_ID
+                			AND A.CREATE_DATE = T3.CREATE_DATE
+                			AND T3.OFFICE_ID = A.OFFICE_ID
+             
+             			) T_3
+    			ON T_3.OFFICE_ID = T_4.OFFICE_ID
+   				AND T_3.GOODS_ID = T_4.GOODS_ID
+
+  			LEFT JOIN SYS_OFFICE T_5
+    			ON T_5.ID = T_4.OFFICE_ID
+  			LEFT JOIN STO_GOODS T_6
+    			ON T_6.GOODS_ID = T_4.GOODS_ID
+
+ 			ORDER BY T_4.OFFICE_ID,T_4.GOODS_ID
+	
+	</select>
+</mapper>

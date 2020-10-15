@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.doorOrder.v01.dao.DepositPanoramaDao">
+	<sql id="doorOrderInfoColumns">
+		a.id AS "id",
+		a.order_id AS "orderId",
+		a.door_id AS "doorId",
+		o1.name AS "doorName",
+		a.amount AS "amount",
+		a.accept_by AS "acceptBy",
+		a.accept_date AS "acceptDate",
+		a.status AS "status",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.rfid AS "rfid",
+		a.del_flag AS "delFlag",
+		a.order_date AS "orderDate",
+		a.method AS "method",
+        a.total_count AS "totalCount",
+		<!-- b.name AS "acceptName", -->
+		c.name AS "updateName",
+		d.name AS "createName",
+		a.office_id AS "office.id",
+		o.name AS "office.name",
+		a.equipment_id AS "equipmentId",
+		e.series_number AS "equipmentName"
+	</sql>
+	
+	<sql id="doorOrderInfoJoins">
+		LEFT JOIN sys_office o ON o.id = a.office_id
+		LEFT JOIN sys_user c ON c.id = a.update_by <!-- AND c.del_flag = #{DEL_FLAG_NORMAL} -->
+		LEFT JOIN sys_user d ON d.id = a.create_by <!-- AND d.del_flag = #{DEL_FLAG_NORMAL} -->
+		LEFT JOIN EQUIPMENT_INFO e ON e.id = a.equipment_id
+		LEFT JOIN sys_office o1 ON o1.id = a.door_id
+	</sql>
+	
+	<select id="get" resultType="DoorOrderInfo">
+		SELECT 
+			<include refid="doorOrderInfoColumns"/>
+		FROM door_order_info a
+		<include refid="doorOrderInfoJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<!-- 获取缴存全景列表数据  add by lihe 2020-05-29 start -->
+	<select id="findList" resultType="com.coffer.businesses.modules.weChat.v03.entity.DoorOrderInfo">
+		SELECT
+			<if test="dbName == 'oracle'">
+				NVL(SUM( b.PAPER_COUNT ),0) AS "paperCount",
+				NVL(SUM( b.PAPER_AMOUNT ),0) AS "paperAmount",
+				NVL(SUM( b.COIN_COUNT ),0) AS "coinCount",
+				NVL(SUM( b.COIN_AMOUNT ),0) AS "coinAmount",
+				NVL(SUM( b.FORCE_AMOUNT ),0) AS "forceAmount",
+				NVL(SUM( b.OTHER_AMOUNT ),0) AS "otherAmount",
+			</if>
+			<if test="dbName == 'mysql'">
+				IFNULL(SUM( b.PAPER_COUNT ),0) AS "paperCount",
+				IFNULL(SUM( b.PAPER_AMOUNT ),0) AS "paperAmount",
+				IFNULL(SUM( b.COIN_COUNT ),0) AS "coinCount",
+				IFNULL(SUM( b.COIN_AMOUNT ),0) AS "coinAmount",
+				IFNULL(SUM( b.FORCE_AMOUNT ),0) AS "forceAmount",
+				IFNULL(SUM( b.OTHER_AMOUNT ),0) AS "otherAmount",
+			</if>
+			<include refid="doorOrderInfoColumns"/>
+		FROM door_order_info a
+		<include refid="doorOrderInfoJoins"/>
+		LEFT JOIN door_order_detail b ON a.ORDER_ID = b.ORDER_ID
+		LEFT JOIN sys_user u ON b.CREATE_BY = u.ID AND u.del_flag = 0
+		<where>
+				a.del_flag = #{DEL_FLAG_NORMAL}
+				<if test="acceptBy != null and acceptBy != ''">
+					AND a.accept_by = #{acceptBy}
+				</if>
+				<!-- 门店编号 -->
+				<if test="doorId != null and doorId != ''">
+					AND (a.door_id = #{doorId} or o1.PARENT_IDS like  
+						<if test="dbName == 'oracle'">'%,' || #{doorId} || ',%'</if>
+						<if test="dbName == 'mysql'">CONCAT('%', #{doorId}, '%')</if>
+						)
+				</if>
+				<!-- 机具编号 -->
+	            <if test="equipmentId != null and equipmentId != ''">
+	                AND a.equipment_id = #{equipmentId}
+	            </if>
+	            <!-- 状态 -->
+				<if test="status != null and status != ''">
+					<!-- 判断是否为历史所有状态 gzd 2020-09-10 -->
+					<if test="status == 99">
+						AND a.status &lt;> 0
+					</if>
+					<if test="status != 99">
+						AND a.status = #{status}
+					</if>
+				</if>
+				<!-- 存款方式 -->
+				<if test="method != null and method != ''">
+					AND a.method = #{method}
+				</if>
+				<!-- 存款方式列表 -->
+				<if test="methodList != null and methodList.size != 0">
+					AND a.method in 
+					<foreach collection="methodList" item="status" separator="," open="(" close=")" index="index">
+					 	 #{methodList[${index}]}
+					</foreach>
+				</if>
+				<if test="office != null and office.id != null and office.id != ''">
+					AND a.office_id = #{office.id}
+				</if>
+				<!-- 状态列表 -->
+				<if test="statusList != null and statusList.size != 0">
+					AND a.status in
+					<foreach collection="statusList" item="status" separator="," open="(" close=")" index="index">
+					 	 #{statusList[${index}]}
+					</foreach>
+				</if>
+				<!-- 机具序列号 -->
+				<if test="null != equipmentName and equipmentName != ''">
+					AND e.series_number like 
+					<if test="dbName == 'oracle'">'%,' || #{equipmentName} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{equipmentName}, '%')</if>
+				</if>
+				<!-- 包号 -->
+				<if test="null != rfid and rfid != ''">
+					AND a.rfid like 
+					<if test="dbName == 'oracle'">'%,' || #{rfid} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{rfid}, '%')</if>
+				</if>
+				<if test="searchDateStart != null and searchDateStart != ''">
+		            <if test="dbName == 'oracle'">AND TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+					<if test="dbName=='mysql'">AND DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		        </if>
+		        <if test="searchDateEnd != null and searchDateEnd != ''">
+		            <if test="dbName == 'oracle'">AND '${searchDateEnd}' >= TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+					<if test="dbName=='mysql'">AND '${searchDateEnd}'>=DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+		        </if>
+		        <!-- 总金额 范围查询使用  start-->
+				<if test="beforeAmount != null and beforeAmount != ''">
+		            AND a.amount >= #{beforeAmount}
+		        </if>
+		        <if test="afterAmount != null and afterAmount != ''">
+		            AND #{afterAmount} >= a.amount
+		        </if>
+		        <!-- 总金额范围  end-->
+				<!-- 凭条 -->
+				<if test="tickertape != null and tickertape != ''">
+					AND b.TICKERTAPE like 
+					<if test="dbName == 'oracle'">'%,' || #{tickertape} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{tickertape}, '%')</if>
+				</if>
+				<!-- 存款人 -->
+				<if test="null != updateName and updateName != ''">
+					AND u.NAME like 
+					<if test="dbName == 'oracle'">'%,' || #{updateName} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{updateName}, '%')</if>
+				</if>
+				<!-- 业务备注 -->
+				<if test="null != remarks and remarks != ''">
+					AND b.REMARKS like 
+					<if test="dbName == 'oracle'">'%,' || #{remarks} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{remarks}, '%')</if>
+				</if>
+				${sqlMap.dsf}
+			</where>
+			GROUP BY a.ORDER_ID
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	<!-- 获取缴存全景列表数据  add by lihe 2020-05-29 end -->
+	
+	
+	<sql id="doorOrderInfoColumnsPackage">
+		a.id AS "id",
+		<!-- a.order_id AS "orderId", -->
+		case when a.status != '4' AND a.status !='2'  then  a.order_id  else ' ' end AS "orderId",
+		a.door_id AS "doorId",
+		o1.name AS "doorName",
+		a.amount AS "amount",
+		a.accept_by AS "acceptBy",
+		a.accept_date AS "acceptDate",
+		a.status AS "status",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.rfid AS "rfid",
+		a.del_flag AS "delFlag",
+		a.order_date AS "orderDate",
+		a.method AS "method",
+        a.total_count AS "totalCount",
+		<!-- b.name AS "acceptName", -->
+		c.name AS "updateName",
+		d.name AS "createName",
+		a.office_id AS "office.id",
+		o.name AS "office.name",
+		a.equipment_id AS "equipmentId",
+		e.series_number AS "equipmentName",
+		dod.REMARKS AS "remarks"
+	</sql>
+	
+	<!-- 获取缴存全景封包缴存列表数据  add by huzhiyong 2020-06-03 start -->
+	<select id="packageList" resultType="com.coffer.businesses.modules.weChat.v03.entity.DoorOrderInfo">
+		SELECT
+			<include refid="doorOrderInfoColumnsPackage"/>
+		FROM door_order_info a
+		<include refid="doorOrderInfoJoins"/>
+		<if test="null != remarks and remarks != ''">
+		LEFT JOIN door_order_detail b ON a.ORDER_ID = b.ORDER_ID		
+		LEFT JOIN sys_user u ON b.CREATE_BY = u.ID AND u.del_flag = 0
+		</if>
+		LEFT JOIN door_order_detail dod ON a.ORDER_ID = dod.ORDER_ID AND a.method = '2' 	
+		<where>
+				a.del_flag = #{DEL_FLAG_NORMAL}
+				<if test="acceptBy != null and acceptBy != ''">
+					AND a.accept_by = #{acceptBy}
+				</if>
+				<!-- 门店编号 -->
+				<if test="doorId != null and doorId != ''">
+					AND (a.door_id = #{doorId} or o1.PARENT_IDS like  
+						<if test="dbName == 'oracle'">'%,' || #{doorId} || ',%'</if>
+						<if test="dbName == 'mysql'">CONCAT('%', #{doorId}, '%')</if>
+						)
+				</if>
+	            <!-- 状态 -->
+				<if test="status != null and status != ''">
+					AND a.status = #{status}
+				</if>
+				<!-- 存款方式 -->
+				<if test="method != null and method != ''">
+					AND a.method = #{method}
+				</if>
+				<!-- 存款方式列表 -->
+				<if test="methodList != null and methodList.size != 0">
+					AND a.method in 
+					<foreach collection="methodList" item="status" separator="," open="(" close=")" index="index">
+					 	 #{methodList[${index}]}
+					</foreach>
+				</if>
+				<if test="office != null and office.id != null and office.id != ''">
+					AND a.office_id = #{office.id}
+				</if>
+				<!-- 状态列表 -->
+				<if test="statusList != null and statusList.size != 0">
+					AND a.status in
+					<foreach collection="statusList" item="status" separator="," open="(" close=")" index="index">
+					 	 #{statusList[${index}]}
+					</foreach>
+				</if>
+				<!-- 包号 -->
+				<if test="null != rfid and rfid != ''">
+					AND a.rfid like 
+					<if test="dbName == 'oracle'">'%,' || #{rfid} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{rfid}, '%')</if>
+				</if>
+				<if test="searchDateStart != null and searchDateStart != ''">
+		            <if test="dbName == 'oracle'">AND TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+					<if test="dbName=='mysql'">AND DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		        </if>
+		        <if test="searchDateEnd != null and searchDateEnd != ''">
+		            <if test="dbName == 'oracle'">AND '${searchDateEnd}' >= TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+					<if test="dbName=='mysql'">AND '${searchDateEnd}'>=DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+		        </if>
+		        <!-- 总金额 范围查询使用  start-->
+				<if test="beforeAmount != null and beforeAmount != ''">
+		            AND a.amount >= #{beforeAmount}
+		        </if>
+		        <if test="afterAmount != null and afterAmount != ''">
+		            AND #{afterAmount} >= a.amount
+		        </if>
+		        <!-- 总金额范围  end-->
+				<!-- 凭条 -->
+				<!-- <if test="tickertape != null and tickertape != ''">
+					AND b.TICKERTAPE like 
+					<if test="dbName == 'oracle'">'%,' || #{tickertape} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{tickertape}, '%')</if>
+				</if>  -->
+				<!-- 存款人 -->
+				<!-- <if test="null != updateName and updateName != ''">
+					AND u.NAME like 
+					<if test="dbName == 'oracle'">'%,' || #{updateName} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{updateName}, '%')</if>
+				</if> -->
+				<!-- 登记人 -->
+				 <if test="null != createName and createName != ''">
+					AND d.NAME like 
+					<if test="dbName == 'oracle'">'%,' || #{createName} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{createName}, '%')</if>
+				</if> 
+				<!-- 业务备注 -->
+				<if test="null != remarks and remarks != ''">
+					AND b.REMARKS like 
+					<if test="dbName == 'oracle'">'%,' || #{remarks} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{remarks}, '%')</if>
+				</if>
+				${sqlMap.dsf}
+			</where>
+			<!-- GROUP BY a.ORDER_ID -->
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	<!-- 获取缴存全景封包缴存列表数据  add by huzhiyong 2020-06-03 end -->
+</mapper>

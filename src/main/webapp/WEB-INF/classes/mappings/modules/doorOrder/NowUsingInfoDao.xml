@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.doorOrder.v01.dao.NowUsingInfoDao">
+	<resultMap type="com.coffer.businesses.modules.doorOrder.v01.entity.NowUsingInfo" id="nowUsingInfo">
+		<id property="equipmentId" column="EQUIPMENT_ID"/>
+		<result property="seriesNumber" column="SERIES_NUMBER"/>
+		<result property="area" column="NAME"/>
+		<result property="bagNo" column="BAG_NO"/>
+		<result property="boxNo" column="BAG_NO"/>
+ 		<result property="banknoteCount" column="PAPER_COUNT"/>
+		<result property="banknoteAmount" column="PAPER_AMOUNT"/>
+		<result property="forceAmount" column="FORCE_AMOUNT"/>
+		<result property="totalCount" column="COUNT"/>
+		<result property="otherAmount" column="OTHER_AMOUNT"/>
+		<result property="totalAmount" column="AMOUNT"/>
+		<result property="lastChangeTime" column="CHANGE_DATE"/>
+		<result property="belongTo" column="DOOR_NAME"/>
+		<result property="aOffice.id" column="DOOR_ID"/>
+		<result property="aOffice.name" column="DOOR_NAME"/>
+		<result property="equipmentId" column="EQUIPMENT_ID"/>
+	</resultMap>
+	
+	<!-- <select id="findList" resultMap="nowUsingInfo" parameterType="com.coffer.businesses.modules.doorOrder.v01.entity.NowUsingInfo">
+		SELECT
+			DISTINCT
+			sss.paperCount AS PAPER_COUNT,
+			sss.paperAmount AS PAPER_AMOUNT,
+			sss.otherAmount AS OTHER_AMOUNT,
+			sss.forceAmount AS FORCE_AMOUNT,
+			sss.COUNT AS COUNT,
+			sss.AMOUNT AS AMOUNT,
+			sss.ORDER_ID,
+			s3.EQUIPMENT_ID,
+			s3.DOOR_ID,
+			so.NAME AS DOOR_NAME,
+			s3.DOOR_NAME,
+			s3.BAG_NO,
+			s4.CHANGE_DATE,
+			so2.NAME,
+			e.SERIES_NUMBER
+		FROM
+			(
+				SELECT
+					cam.EQUIPMENT_ID,
+					cam.DOOR_ID,
+					cam.DOOR_NAME,
+					cam.BAG_NO,
+					cam.COUNT,
+					cam.AMOUNT,
+					cam.UPDATE_DATE,
+					dod.ORDER_ID,
+                    cam.CLEAR_CENTER_ID 
+ 
+				FROM
+					clear_add_money cam
+				LEFT JOIN door_order_detail dod ON cam.BUSINESS_ID=dod.TICKERTAPE
+				WHERE
+					cam.id IN (
+						SELECT
+							s2.id
+						FROM
+							(
+								SELECT
+									EQUIPMENT_ID,
+									max(UPDATE_DATE) AS 'LASTEST_DATE'
+								FROM
+									clear_add_money
+								GROUP BY
+									EQUIPMENT_ID
+							) s1
+						LEFT JOIN (
+							SELECT
+								t1.id,
+								EQUIPMENT_ID,
+								DOOR_ID,
+								t2.name as 'DOOR_NAME',
+								BAG_NO,
+								COUNT,
+								AMOUNT,
+								t1.UPDATE_DATE 
+							FROM
+								clear_add_money t1 left join sys_office t2 on t1.DOOR_ID = t2.id
+							WHERE
+								t1.type = 0 
+								AND t1.DEL_FLAG = 0
+							 AND t2.DEL_FLAG = 0
+						) s2 ON s1.LASTEST_DATE = UPDATE_DATE
+						AND s1.EQUIPMENT_ID = s2.EQUIPMENT_ID
+					)
+				AND cam.DEL_FLAG = 0
+			) s3
+			LEFT JOIN (SELECT d.ORDER_ID, d.RFID, 
+					<if test="dbName=='oracle'">
+						NVL(SUM(a.COUNT_ZHANG),0) AS paperCount,
+						NVL(SUM(a.COUNT_ZHANG), 0) AS count,
+						NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.force} THEN a.DETAIL_AMOUNT else 0 END),0) AS forceAmount,
+						NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.paper} THEN a.DETAIL_AMOUNT else 0 END),0) AS paperAmount,
+						NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.other} THEN a.DETAIL_AMOUNT else 0 END),0) AS otherAmount,
+						NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.force} THEN a.DETAIL_AMOUNT else 0 END),0)+NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.paper} THEN a.DETAIL_AMOUNT else 0 END),0) AS amount
+					</if>
+					<if test="dbName=='mysql'">
+						IFNULL(SUM(a.COUNT_ZHANG),0) AS paperCount,
+						IFNULL(SUM(a.COUNT_ZHANG), 0) AS count,
+						IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.force} THEN a.DETAIL_AMOUNT else 0 END),0) AS forceAmount,
+						IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.paper} THEN a.DETAIL_AMOUNT else 0 END),0) AS paperAmount,
+						IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.other} THEN a.DETAIL_AMOUNT else 0 END),0) AS otherAmount,
+						IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.force} THEN a.DETAIL_AMOUNT else 0 END),0)+IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.paper} THEN a.DETAIL_AMOUNT else 0 END),0) AS amount
+					</if>
+					FROM
+						door_order_detail d
+					LEFT JOIN door_order_amount a ON d.ID = a.DETAIL_ID
+					GROUP BY
+						d.ORDER_ID,
+						d.RFID) sss ON sss.ORDER_ID = s3.ORDER_ID
+		LEFT JOIN ( select ss1.EQUIPMENT_ID,cam.CHANGE_DATE,ss1.LAST_CHANGE_DATE from  (
+				SELECT EQUIPMENT_ID, max( UPDATE_DATE ) AS 'LAST_CHANGE_DATE' FROM clear_add_money WHERE type = 1 AND DEL_FLAG = 0 AND BUSINESS_ID IS NOT NULL AND BUSINESS_ID != '' GROUP BY EQUIPMENT_ID) ss1 left join clear_add_money cam on cam.	EQUIPMENT_ID = ss1.EQUIPMENT_ID and cam.UPDATE_DATE = ss1.LAST_CHANGE_DATE ) s4 ON s3.EQUIPMENT_ID = s4.EQUIPMENT_ID 
+			AND s3.UPDATE_DATE > s4.LAST_CHANGE_DATE
+			LEFT JOIN sys_office so ON s3.DOOR_ID = so.ID AND so.DEL_FLAG = 0
+			LEFT JOIN sys_office so2 ON so.PARENT_ID = so2.ID AND so2.DEL_FLAG = 0
+		 	LEFT JOIN door_order_info doi ON s3.EQUIPMENT_ID = doi.EQUIPMENT_ID AND doi.DEL_FLAG = 0
+			AND s3.BAG_NO = doi.RFID
+			LEFT JOIN door_order_detail dod ON doi.ORDER_ID = dod.ORDER_ID AND dod.DEL_FLAG = 0
+			AND s3.AMOUNT = dod.AMOUNT
+			LEFT JOIN equipment_info e on e.ID = s3.EQUIPMENT_ID AND e.DEL_FLAG = 0
+		<where>
+			 <if test="null != aOffice and aOffice.id != null and aOffice.id != ''">
+				s3.DOOR_ID = #{aOffice.id}
+			</if>
+			<if test="seriesNumber != null and seriesNumber != ''">
+				AND e.SERIES_NUMBER like CONCAT('%',#{seriesNumber},'%')
+			</if>
+			<if test="bagNo != null and bagNo != ''">
+				AND s3.BAG_NO like CONCAT('%',#{bagNo},'%')
+			</if>
+			<if test="boxNo != null and boxNo != ''">
+				AND s3.BAG_NO = #{boxNo}
+			</if> 
+			AND (${sqlMap.dsf})
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select> -->
+	
+	<select id="findList" resultMap="nowUsingInfo" parameterType="com.coffer.businesses.modules.doorOrder.v01.entity.NowUsingInfo">
+		SELECT
+			ei.SERIES_NUMBER,
+			so2.NAME,
+			cam.BAG_NO,
+			t2.PAPER_COUNT,
+			t2.PAPER_AMOUNT,
+			t2.FORCE_AMOUNT,
+			t2.OTHER_AMOUNT,
+			t2.COUNT,
+			t2.AMOUNT,
+			t3.CHANGE_DATE,
+			so.NAME as 'DOOR_NAME',
+			ei.ID as 'EQUIPMENT_ID'
+		FROM
+			clear_add_money cam
+			RIGHT JOIN ( SELECT EQUIPMENT_ID, max( UPDATE_DATE ) AS 'LASTEST_DATE' FROM clear_add_money WHERE DEL_FLAG = 0 GROUP BY EQUIPMENT_ID ) t1 ON cam.EQUIPMENT_ID = t1.EQUIPMENT_ID 
+			AND cam.UPDATE_DATE = t1.lastest_date 
+			AND cam.DEL_FLAG = 0
+			LEFT JOIN (
+			SELECT
+				RFID,
+				IFNULL( sum( PAPER_COUNT ), 0 ) AS 'PAPER_COUNT',
+				IFNULL( sum( PAPER_AMOUNT ), 0 ) AS 'PAPER_AMOUNT',
+				IFNULL( sum( FORCE_AMOUNT ), 0 ) AS 'FORCE_AMOUNT',
+				IFNULL( sum( OTHER_AMOUNT ), 0 ) AS 'OTHER_AMOUNT',
+				IFNULL( sum( PAPER_COUNT ), 0 ) AS 'COUNT',
+				IFNULL( sum( PAPER_AMOUNT ), 0 ) + IFNULL( sum( FORCE_AMOUNT ), 0 ) AS 'AMOUNT' 
+			FROM
+				door_order_detail 
+			WHERE
+				DEL_FLAG = 0 
+			GROUP BY
+				RFID 
+			) t2 ON cam.BAG_NO = t2.RFID
+			LEFT JOIN equipment_info ei ON cam.EQUIPMENT_ID = ei.ID 
+			AND ei.DEL_FLAG = 0
+			LEFT JOIN sys_office so ON cam.DOOR_ID = so.ID 
+			AND so.DEL_FLAG = 0
+			LEFT JOIN sys_office so2 ON so.PARENT_ID = so2.ID 
+			AND so2.DEL_FLAG = 0
+			LEFT JOIN ( SELECT EQUIPMENT_ID, max( UPDATE_DATE ) AS 'CHANGE_DATE' FROM clear_add_money WHERE type = 1 AND DEL_FLAG = 0 GROUP BY EQUIPMENT_ID ) t3 ON cam.EQUIPMENT_ID = t3.EQUIPMENT_ID 
+		<where>
+			cam.type = 0
+			<if test="null != aOffice and aOffice.id != null and aOffice.id != ''">
+				AND (cam.DOOR_ID = #{aOffice.id} or 
+					so.PARENT_IDS like  
+				<if test="dbName == 'oracle'">'%,' || #{aOffice.id} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{aOffice.id}, '%')</if>
+					)
+			</if>
+			<if test="seriesNumber != null and seriesNumber != ''">
+				AND ei.SERIES_NUMBER like CONCAT('%',#{seriesNumber},'%')
+			</if>
+			<if test="bagNo != null and bagNo != ''">
+				AND cam.BAG_NO like CONCAT('%',#{bagNo},'%')
+			</if>
+			<if test="boxNo != null and boxNo != ''">
+				AND cam.BAG_NO = #{boxNo}
+			</if> 
+			AND (${sqlMap.dsf})
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+</mapper>

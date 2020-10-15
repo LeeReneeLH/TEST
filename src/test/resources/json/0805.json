@@ -1,0 +1,42 @@
+{
+    "serviceNo": "0805",
+    "eqpId": "JL10001",
+    "bagNo": "10000001",
+    "totalAmount": 185.6,
+    "tickerTape": "000001",
+    "userId": "600aef52364b444ba6740a5814c0659d",
+    "currency": "1",
+    "detail": [
+        {
+            "type": "01",
+            "amount": 170.6,
+            "denomination": [
+                {
+                    "ID": "15",
+                    "count": 1
+                },
+                {
+                    "ID": "16",
+                    "count": 1
+                },
+                {
+                    "ID": "17",
+                    "count": 1
+                },
+                {
+                    "ID": "29",
+                    "count": 1
+                },
+                {
+                    "ID": "30",
+                    "count": 1
+                }
+            ]
+        },
+        {
+            "type": "02",
+            "amount": 15,
+            "denomination": null
+        }
+    ]
+}

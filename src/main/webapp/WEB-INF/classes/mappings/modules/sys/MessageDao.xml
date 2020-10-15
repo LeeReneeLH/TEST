@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.core.modules.sys.dao.MessageDao">
+
+	<sql id="messageColumns">
+		message_body,
+		message_type,
+		id,
+		message_topic,
+		del_flag,
+		create_by,
+		create_name,
+		create_date,
+		update_by,
+		update_name,
+		update_date,
+		cancel_reason
+	</sql>
+
+	<resultMap id="messageResult" type="com.coffer.core.modules.sys.entity.Message">
+	    <result column="id" property="id"/>
+	    <result column="messageBody" property="messageBody"/>
+	    <result column="messageType" property="messageType"/>
+	    <result column="messageTopic" property="messageTopic"/>
+	    <result column="delFlag" property="delFlag"/>
+	    <result column="createName" property="createName"/>
+	    <result column="createDate" property="createDate"/>
+	    <result column="updateName" property="updateName"/>
+	    <result column="updateDate" property="updateDate"/>
+	    <result column="cancelReason" property="cancelReason"/>
+	    <association property="createBy" column="create_By" javaType="User" select="com.coffer.core.modules.sys.dao.UserDao.get" fetchType="lazy"/>
+	    <association property="updateBy" column="update_By" javaType="User" select="com.coffer.core.modules.sys.dao.UserDao.get" fetchType="lazy"/>
+	</resultMap>
+
+	<select id="get" resultType="Message">
+		SELECT
+			<include refid="messageColumns" />
+		FROM SYS_MESSAGE
+		WHERE id = #{id}
+	</select>
+	
+	<select id="findList" resultMap="messageResult">
+		SELECT
+			<include refid="messageColumns" />
+		FROM SYS_MESSAGE
+		<where>
+			<if test="messageType != null and messageType != ''">
+				AND message_type = #{messageType}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY CREATE_DATE DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="findMessageByAuthority" resultType="Message">
+	SELECT * FROM(
+		SELECT T1.MESSAGE_BODY,T1.MESSAGE_TYPE,T1.ID,T1.MESSAGE_TOPIC,T1.DEL_FLAG,T1.CREATE_NAME,T1.CREATE_DATE
+		FROM(SELECT
+			<include refid="messageColumns" />
+			FROM SYS_MESSAGE a
+			LEFT JOIN (SELECT MESSAGE_ID
+			 	 		 FROM SYS_MESSAGE_READ
+		     			WHERE USER_ID = #{currentUser.id}
+		     			) b ON a.id = b.MESSAGE_ID
+		     			WHERE
+							b.MESSAGE_ID IS NULL) T1
+		INNER JOIN(SELECT
+					<include refid="messageColumns" />
+					FROM SYS_MESSAGE a
+					JOIN(SELECT T3.MESSAGE_ID FROM(SELECT MESSAGE_ID from sys_message_user_authority 
+													WHERE USER_TYPE = #{userAuthority}) T3
+						JOIN(SELECT MESSAGE_ID from sys_message_office_authority
+							WHERE OFFICE_ID = #{currentUser.office.id}) T4
+						ON T3.MESSAGE_ID = T4.MESSAGE_ID
+						)b ON a.id = b.MESSAGE_ID) T2
+		ON T1.ID=T2.ID
+		WHERE 
+			<if test="dbName == 'oracle'">T1.CREATE_DATE > SYSDATE - #{dateRange}</if>
+			<if test="dbName == 'mysql'">T1.CREATE_DATE > DATE_SUB(CURDATE(), INTERVAL #{dateRange} DAY)</if>
+			<if test="searchDate != null and searchDate != ''">
+				and T1.CREATE_DATE >= #{searchDate}
+			</if>
+		ORDER BY T1.CREATE_DATE ASC
+		<!-- 暂且不设置消息最大数 hzy 2020/04/15  -->
+		<!-- <if test="dbName == 'mysql'">LIMIT #{maxNumber}</if> -->
+		) TABLE_1
+		<!-- 暂且不设置消息最大数 hzy 2020/04/15  -->
+	<!-- <where>
+		<if test="dbName == 'oracle'">AND rownum &lt;= #{maxNumber}</if>
+	</where> -->
+	</select>
+
+	<select id="findMessageHistory" resultMap="messageResult">
+		SELECT
+			<include refid="messageColumns" />
+		FROM SYS_MESSAGE a
+		JOIN(SELECT T3.MESSAGE_ID FROM(SELECT MESSAGE_ID from sys_message_user_authority
+			WHERE USER_TYPE = #{userAuthority}) T3
+			JOIN(SELECT MESSAGE_ID from sys_message_office_authority
+				WHERE OFFICE_ID = #{currentUser.office.id}) T4
+			ON T3.MESSAGE_ID = T4.MESSAGE_ID
+			)b ON a.id = b.MESSAGE_ID
+		<where>			
+			<if test="messageType != null and messageType != ''">
+				AND a.message_type = #{messageType}
+			</if>
+		</where>
+		UNION 
+		SELECT
+			<include refid="messageColumns" />
+		FROM SYS_MESSAGE
+		WHERE create_by = #{currentUser.id}
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY CREATE_DATE DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<insert id="insertReadUser">
+		INSERT INTO SYS_MESSAGE_READ(
+			message_id,
+			user_id,
+			read_date
+		) VALUES (
+			#{id},
+			#{currentUser.id},
+			#{updateDate}
+		)
+	</insert>
+	
+	<insert id="insertUserAuthority">
+		INSERT INTO SYS_MESSAGE_USER_AUTHORITY(
+			message_id,
+			user_type
+		) VALUES (
+			#{id},
+			#{userAuthority}
+		)
+	</insert>
+	
+	<select id="findUserAuthority" resultType="string">
+		SELECT USER_TYPE FROM SYS_MESSAGE_USER_AUTHORITY
+		WHERE MESSAGE_ID = #{messageId}
+	</select>
+	
+	<insert id="insertOfficeAuthority">
+		INSERT INTO SYS_MESSAGE_OFFICE_AUTHORITY(
+			message_id,
+			office_id
+		) VALUES (
+			#{id},
+			#{officeAuthority}
+		)
+	</insert>
+	
+	<select id="findOfficeAuthority" resultType="string">
+		SELECT OFFICE_ID FROM SYS_MESSAGE_OFFICE_AUTHORITY
+		WHERE MESSAGE_ID = #{messageId}
+	</select>
+
+	<insert id="insert">
+		INSERT INTO SYS_MESSAGE(
+			message_body,
+			message_type,
+			id,
+			message_topic,
+			del_flag,
+			create_by,
+			create_name,
+			create_date,
+			update_by,
+			update_name,
+			update_date,
+			cancel_reason
+		) VALUES (
+			#{messageBody},
+			#{messageType},
+			#{id},
+			#{messageTopic},
+			#{delFlag},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate},
+			#{cancelReason}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE SYS_MESSAGE
+		SET
+			message_body=#{messageBody},
+			message_topic=#{messageTopic},
+			del_flag=#{delFlag},
+			update_by=#{updateBy.id},
+			update_name=#{updateName},
+			update_date=#{updateDate},
+			cancel_reason=#{cancelReason}
+		WHERE id = #{id}
+	</update>
+	
+	<select id="findRelevanceList" resultType="Message">
+		SELECT
+			*
+		FROM SYS_MESSAGE_RELEVANCE
+	</select>
+	
+	<insert id="insertRelevance">
+		INSERT INTO SYS_MESSAGE_RELEVANCE(
+			message_type,
+			message_type_name,
+			message_construct,
+			user_authority,
+			office_authority,
+			menu_id,
+			url,
+			del_flag,
+			create_by,
+			create_name,
+			create_date,
+			update_by,
+			update_name,
+			update_date
+		) VALUES (
+			#{messageType},
+			#{messageTypeName},
+			#{messageConstruct},
+			#{userAuthority},
+			#{officeAuthority},
+			#{menuId},
+			#{url},
+			#{delFlag},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate}
+		)
+	</insert>
+	
+	<update id="updateRelevance">
+		UPDATE SYS_MESSAGE_RELEVANCE
+		SET
+			message_type_name=#{messageTypeName},
+			message_construct=#{messageConstruct},
+			user_authority=#{userAuthority},
+			office_authority=#{officeAuthority},
+			<if test="menuId != null and menuId != ''">
+				menu_id=#{menuId},
+			</if>
+			url=#{url},
+			del_flag=#{delFlag},
+			update_by=#{updateBy.id},
+			update_name=#{updateName},
+			update_date=#{updateDate}
+		WHERE message_type = #{messageType}
+	</update>
+	
+</mapper>

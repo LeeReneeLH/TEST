@@ -1,0 +1,31 @@
+{
+	"versionNo": "01",
+	"serviceNo": "24",
+	"officeId": "28900225",
+	"routeId": "20170719111447308",
+	"boxList": [
+		{
+			"boxNo": "0987654321",
+			"rfid": "12345678",
+			"scanFlag": "1"
+		},
+		{
+			"boxNo": "9999999999",
+			"rfid": "11111111",
+			"scanFlag": "2"
+		},
+		{
+			"boxNo": "6666666666",
+			"rfid": "44444444",
+			"scanFlag": "1"
+		}
+	],
+	"managerList": [
+		{
+			"id": "28900225005",
+			"reason": "0"
+		}
+	],
+	"userId": "ff8ae8fb874b4babb1c23d2b296bdec5",
+	"userName": "马志红"
+}

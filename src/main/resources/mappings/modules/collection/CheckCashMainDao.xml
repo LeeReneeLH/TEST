@@ -1,0 +1,654 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.collection.v03.dao.CheckCashMainDao">
+
+	<sql id="checkCashColumns">
+		a.out_no AS "outNo",
+		a.cust_no AS "custNo",
+		cust.name AS "custName",
+		a.input_amount AS "inputAmount",
+		a.check_amount AS "checkAmount",
+		a.diff_amount AS "diffAmount",
+		a.box_count AS "boxCount",
+		a.remarks AS "remarks",
+		a.reg_date AS "regDate",
+		a.rfid AS "rfid",		
+		a.data_flag AS "dataFlag",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.update_cnt AS "updateCnt",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.del_flag AS "delFlag",
+		a.update_name AS "updateBy.name",
+		a.create_name AS "createBy.name",
+		a.office_id AS "office.id",
+		o.name AS "office.name"
+	</sql>
+
+	<sql id="checkCashJoins">
+		LEFT JOIN sys_office o ON o.id = a.office_id
+		LEFT JOIN sys_office cust on a.cust_no = cust.id
+		LEFT JOIN STO_ESCORT_INFO f ON f.USER_ID = a.update_by AND f.del_flag = #{DEL_FLAG_NORMAL}
+	</sql>
+    
+	<select id="get" resultType="CheckCashMain">
+		SELECT 
+			<include refid="checkCashColumns"/>
+		FROM check_cash_main a
+		<include refid="checkCashJoins"/>
+		WHERE a.out_no = #{id}
+	</select>
+	
+	<select id="findList" resultType="CheckCashMain">
+		SELECT 
+			<include refid="checkCashColumns"/>,
+			odetail.remarks as "oRemarks",
+            sum( camount.ENABLED_FLAG ),
+            <!-- GJ 开始 -->
+			t1.UPDATE_DATE as "currentClearDate",
+			t1.EQUIPMENT_ID
+			<!-- GJ 结束 -->
+        FROM check_cash_main a
+		<include refid="checkCashJoins"/>
+		left join check_cash_amount camount on a.out_no = camount.out_no
+		left join door_order_detail odetail on camount.pack_num = odetail.tickertape
+		<!-- GJ 开始 -->
+		left join door_order_info doi on a.RFID = doi.rfid
+		left join (select * from clear_plan_info where `STATUS` = 1) t1 on doi.ORDER_ID = t1.PLAN_ID
+		<!-- GJ 结束 -->
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+            and odetail.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="searchCustNo != null and searchCustNo != ''">
+				AND a.cust_no = #{searchCustNo}
+			</if>
+			<if test="rfid != null and rfid != ''">
+				AND a.rfid = #{rfid}
+			</if>
+	        <!-- 主表：登记时间(开始) -->
+	        <if test="searchRegDateStart != null and searchRegDateStart != ''">
+				<if test="dbName == 'oracle'">AND TO_CHAR(A.reg_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchRegDateStart}'</if>
+				<if test="dbName == 'mysql'">AND DATE_FORMAT(A.reg_date, '%Y-%m-%d %H:%i:%S') >= '${searchRegDateStart}'</if>
+	        </if>
+	        <!-- 主表：登记时间(结束) -->
+	        <if test="searchRegDateEnd != null and searchRegDateEnd != ''">
+				<if test="dbName == 'oracle'">AND '${searchRegDateEnd}' >= TO_CHAR(A.reg_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName == 'mysql'">AND '${searchRegDateEnd}' >= DATE_FORMAT(A.reg_date, '%Y-%m-%d %H:%i:%S')</if>
+	        </if>
+			<if test="searchClearManNo != null and searchClearManNo != ''">
+				AND f.user_id = #{searchClearManNo}
+			</if>
+			<!-- 拆箱单号 -->
+			<if test="outNo != null and outNo != ''">
+				AND a.out_no = #{outNo}
+			</if>
+			<!-- 权限控制(清分操作员只能看和自己相关的拆箱记录和未拆箱的) -->
+			<if test="curUserType == clearOpt">
+				AND (a.update_by = #{curUserId} OR a.update_by IS null OR a.update_by = '')
+			</if>
+			<if test="office != null and office.id !=null and office.id != ''">
+				AND a.office_id = #{office.id}
+			</if>
+			<if test="oRemarks != null and oRemarks != ''">
+				AND odetail.remarks like
+				<if test="dbName == 'oracle'">'%'||#{oRemarks}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{oRemarks}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{oRemarks},'%')</if>
+			</if>
+		    <if test="checked != null and checked != ''">
+                AND camount.ENABLED_FLAG = #{checked}
+            </if>
+			${sqlMap.dsf}
+		</where>
+		GROUP BY a.out_no
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.out_no DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- GJ 开始 -->
+	<select id="getLastClearDate" resultType="ClearPlanInfo">
+		SELECT
+			equipment_id,
+			max(update_date) as 'lastClearDate'
+		FROM
+			clear_plan_info
+		WHERE 
+			status = 1
+			and equipment_id = #{equipmentId}
+			and DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%S') <![CDATA[ < ]]> DATE_FORMAT(#{updateDate}, '%Y-%m-%d %H:%i:%S')
+	</select>
+	<!-- GJ 结束 -->
+	
+	<select id="pdaFindList" resultType="CheckCashMain">
+		SELECT 
+			<include refid="checkCashColumns"/>
+		FROM check_cash_main a
+		<include refid="checkCashJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+
+			<if test="searchCustNo != null and searchCustNo != ''">
+				AND a.cust_no = #{searchCustNo}
+			</if>
+	        <!-- 当日 -->
+			<if test="dbName == 'oracle'">AND TO_CHAR(A.reg_date, 'yyyy-mm-dd') = TO_CHAR(sysdate, 'yyyy-mm-dd')</if>
+			<if test="dbName == 'mysql'">AND DATE_FORMAT(A.reg_date, '%Y-%m-%d') = DATE_FORMAT(now(), '%Y-%m-%d')</if>
+			AND (a.input_amount >0 or a.check_amount > 0 )
+		</where>
+		ORDER BY a.out_no DESC
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO CHECK_CASH_MAIN(
+		   out_no,
+		   cust_no,
+		   cust_name,
+		   status,
+		   input_amount,
+		   check_amount,
+		   diff_amount,
+		   box_count,
+		   reg_date,
+		   data_flag,
+		   create_by,
+		   create_name,
+		   create_date,
+		   update_by,
+		   update_name,
+		   update_date,
+		   update_cnt,
+		   del_flag,
+		   remarks,
+		   office_id,
+		   office_name,
+		   rfid
+		) VALUES (
+			#{outNo},
+			#{custNo},
+			#{custName},
+			#{status},
+			#{inputAmount},
+			#{checkAmount},
+			#{diffAmount},
+			#{boxCount},
+			#{regDate},
+			#{dataFlag},
+			#{createBy.id},
+			#{createBy.name},
+			#{createDate},
+			#{updateBy.id},
+			#{updateBy.name},
+			#{updateDate},
+			0,
+			#{delFlag},
+			#{remarks},
+			#{office.id},
+			#{office.name},
+			#{rfid}
+		)
+	</insert>
+
+	<update id="update">
+		UPDATE check_cash_main SET 
+			cust_no = #{custNo}, 
+			cust_name = #{custName}, 
+			input_amount = #{inputAmount}, 
+			check_amount = #{checkAmount}, 
+			diff_amount = #{diffAmount}, 
+			box_count = #{boxCount}, 
+			remarks = #{remarks},
+			update_by = #{updateBy.id}, 
+			update_date = #{updateDate}, 
+			update_name = #{updateBy.name},
+			update_cnt = update_cnt + 1,
+			rfid = #{rfid}
+		WHERE out_no = #{outNo}
+	</update>
+	
+	<!-- 删除款箱拆箱表数据(逻辑删除) -->
+	<update id="logicDelete">
+		UPDATE check_cash_main SET
+		del_flag = '1',
+		update_by = #{updateBy.id}, 
+		update_date = #{updateDate}, 
+		update_name = #{updateBy.name},
+		update_cnt = update_cnt + 1
+		WHERE out_no = #{outNo}
+		  and del_flag = '0'
+	</update>
+	
+	<!--  查询款箱拆箱列表   lihe 2020-03-11 start
+	<select id="getCheckCashList1" resultType="com.coffer.businesses.modules.collection.v03.entity.CheckCashMain">
+		SELECT
+			拆箱单号
+			a.OUT_NO AS "outNo",
+			包号
+			a.RFID AS "rfid",
+			门店编号
+			a.CUST_NO AS "custNo",
+			门店名称
+			a.CUST_NAME AS "custName",
+			登记时间
+			a.REG_DATE AS "updateDate",
+			清分人员
+			a.update_name AS "updateBy.name",
+			备注
+			dod.remarks AS "remarks",
+			存款录入金额（元）
+			b.inputAmount AS "inputAmount",
+			存款差错金额（元）
+			b.saveErrorMoney AS "saveErrorMoney",
+			实际存款金额（元）
+			b.trueSumMoney AS "trueSumMoney",
+			实际拆箱金额（元）
+			a.check_amount AS "checkAmount",
+			差额（元）
+			a.diff_amount AS "diffAmount",
+			业务备注 gzd 2020-04-14
+			b.remarks AS "oRemarks",
+			总笔数
+			b.boxCount AS "boxCount",
+			未拆数
+			b.noBoxCount AS "noBoxCount",
+			<if test="dbName=='oracle'">
+				钞袋开始使用时间
+				CASE WHEN i.`STATUS`='2' AND i.METHOD='4' THEN TO_CHAR( i.CREATE_DATE, '%Y-%m-%d %H:%i:%s' ) ELSE NULL END AS "lastTime",
+				钞袋更换时间
+				CASE WHEN i.`STATUS`='2' AND i.METHOD='4' THEN TO_CHAR( i.UPDATE_DATE, '%Y-%m-%d %H:%i:%s' ) WHEN i.`STATUS`!='2' AND i.METHOD='4' THEN TO_CHAR( now(), '%Y-%m-%d %H:%i:%s' ) ELSE NULL END AS "thisTime"
+				上次清机时间
+				TO_CHAR( NVL(e.UPDATE_DATE,g.deposit_date), 'yyyy-mm-dd hh24:mi:ss' ) AS "lastTime",
+				本次清机时间
+				TO_CHAR( NVL(e.cDate,sysdate), 'yyyy-mm-dd hh24:mi:ss' ) AS "thisTime"
+				钞袋使用时间(分钟)
+				TIMESTAMPDIFF(MINUTE,TO_CHAR( NVL(e.UPDATE_DATE,g.deposit_date), 'yyyy-mm-dd hh24:mi:ss' ),TO_CHAR( NVL(e.cDate,sysdate), 'yyyy-mm-dd hh24:mi:ss' )) AS packNumUseTime
+			    钞袋使用时间(时间段展示)
+			        CONCAT(CONCAT(TO_CHAR( NVL(e.UPDATE_DATE,g.deposit_date), 'yyyy-mm-dd hh24:mi' ),'~'),TO_CHAR( NVL(e.cDate,sysdate), 'yyyy-mm-dd hh24:mi' )) AS packNumUseTime
+			    上次清机时间
+			    NVL(e.UPDATE_DATE,g.deposit_date) AS "lastTime",
+			    本次清机时间
+			    NVL(e.cDate,sysdate) AS "thisTime"
+			</if>
+			<if test="dbName=='mysql'">
+				钞袋开始使用时间
+				CASE WHEN (i.`STATUS`='2' or i.`STATUS`='3') AND i.METHOD='4' THEN DATE_FORMAT( i.CREATE_DATE, '%Y-%m-%d %H:%i:%s' ) ELSE NULL END AS "lastTime",
+				钞袋更换时间
+				CASE WHEN i.`STATUS`='2' AND i.METHOD='4' THEN DATE_FORMAT( i.UPDATE_DATE, '%Y-%m-%d %H:%i:%s' ) 
+				WHEN i.`STATUS`='3' AND i.METHOD='4' THEN DATE_FORMAT( c.UPDATE_DATE, '%Y-%m-%d %H:%i:%s' ) 
+				WHEN i.`STATUS`!='2' AND i.`STATUS`!='3' AND i.METHOD='4' THEN DATE_FORMAT( now(), '%Y-%m-%d %H:%i:%s' ) ELSE NULL END AS "thisTime"
+				上次清机时间
+				 DATE_FORMAT( IFNULL(e.UPDATE_DATE,g.deposit_date), '%Y-%m-%d %H:%i:%s' ) AS "lastTime", 
+				本次清机时间
+				 DATE_FORMAT( IFNULL(e.cDate,now()), '%Y-%m-%d %H:%i:%s' ) AS "thisTime" ,
+				钞袋使用时间(分钟)
+				TIMESTAMPDIFF(MINUTE,DATE_FORMAT( IFNULL(e.UPDATE_DATE,g.deposit_date), '%Y-%m-%d %H:%i:%s' ), DATE_FORMAT( IFNULL(e.cDate,now()), '%Y-%m-%d %H:%i:%s' )) AS packNumUseTime
+ 				钞袋使用时间(时间段展示) add:ZXK start			 
+			    上次清机时间
+			    IFNULL(e.UPDATE_DATE,g.deposit_date) AS "lastTime",
+			    本次清机时间
+			    IFNULL(e.cDate,now()) AS "thisTime" 
+			    钞袋使用时间(时间段展示)  end
+			</if>
+		FROM
+			check_cash_main a
+			机构过滤使用
+			LEFT JOIN sys_office o ON o.id = a.office_id
+			LEFT JOIN sys_office cust ON a.cust_no = cust.id
+			查询清分人员使用
+			LEFT JOIN STO_ESCORT_INFO f ON f.USER_ID = a.update_by AND f.del_flag = 0
+			查询最新一条存款的业务备注 gzd 2020-04-24
+			LEFT JOIN (
+				SELECT dod1.REMARKS,dod1.OUT_NO AS ORDER_ID
+				FROM check_cash_amount dod1 
+				RIGHT JOIN(SELECT OUT_NO,
+							MAX(CREATE_DATE) AS CREATE_DATE
+							FROM check_cash_amount 
+							GROUP BY OUT_NO ) dod2 
+				ON dod1.OUT_NO = dod2.OUT_NO AND dod1.CREATE_DATE = dod2.CREATE_DATE
+				<where>
+					拆箱单号
+					<if test="outNo != null and outNo != ''">
+						AND dod1.OUT_NO like 
+						<if test="dbName == 'oracle'">'%,' || #{outNo} || ',%'</if>
+						<if test="dbName == 'mysql'">CONCAT('%', #{outNo}, '%')</if>
+					</if>
+					业务备注 gzd 2020-04-23 
+		            <if test="remarks != null and remarks != ''">
+						AND dod1.REMARKS like
+						<if test="dbName == 'oracle'">'%'||#{remarks}||'%'</if>
+						<if test="dbName == 'mssql'">'%'+#{remarks}+'%'</if>
+						<if test="dbName == 'mysql'">concat('%',#{remarks},'%')</if>
+					</if>
+					是否拆箱
+					<if test="checked != null and checked != ''">
+		                AND dod1.ENABLED_FLAG = #{checked}
+		            </if>
+				</where>
+				GROUP BY dod1.OUT_NO ) dod ON a.out_no = dod.ORDER_ID 
+			查询存款金额使用
+			LEFT JOIN (
+			SELECT
+				c.OUT_NO,
+				c.ENABLED_FLAG,
+				c.REMARKS,
+				<if test="dbName == 'oracle'">
+					NVL(SUM( c.INPUT_AMOUNT ),0) AS "inputAmount",
+					NVL(SUM( c.INPUT_AMOUNT ), 0 ) + NVL( SUM( d.AMOUNT ), 0 ) AS "trueSumMoney",
+					NVL(SUM( c.CHECK_AMOUNT ), 0 ) AS "checkAmount",
+					NVL(SUM( d.amount ), 0 ) AS "saveErrorMoney",
+					CASE  WHEN d.ERROR_TYPE = 3 then NVL(SUM( c.INPUT_AMOUNT ), 0 ) - NVL( SUM( d.AMOUNT ), 0 ) 
+					ELSE NVL(SUM( c.INPUT_AMOUNT ), 0 ) + NVL( SUM( d.AMOUNT ), 0 ) 
+					END AS "trueSumMoney",
+					CASE WHEN	d.ERROR_TYPE = 3 then (- NVL(SUM( d.amount ), 0 )) ELSE NVL(SUM( d.amount ), 0 ) END AS "saveErrorMoney",
+					NVL(SUM( c.DIFF_AMOUNT ), 0 ) AS "diffAmount",
+				</if>
+				<if test="dbName=='mysql'">
+					IFNULL(SUM( c.INPUT_AMOUNT ), 0) AS "inputAmount",
+					IFNULL( SUM( c.INPUT_AMOUNT ), 0) + IFNULL( SUM( d.AMOUNT ), 0 ) AS "trueSumMoney",
+					IFNULL(SUM( c.CHECK_AMOUNT ),0) AS "checkAmount",
+					IFNULL(SUM( d.amount ),0) AS "saveErrorMoney",
+					CASE  WHEN d.ERROR_TYPE = 3 then IFNULL( SUM( c.INPUT_AMOUNT ), 0 ) - IFNULL( SUM( d.AMOUNT ), 0 ) 
+					ELSE IFNULL( SUM( c.INPUT_AMOUNT ), 0 ) + IFNULL( SUM( d.AMOUNT ), 0 ) 
+					END AS "trueSumMoney",
+					CASE WHEN d.ERROR_TYPE = 3 then (- IFNULL( SUM( d.amount ), 0 )) ELSE IFNULL( SUM( d.amount ), 0 ) END AS "saveErrorMoney",
+					
+					IFNULL(SUM( c.DIFF_AMOUNT ),0) AS "diffAmount",
+				</if>
+				COUNT( c.ENABLED_FLAG ) AS "boxCount",
+				COUNT( c.ENABLED_FLAG ) - CASE WHEN c.ENABLED_FLAG = 1 THEN COUNT( c.ENABLED_FLAG ) ELSE 0 END AS "noBoxCount" 
+			FROM
+				check_cash_amount c
+				LEFT JOIN deposit_error d ON c.PACK_NUM = d.ORDER_ID
+			<where>
+				业务备注模糊查询
+				<if test="oRemarks != null and oRemarks != ''">
+					AND c.remarks like
+					<if test="dbName == 'oracle'">'%'||#{oRemarks}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{oRemarks}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{oRemarks},'%')</if>
+				</if>
+				凭条号模糊查询
+				<if test="tickertape != null and tickertape != ''">
+					AND c.PACK_NUM like 
+					<if test="dbName == 'oracle'">'%'||#{tickertape}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{tickertape}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{tickertape},'%')</if>
+				</if>
+				<if test="checked != null and checked != ''">
+	                AND c.ENABLED_FLAG = #{checked}
+	            </if>
+	            拆箱单号
+				<if test="outNo != null and outNo != ''">
+					AND c.OUT_NO like 
+					<if test="dbName == 'oracle'">'%,' || #{outNo} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{outNo}, '%')</if>
+				</if>
+			</where>
+			GROUP BY
+				c.OUT_NO 
+			) b ON a.OUT_NO = b.OUT_NO
+			查询款袋使用时间使用
+			LEFT JOIN door_order_info i ON a.OUT_NO=i.ORDER_ID
+			查询本次清机时间使用
+			LEFT JOIN (SELECT EQUIPMENT_ID,UPDATE_DATE,PLAN_ID FROM clear_plan_info WHERE STATUS = ${clearPlan.status.completed} AND PLAN_ID != '') c ON a.OUT_NO = c.PLAN_ID
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="searchCustNo != null and searchCustNo != ''">
+				AND a.cust_no = #{searchCustNo}
+			</if>
+			<if test="rfid != null and rfid != ''">
+				AND a.rfid like 
+				<if test="dbName == 'oracle'">'%,' || #{rfid} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{rfid}, '%')</if>
+			</if>
+	        主表：登记时间(开始)
+	        <if test="searchRegDateStart != null and searchRegDateStart != ''">
+				<if test="dbName == 'oracle'">AND TO_CHAR(a.reg_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchRegDateStart}'</if>
+				<if test="dbName == 'mysql'">AND DATE_FORMAT(a.reg_date, '%Y-%m-%d %H:%i:%S') >= '${searchRegDateStart}'</if>
+	        </if>
+	        主表：登记时间(结束)
+	        <if test="searchRegDateEnd != null and searchRegDateEnd != ''">
+				<if test="dbName == 'oracle'">AND '${searchRegDateEnd}' >= TO_CHAR(a.reg_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName == 'mysql'">AND '${searchRegDateEnd}' >= DATE_FORMAT(a.reg_date, '%Y-%m-%d %H:%i:%S')</if>
+	        </if>
+			<if test="searchClearManNo != null and searchClearManNo != ''">
+				AND f.user_id = #{searchClearManNo}
+			</if>
+			拆箱单号
+			<if test="outNo != null and outNo != ''">
+				AND a.out_no like 
+				<if test="dbName == 'oracle'">'%,' || #{outNo} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{outNo}, '%')</if>
+			</if>
+			权限控制(清分操作员只能看和自己相关的拆箱记录和未拆箱的)
+			<if test="curUserType == clearOpt">
+				AND (a.update_by = #{curUserId} OR a.update_by IS null OR a.update_by = '')
+			</if>
+			<if test="office != null and office.id !=null and office.id != ''">
+				AND a.office_id = #{office.id}
+			</if>
+		    <if test="checked != null and checked != ''">
+                AND b.ENABLED_FLAG = #{checked}
+            </if>
+            业务备注 gzd 2020-04-23 
+            <if test="remarks != null and remarks != ''">
+				AND dod.remarks like
+				<if test="dbName == 'oracle'">'%'||#{remarks}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{remarks}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{remarks},'%')</if>
+			</if>
+            业务备注或凭条模糊查询使用
+            <if test="(oRemarks != null and oRemarks != '')||(tickertape != null and tickertape != '')">
+				AND b.OUT_NO is not NULL
+			</if>
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	查询款箱拆箱列表   lihe 2020-03-11 end -->
+
+	<!-- 对账功能用，检查拆箱记录中包是否已清分 add by yinkai -->
+	<select id="getByCondition" resultType="com.coffer.businesses.modules.collection.v03.entity.CheckCashMain">
+		SELECT
+		<include refid="checkCashColumns"/>
+		FROM check_cash_main a
+		<include refid="checkCashJoins"/>
+		LEFT JOIN door_order_info doi on a.out_no = doi.order_id
+		<where>
+			<if test="outNo != null and outNo != ''">
+				AND a.out_no = #{outNo}
+			</if>
+			<if test="checkedMulti != null">
+				AND doi.status in
+				<foreach collection="checkedMulti" index="index" item="item" open="(" separator="," close=")">
+					#{item}
+				</foreach>
+			</if>
+			AND a.del_flag = '0'
+			AND doi.del_flag = '0'
+		</where>
+	</select>
+	
+	
+	<!-- 查询款箱拆箱列表   lihe 2020-03-11 start-->
+	<select id="getCheckCashList" resultType="com.coffer.businesses.modules.collection.v03.entity.CheckCashMain">
+		SELECT
+			<!-- 拆箱单号 -->
+			a.OUT_NO AS "outNo",
+			<!-- 包号 -->
+			a.RFID AS "rfid",
+			<!-- 门店编号 -->
+			a.CUST_NO AS "custNo",
+			<!-- 门店名称 -->
+			a.CUST_NAME AS "custName",
+			<!-- 登记时间 -->
+			a.REG_DATE AS "updateDate",
+			<!-- 清分人员 -->
+			a.update_name AS "updateBy.name",
+			<!-- 备注 -->
+			<!-- dod.remarks AS "remarks", -->
+			<!-- 实际拆箱金额（元） -->
+			a.check_amount AS "checkAmount",
+			<!-- 差额（元） -->
+			a.diff_amount AS "diffAmount",
+			
+			<if test="dbName=='oracle'">
+				NVL(SUM( c.INPUT_AMOUNT ),0) AS "inputAmount",
+				ELSE NVL(SUM( c.INPUT_AMOUNT ), 0 ) + NVL( SUM( d.AMOUNT ), 0 ) 
+				END AS "trueSumMoney",
+				NVL(SUM( d.amount ), 0 )  AS "saveErrorMoney",
+				<!-- 钞袋开始使用时间 -->
+				CASE WHEN i.`STATUS`='2' AND i.METHOD='4' THEN TO_CHAR( i.CREATE_DATE, '%Y-%m-%d %H:%i:%s' ) ELSE NULL END AS "lastTime",
+				<!-- 钞袋更换时间 -->
+				CASE WHEN i.`STATUS`='2' AND i.METHOD='4' THEN TO_CHAR( i.UPDATE_DATE, '%Y-%m-%d %H:%i:%s' ) WHEN i.`STATUS`!='2' AND i.METHOD='4' THEN TO_CHAR( now(), '%Y-%m-%d %H:%i:%s' ) ELSE NULL END AS "thisTime"
+				,
+			</if>
+			<if test="dbName=='mysql'">
+				IFNULL( SUM( b.INPUT_AMOUNT ), 0 ) AS "inputAmount",
+				IFNULL( SUM( b.INPUT_AMOUNT ), 0 ) + IFNULL( SUM( b.AMOUNT ), 0 )  AS "trueSumMoney",
+				IFNULL( SUM( b.amount ), 0 )  AS "saveErrorMoney",
+				COUNT( b.ENABLED_FLAG ) AS "boxCount",
+				COUNT( b.ENABLED_FLAG ) - CASE WHEN b.ENABLED_FLAG = 1 THEN COUNT( b.ENABLED_FLAG ) ELSE 0 END AS "noBoxCount" ,
+			
+				<!-- 钞袋开始使用时间 -->
+				CASE WHEN (i.`STATUS`='2' or i.`STATUS`='3') AND i.METHOD='4' THEN DATE_FORMAT( i.CREATE_DATE, '%Y-%m-%d %H:%i:%s' ) ELSE NULL END AS "lastTime",
+				<!-- 钞袋更换时间 -->
+				CASE WHEN i.`STATUS`='2' AND i.METHOD='4' THEN DATE_FORMAT( i.UPDATE_DATE, '%Y-%m-%d %H:%i:%s' ) 
+				WHEN i.`STATUS`='3' AND i.METHOD='4' THEN DATE_FORMAT( c.UPDATE_DATE, '%Y-%m-%d %H:%i:%s' ) 
+				WHEN i.`STATUS`!='2' AND i.`STATUS`!='3' AND i.METHOD='4' THEN DATE_FORMAT( now(), '%Y-%m-%d %H:%i:%s' ) ELSE NULL END AS "thisTime"
+				,
+			</if>
+			dei.status as 'errorStatus'
+		FROM
+			check_cash_main a
+			<!-- 机构过滤使用 -->
+			LEFT JOIN sys_office o ON o.id = a.office_id
+			LEFT JOIN sys_office cust ON a.cust_no = cust.id
+			<!-- 查询清分人员使用 -->
+			LEFT JOIN STO_ESCORT_INFO f ON f.USER_ID = a.update_by AND f.del_flag = 0
+			LEFT JOIN (
+				SELECT
+						c.OUT_NO,
+						c.ENABLED_FLAG,
+						c.REMARKS,
+						c.INPUT_AMOUNT,
+						CASE WHEN d.ERROR_TYPE = 3 THEN (- d.amount ) ELSE d.amount  END AS "amount",
+						d.ERROR_TYPE
+					FROM
+						check_cash_amount c
+						LEFT JOIN deposit_error d ON c.PACK_NUM = d.ORDER_ID and d.`STATUS` != 2
+					<where>
+						<!-- 业务备注模糊查询 -->
+						<if test="oRemarks != null and oRemarks != ''">
+							AND c.remarks like
+							<if test="dbName == 'oracle'">'%'||#{oRemarks}||'%'</if>
+							<if test="dbName == 'mssql'">'%'+#{oRemarks}+'%'</if>
+							<if test="dbName == 'mysql'">concat('%',#{oRemarks},'%')</if>
+						</if>
+						<!-- 凭条号模糊查询 -->
+						<if test="tickertape != null and tickertape != ''">
+							AND c.PACK_NUM like 
+							<if test="dbName == 'oracle'">'%'||#{tickertape}||'%'</if>
+							<if test="dbName == 'mssql'">'%'+#{tickertape}+'%'</if>
+							<if test="dbName == 'mysql'">concat('%',#{tickertape},'%')</if>
+						</if>
+						<if test="checked != null and checked != ''">
+			                AND c.ENABLED_FLAG = #{checked}
+			            </if>
+			            <!-- 拆箱单号 -->
+						<if test="outNo != null and outNo != ''">
+							AND c.OUT_NO like 
+							<if test="dbName == 'oracle'">'%,' || #{outNo} || ',%'</if>
+							<if test="dbName == 'mysql'">CONCAT('%', #{outNo}, '%')</if>
+						</if>
+					</where>
+					) b ON a.OUT_NO = b.OUT_NO
+			
+			<!-- 查询款袋使用时间使用 -->
+			LEFT JOIN door_order_info i ON a.OUT_NO=i.ORDER_ID
+			<!-- 查询本次清机时间使用 -->
+			LEFT JOIN (SELECT EQUIPMENT_ID,UPDATE_DATE,PLAN_ID FROM clear_plan_info WHERE STATUS = ${clearPlan.status.completed} AND PLAN_ID != '') c ON a.OUT_NO = c.PLAN_ID
+			LEFT JOIN door_error_info dei on i.ORDER_ID = dei.BUSINESS_ID
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="searchCustNo != null and searchCustNo != ''">
+				AND a.cust_no = #{searchCustNo}
+			</if>
+			<if test="rfid != null and rfid != ''">
+				AND a.rfid like 
+				<if test="dbName == 'oracle'">'%,' || #{rfid} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{rfid}, '%')</if>
+			</if>
+	        <!-- 主表：登记时间(开始) -->
+	        <if test="searchRegDateStart != null and searchRegDateStart != ''">
+				<if test="dbName == 'oracle'">AND TO_CHAR(a.reg_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchRegDateStart}'</if>
+				<if test="dbName == 'mysql'">AND DATE_FORMAT(a.reg_date, '%Y-%m-%d %H:%i:%S') >= '${searchRegDateStart}'</if>
+	        </if>
+	        <!-- 主表：登记时间(结束) -->
+	        <if test="searchRegDateEnd != null and searchRegDateEnd != ''">
+				<if test="dbName == 'oracle'">AND '${searchRegDateEnd}' >= TO_CHAR(a.reg_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName == 'mysql'">AND '${searchRegDateEnd}' >= DATE_FORMAT(a.reg_date, '%Y-%m-%d %H:%i:%S')</if>
+	        </if>
+			<if test="searchClearManNo != null and searchClearManNo != ''">
+				AND f.user_id = #{searchClearManNo}
+			</if>
+			<!-- 拆箱单号 -->
+			<if test="outNo != null and outNo != ''">
+				AND a.out_no like 
+				<if test="dbName == 'oracle'">'%,' || #{outNo} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{outNo}, '%')</if>
+			</if>
+			<!-- 权限控制(清分操作员只能看和自己相关的拆箱记录和未拆箱的) -->
+			<if test="curUserType == clearOpt">
+				AND (a.update_by = #{curUserId} OR a.update_by IS null OR a.update_by = '')
+			</if>
+			<if test="office != null and office.id !=null and office.id != ''">
+				AND a.office_id = #{office.id}
+			</if>
+		    <if test="checked != null and checked != ''">
+                AND b.ENABLED_FLAG = #{checked}
+            </if>
+            <if test="errorStatus != null and errorStatus != '' and errorStatus == 5">
+            	AND dei.status = #{errorStatus}
+            </if>
+            <if test="errorStatus != null and errorStatus != ''  and errorStatus != 5">
+            	AND (dei.status != 5 OR dei.status is null)
+            </if>
+            <!-- 业务备注 gzd 2020-04-23  -->
+            <!-- <if test="remarks != null and remarks != ''">
+				AND dod.remarks like
+				<if test="dbName == 'oracle'">'%'||#{remarks}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{remarks}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{remarks},'%')</if>
+			</if> -->
+            <!-- 业务备注或凭条模糊查询使用 -->
+            <if test="(oRemarks != null and oRemarks != '')||(tickertape != null and tickertape != '')">
+				AND b.OUT_NO is not NULL
+			</if>
+			${sqlMap.dsf}
+		</where>
+		GROUP BY a.OUT_NO
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+</mapper>

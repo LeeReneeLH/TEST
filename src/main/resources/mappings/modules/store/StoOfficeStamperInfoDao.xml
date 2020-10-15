@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v02.dao.StoOfficeStamperInfoDao">
+	<resultMap type="com.coffer.businesses.modules.store.v02.entity.StoOfficeStamperInfo" id="BaseResultMap">
+		<id     column="ID"         property="id"/>
+		<result column="OFFICE_STAMPER_TYPE"   property="officeStamperType"/>
+		<result column="OFFICE_STAMPER"   property="officeStamper"/>
+		<result column="STAMPER_NAME"   property="stamperName"/>
+		<result column="STAMPER_HEIGHT"   property="stamperHeight"/>
+		<result column="STAMPER_WIDTH"   property="stamperWidth"/>
+	</resultMap>
+
+	<insert id="insert">
+		INSERT INTO STO_OFFICE_STAMPER_INFO(
+			ID,
+			OFFICE_ID,
+			OFFICE_STAMPER_TYPE,
+       		OFFICE_STAMPER,
+       		STAMPER_NAME,
+       		IS_STAMPER_UPLOAD,
+       		STAMPER_HEIGHT,
+       		STAMPER_WIDTH,
+			CREATE_BY,
+			CREATE_NAME,
+			CREATE_DATE,
+			DEL_FLAG
+		) VALUES (
+			#{id},
+			#{office.id},
+			#{officeStamperType},
+       		#{officeStamper},
+       		#{stamperName},
+       		#{isStamperUpload},
+       		#{stamperHeight},
+       		#{stamperWidth},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="delete">
+		UPDATE STO_OFFICE_STAMPER_INFO
+       	SET DEL_FLAG = #{DEL_FLAG_DELETE},
+           	UPDATE_BY = #{updateBy.id},
+           	UPDATE_NAME = #{updateName},
+           	UPDATE_DATE = #{updateDate}
+     	WHERE OFFICE_ID = #{office.id}
+		AND OFFICE_STAMPER_TYPE = #{officeStamperType}
+	</update>
+	
+	<update id="update">
+		UPDATE STO_OFFICE_STAMPER_INFO
+       	SET UPDATE_BY = #{updateBy.id}
+       		,UPDATE_NAME = #{updateName}
+           	,UPDATE_DATE = #{updateDate}
+       	<if test="officeStamper != null and officeStamper != ''">
+       		,OFFICE_STAMPER = #{officeStamper}
+       	</if>
+       	<if test="stamperName != null and stamperName != ''">
+       		,STAMPER_NAME = #{stamperName}
+       	</if>
+       	<if test="isStamperUpload != null and isStamperUpload != ''">
+       		,IS_STAMPER_UPLOAD = #{isStamperUpload}
+       	</if>
+        <if test="stamperHeight != null">
+       		,STAMPER_HEIGHT = #{stamperHeight}
+       	</if>
+       	<if test="stamperWidth != null">
+       		,STAMPER_WIDTH = #{stamperWidth}
+       	</if>   	
+     	WHERE DEL_FLAG = '${delFlag}'
+     	AND OFFICE_ID = #{office.id}
+		AND OFFICE_STAMPER_TYPE = #{officeStamperType}
+	</update>
+	
+	<select id="get" resultType="com.coffer.businesses.modules.store.v02.entity.StoOfficeStamperInfo">
+		SELECT 
+			ID,
+			OFFICE_STAMPER_TYPE,
+			OFFICE_STAMPER,
+			STAMPER_NAME,
+			STAMPER_HEIGHT,
+			STAMPER_WIDTH
+		FROM STO_OFFICE_STAMPER_INFO
+		WHERE DEL_FLAG = '${delFlag}'
+		AND OFFICE_ID = #{office.id}
+		AND OFFICE_STAMPER_TYPE = #{officeStamperType}
+	</select>
+	<select id="getById" resultType="com.coffer.businesses.modules.store.v02.entity.StoOfficeStamperInfo">
+		SELECT 
+			ID,
+			OFFICE_STAMPER_TYPE,
+			OFFICE_STAMPER,
+			STAMPER_NAME,
+			STAMPER_HEIGHT,
+			STAMPER_WIDTH
+		FROM STO_OFFICE_STAMPER_INFO
+		WHERE ID = #{id}
+	</select>
+	<select id="findList"  resultMap="BaseResultMap">
+		SELECT 
+			ID,
+			OFFICE_STAMPER_TYPE,
+			OFFICE_STAMPER,
+			STAMPER_NAME,
+			STAMPER_HEIGHT,
+			STAMPER_WIDTH
+		FROM STO_OFFICE_STAMPER_INFO
+		WHERE DEL_FLAG = '${delFlag}'
+		AND OFFICE_ID = #{office.id}
+			
+	</select>
+
+</mapper>

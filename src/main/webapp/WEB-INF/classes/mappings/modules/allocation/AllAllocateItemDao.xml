@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.allocation.v01.dao.AllAllocateItemDao">
+    <!-- 查询库间调拨信息字段 -->
+  	<sql id="allAllocateItemsColumns">
+  		t_aaitem.all_items_id AS "allItemsId",
+	  	t_aaitem.all_id AS "allId",
+	  	t_aaitem.goods_id as "goodsId",
+		t_aaitem.money_number AS "moneyNumber" ,
+		t_aaitem.money_amount AS "moneyAmount",
+		t_aaitem.confirm_flag AS "confirmFlag"
+	</sql>
+	
+    <!-- 查询库间调拨信息字段 -->
+  	<sql id="itemsAndGoodsColumns">
+  		t_aaitem.all_items_id AS "allItemsId",
+	  	t_aaitem.all_id AS "allId",
+	  	t_aaitem.goods_id as "goodsId",
+		t_aaitem.money_number AS "moneyNumber" ,
+		t_aaitem.money_amount AS "moneyAmount",
+		t_aaitem.confirm_flag AS "confirmFlag",
+		t_aaitem.box_no,
+		t_aaitem.batch_no,
+		goods.goods_name AS "goodsName"
+	</sql>
+	
+	<!-- 查询库间调拨信息列表 -->
+	<select id="get" resultType="com.coffer.businesses.modules.allocation.v01.entity.AllAllocateItem">
+		SELECT 
+			<include refid="allAllocateItemsColumns"/>
+		FROM 
+			all_allocate_items t_aaitem
+		WHERE
+			t_aaitem.all_items_id= #{allItemsId}
+	</select>
+	
+	<!-- 查询库间调拨信息列表 -->
+	<select id="findItemsListByAllId" resultType="com.coffer.businesses.modules.allocation.v01.entity.AllAllocateItem">
+		SELECT 
+			<include refid="allAllocateItemsColumns"/>
+		FROM 
+			all_allocate_items t_aaitem
+		WHERE
+			1=1
+			and t_aaitem.all_id = #{allocationInfo.allId}
+			
+	</select>
+	
+	<!-- 按流水号，登记种别 查询物品列表 -->
+	<select id="findItemsList" resultType="com.coffer.businesses.modules.allocation.v01.entity.AllAllocateItem">
+		SELECT 
+			<include refid="itemsAndGoodsColumns"/>
+		FROM 
+			all_allocate_items t_aaitem left join sto_goods goods on t_aaitem.goods_id = goods.goods_id
+		WHERE
+			1=1
+			and t_aaitem.all_id = #{allId}
+		order by t_aaitem.goods_id	
+			
+	</select>
+
+	<insert id="insert">
+		INSERT INTO all_allocate_items(
+			all_items_id,
+			all_id,
+			goods_id,
+			money_number,
+			money_amount,
+			confirm_flag,
+			box_no,
+			batch_no
+		) VALUES (
+			#{allItemsId},
+			#{allocationInfo.allId},
+			#{goodsId},
+			#{moneyNumber},
+			#{moneyAmount},
+			#{confirmFlag},
+			#{boxNo},
+			#{batchNo}
+		)
+	</insert>
+	<update id="update">
+		UPDATE all_allocate_items 
+		SET
+			<if test="moneyNumber != null">
+				money_number = #{moneyNumber},
+			</if>
+			<if test="moneyAmount != null">
+				money_amount = #{moneyAmount},
+			</if>
+		WHERE all_items_id = #{allItemsId}
+			  AND all_id = #{allocationInfo.allId}
+	</update>
+
+	<delete id="delete">
+		Delete from  all_allocate_items 
+      
+   		WHERE all_id = #{allocationInfo.allId}
+	</delete>
+	
+	<delete id="deleteByConfirmed">
+		Delete from  all_allocate_items 
+      
+   		WHERE all_id = #{allocationInfo.allId} and confirm_flag = '1'
+	</delete>
+	<delete id="deleteDetail">
+		Delete from  all_allocate_items 
+			
+	</delete>
+	<delete id="delOrderDetail">
+		Delete from  all_allocate_items 
+		
+		WHERE all_id = #{allId}
+		
+	</delete>
+	
+	<!-- 根据加钞计划批次号查询ATM清机钞箱信息  作者：xp 时间：2017-11-17-->
+	<select id = "getAtmClearBoxInfoByPlanId" resultType = "com.coffer.businesses.modules.allocation.v01.entity.AtmClearBoxInfo">
+		SELECT
+			a.box_NO AS boxNo,
+			<if test="dbName == 'oracle'">
+				SUM(NVL(a.MONEY_AMOUNT,0)) AS amount,
+			</if>
+			<if test="dbName == 'mysql'">
+				SUM(IFNULL(a.MONEY_AMOUNT,0)) AS amount,
+			</if>
+			b.create_date AS devanningDate
+		FROM
+			all_allocate_items a
+			LEFT JOIN all_allocate_info b ON a.ALL_ID = b.ALL_ID
+		<where>
+			<!-- 修改查询条件  修改人：xl 修改时间：2017-11-21 begin  --> 
+		 	a.BATCH_NO = #{batchNo}
+		 	<!-- end  --> 
+			AND a.CONFIRM_FLAG = '0'
+			AND b.DEL_FLAG = '0'
+		</where>
+		<!-- 增加分组条件  修改人：xl 修改时间：2017-12-11 begin  --> 
+		GROUP BY a.BOX_NO,b.CREATE_DATE
+		<!-- end  --> 
+	</select>
+</mapper>

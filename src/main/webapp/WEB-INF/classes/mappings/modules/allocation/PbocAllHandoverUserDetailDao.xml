@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.coffer.businesses.modules.allocation.v02.dao.PbocAllHandoverUserDetailDao">
+	<resultMap id="BaseResultMap" type="com.coffer.businesses.modules.allocation.v02.entity.PbocAllHandoverUserDetail">
+		<id column="ID" property="id" jdbcType="VARCHAR" />
+		<result column="HANDOVER_ID"     property="handoverId"    jdbcType="VARCHAR" />
+		<result column="INOUT_TYPE"            property="inoutType"          jdbcType="VARCHAR" />
+		<result column="TYPE"            property="type"          jdbcType="VARCHAR" />
+		<result column="ESCORT_ID"       property="escortId"      jdbcType="VARCHAR" />
+		<result column="ESCORT_NAME"     property="escortName"    jdbcType="VARCHAR" />
+		<result column="HAND_TYPE"       property="handType"      jdbcType="VARCHAR" />
+		<result column="ESCORT_SIGN_FLG" property="escortSignFlg" jdbcType="VARCHAR" />
+		<result column="ESCORT_SIGN_PIC" property="escortSignPic" jdbcType="BLOB" />
+	</resultMap>
+
+	<sql id="Base_Column_List">
+		ID, HANDOVER_ID, TYPE, ESCORT_ID, ESCORT_NAME, HAND_TYPE, ESCORT_SIGN_FLG, ESCORT_SIGN_PIC,INOUT_TYPE
+	</sql>
+
+	<select id="findListByHandoverId" resultMap="BaseResultMap">
+		SELECT 
+			<include refid="Base_Column_List"/>
+		FROM PBOC_ALL_HANDOVER_USER_DETAIL a
+		<where>
+			a.handover_id = #{id}
+		</where>
+		
+	</select>
+	
+	<select id="selectById" resultMap="BaseResultMap" parameterType="java.lang.String">
+		select
+		  <include refid="Base_Column_List" />
+		from PBOC_ALL_HANDOVER_USER_DETAIL
+		where ID = #{id,jdbcType=VARCHAR}
+	</select>
+
+	<delete id="deleteById" parameterType="java.lang.String">
+		delete from PBOC_ALL_HANDOVER_USER_DETAIL
+		where ID = #{id,jdbcType=VARCHAR}
+	</delete>
+
+	<insert id="insertHandoverUserDetail" parameterType="com.coffer.businesses.modules.allocation.v02.entity.PbocAllHandoverUserDetail">
+		insert into PBOC_ALL_HANDOVER_USER_DETAIL
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="id != null">
+				ID,
+			</if>
+			<if test="handoverId != null">
+				HANDOVER_ID,
+			</if>
+			<if test="type != null">
+				TYPE,
+			</if>
+			<if test="escortId != null">
+				ESCORT_ID,
+			</if>
+			<if test="escortName != null">
+				ESCORT_NAME,
+			</if>
+			<if test="handType != null">
+				HAND_TYPE,
+			</if>
+			<if test="escortSignFlg != null">
+				ESCORT_SIGN_FLG,
+			</if>
+			<if test="escortSignPic != null">
+				ESCORT_SIGN_PIC,
+			</if>
+			<if test="inoutType != null">
+				INOUT_TYPE,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="id != null">
+				#{id,jdbcType=VARCHAR},
+			</if>
+			<if test="handoverId != null">
+				#{handoverId,jdbcType=VARCHAR},
+			</if>
+			<if test="type != null">
+				#{type,jdbcType=VARCHAR},
+			</if>
+			<if test="escortId != null">
+				#{escortId,jdbcType=VARCHAR},
+			</if>
+			<if test="escortName != null">
+				#{escortName,jdbcType=VARCHAR},
+			</if>
+			<if test="handType != null">
+				#{handType,jdbcType=VARCHAR},
+			</if>
+			<if test="escortSignFlg != null">
+				#{escortSignFlg,jdbcType=VARCHAR},
+			</if>
+			<if test="escortSignPic != null">
+				#{escortSignPic,jdbcType=BLOB},
+			</if>
+			<if test="inoutType != null">
+				#{inoutType,jdbcType=BLOB},
+			</if>
+		</trim>
+	</insert>
+
+	<update id="updateHandoverUserDetail" parameterType="com.coffer.businesses.modules.allocation.v02.entity.PbocAllHandoverUserDetail">
+		update PBOC_ALL_HANDOVER_USER_DETAIL
+		<set>
+			<if test="handoverId != null">
+				HANDOVER_ID = #{handoverId,jdbcType=VARCHAR},
+			</if>
+			<if test="inoutType != null">
+				INOUT_TYPE = #{inoutType,jdbcType=VARCHAR},
+			</if>
+			<if test="type != null">
+				TYPE = #{type,jdbcType=VARCHAR},
+			</if>
+			<if test="escortId != null">
+				ESCORT_ID = #{escortId,jdbcType=VARCHAR},
+			</if>
+			<if test="escortName != null">
+				ESCORT_NAME = #{escortName,jdbcType=VARCHAR},
+			</if>
+			<if test="handType != null">
+				HAND_TYPE = #{handType,jdbcType=VARCHAR},
+			</if>
+			<if test="escortSignFlg != null">
+				ESCORT_SIGN_FLG = #{escortSignFlg,jdbcType=VARCHAR},
+			</if>
+			<if test="escortSignPic != null">
+				ESCORT_SIGN_PIC = #{escortSignPic,jdbcType=BLOB},
+			</if>
+		</set>
+		where ID = #{id,jdbcType=VARCHAR}
+	</update>
+
+</mapper>

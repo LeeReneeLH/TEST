@@ -1,0 +1,1172 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.doorOrder.v01.dao.DayReportDoorMerchanDao">
+    
+	<sql id="dayReportDoorMerchanColumns">
+	    a.id AS "id",
+		a.report_id AS "reportId",
+		a.office_id AS "officeId",
+		o2.name AS "officeName",
+		<!-- a.office_name AS "officeName", -->
+		a.settlement_type AS "settlementType",
+		a.in_amount AS "inAmount",
+		a.out_amount AS "outAmount",
+		a.total_amount AS "totalAmount",
+		a.paid_status AS "paidStatus",
+		a.report_date AS "reportDate",
+		a.account_type AS "accountType",
+		a.del_flag AS "delFlag",
+		a.roffice_id AS "rofficeId",
+		a.rname AS "rname",
+		<!-- 结算机构名称  add by lihe start 2020-01-02 -->
+		o3.name AS "settleOfficeName",
+		<!-- 结算机构名称  add by lihe end 2020-01-02 -->
+		a.paid_amount AS "paidAmount",
+		a.trade_serial_number AS "tradeSerialNumber",
+		a.paid_date AS "paidDate",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createBy.name",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_name AS "updateBy.name",
+		a.update_date AS "updateDate",
+		<!-- add by lihe start 2019-08-29 -->
+		a.photo AS "photo",
+		<!-- add by lihe end 2019-08-29 -->
+		<!-- add by lihe start 2019-11-27 -->
+		a.confirm_by AS "confirmBy.id",
+		a.confirm_name AS "confirmBy.name",
+		a.confirm_date AS "confirmDate",
+		<!-- add by lihe end 2019-11-27 -->
+		<!-- add by gzd start 2020-07-28 -->
+		a.actural_report_amount AS "acturalReportAmount",
+		a.remarks AS "remarks",
+		<!-- add by gzd end 2020-07-28 -->
+		<!-- 新增七位码  wqj-->
+		a.SEVEN_CODE AS "sevenCode"
+	</sql>
+	
+	<sql id="dayReportDoorMerchanJoins">
+		LEFT JOIN sys_office o2 ON o2.id = a.office_id and o2.del_flag = ${delFlag.valid}
+		LEFT JOIN sys_office o3 ON o3.id = a.roffice_id and o3.del_flag = ${delFlag.valid}
+	</sql>
+    
+	<select id="get" resultType="DayReportDoorMerchan">
+		SELECT 
+			<include refid="dayReportDoorMerchanColumns"/>
+		FROM day_report_door_merchan a
+		<include refid="dayReportDoorMerchanJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<!-- 优化财务日结查询列表  lihe 2020-03-26 start-->
+	<select id="findList" resultType="DayReportDoorMerchan">
+		SELECT 
+			<include refid="dayReportDoorMerchanColumns"/>,
+			<if test="settlementType != '02'">
+            <if test="dbName == 'oracle'">
+				<!-- 纸币数量 -->
+				NVL(SUM(d.paper_count),0) AS 'paperMoneyCount',
+				<!-- 硬币数量 -->
+				<!-- NVL(SUM(aa.coinMoneyCount),0)  AS 'coinMoneyCount', -->
+				<!-- 存款总额 -->
+				NVL(SUM(d.paper_count),0) + NVL(SUM(d.coin_count),0)   AS 'saveTotal',
+				<!-- 硬币金额 -->
+				<!-- NVL(SUM(aa.coinMoneyTotal),0) AS 'coinMoneyTotal', -->
+				<!-- 纸币金额 -->
+				NVL(SUM(d.paper_amount),0) AS 'paperMoneyTotal',
+				<!-- 速存金额 -->
+				NVL(SUM(d.paper_amount),0) + NVL(SUM(d.coin_amount),0) AS 'cash',
+				<!-- 强制金额 -->
+				NVL(SUM(d.force_amount),0) AS 'pack',
+				<!-- 其他金额 -->
+				NVL(SUM(d.other_amount),0) AS 'other',
+			</if>
+			<if test="dbName == 'mysql'">
+				<!-- 纸币数量 -->
+				IFNULL(SUM(d.paper_count),0) AS 'paperMoneyCount',
+				<!-- 硬币数量 -->
+				<!-- IFNULL(SUM(aa.coinMoneyCount),0)  AS 'coinMoneyCount', -->
+				<!-- 存款总额 -->
+				IFNULL(SUM(d.paper_count),0) + IFNULL(SUM(d.coin_count),0)  AS 'saveTotal',
+				<!-- 硬币金额 -->
+				<!-- IFNULL(SUM(aa.coinMoneyTotal),0) AS 'coinMoneyTotal', -->
+				<!-- 纸币金额 -->
+				IFNULL(SUM(d.paper_amount),0) AS 'paperMoneyTotal',
+				<!-- 速存金额 -->
+				IFNULL(SUM(d.paper_amount),0) + IFNULL(SUM(d.coin_amount),0) AS 'cash',
+				<!-- 强制金额 -->
+				IFNULL(SUM(d.force_amount),0) AS 'pack',
+				<!-- 其他金额 -->
+				IFNULL(SUM(d.other_amount),0) AS 'other',
+			</if>
+			</if>
+			<!-- add by lihe start 2019-12-31 -->
+			<if test="settlementType == '02'">
+			CASE WHEN a.total_amount>0 THEN '长款' WHEN 0>a.total_amount THEN '短款' ELSE '' END AS errorType,
+			sd.label AS 'paidStatusName',
+			</if>
+			o3.name AS 'rofficeName'
+			<!-- add by lihe end 2019-12-31 -->
+		FROM day_report_door_merchan a
+		<include refid="dayReportDoorMerchanJoins"/>
+		<!-- add by lihe start 2019-12-31 -->
+		<if test="settlementType == '02'">
+		LEFT JOIN (select value,label from sys_dict where TYPE = 'error_is_take_up' and del_flag=${delFlag.valid}) sd ON sd.value = a.paid_status
+		</if>
+		<!-- add by lihe end 2019-12-31 -->
+		<!-- 按门店、日结ID及七位码获取明细金额子查询 -->
+		<if test="settlementType != '02'">
+		LEFT JOIN center_accounts_door_main b ON b.CLIENT_ID = a.OFFICE_ID AND b.REPORT_ID = a.REPORT_ID 
+		AND ( b.SEVEN_CODE = a.SEVEN_CODE OR b.SEVEN_CODE IS NULL ) 
+		LEFT JOIN door_order_detail d ON d.TICKERTAPE = b.TICKERTAPE 
+		</if>
+		<!-- <if test="settlementType != '02'">
+		LEFT JOIN (
+			SELECT
+				b.REPORT_ID,
+				b.CLIENT_ID,
+				b.SEVEN_CODE,
+				SUM(d.paper_count) AS 'paperMoneyCount',
+				SUM(d.paper_amount) AS 'paperMoneyTotal', -->
+				<!-- SUM(IF(a.TYPE_ID= '01' AND a.DENOMINATION IN(15,16,17,18,19,20,21,22,23,24,25,26,27),a.COUNT_ZHANG,0)) AS 'paperMoneyCount',
+				SUM(IF(a.TYPE_ID= '01' AND a.DENOMINATION IN(15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33),a.COUNT_ZHANG,0)) AS 'saveTotal',
+				SUM(IF(a.TYPE_ID = '01' AND a.DENOMINATION IN(15,16,17,18,19,20,21,22,23,24,25,26,27),a.DETAIL_AMOUNT, 0)) AS 'paperMoneyTotal', -->
+				<!-- SUM(IF(a.TYPE_ID= '01' AND a.DENOMINATION IN(28,29,30,31,32,33),a.COUNT_ZHANG,0)) AS 'coinMoneyCount',
+				SUM(IF(a.TYPE_ID= '01' AND a.DENOMINATION IN(28,29,30,31,32,33),a.DETAIL_AMOUNT,0)) AS 'coinMoneyTotal',
+				SUM(IF(a.TYPE_ID = '01', a.DETAIL_AMOUNT, 0)) AS 'cash',
+				SUM(IF(a.TYPE_ID = '02', a.DETAIL_AMOUNT, 0)) AS 'pack',
+				SUM(IF(a.TYPE_ID = '03', a.DETAIL_AMOUNT, 0)) AS 'other' -->
+				<!-- IFNULL( SUM( a.COUNT_ZHANG ), 0 ) AS paperMoneyCount,
+				IFNULL( SUM( a.COUNT_ZHANG ), 0 ) AS saveTotal,
+				IFNULL( SUM( CASE WHEN a.TYPE_ID = '02' THEN a.DETAIL_AMOUNT ELSE 0 END ), 0 ) AS pack,
+				IFNULL( SUM( CASE WHEN a.TYPE_ID = '01' THEN a.DETAIL_AMOUNT ELSE 0 END ), 0 ) AS cash,
+				IFNULL( SUM( CASE WHEN a.TYPE_ID = '03' THEN a.DETAIL_AMOUNT ELSE 0 END ), 0 ) AS other -->
+				<!-- <if test="dbName == 'oracle'">
+					NVL(SUM(d.coin_count), 0)+NVL(SUM(d.paper_count), 0) AS 'saveTotal',
+					NVL(SUM(d.paper_amount), 0)+NVL(SUM(d.coin_amount), 0) AS cash,
+				</if>
+				<if test="dbName == 'mysql'">
+					IFNULL(SUM(d.coin_count), 0)+IFNULL(SUM(d.paper_count), 0) AS 'saveTotal',
+					IFNULL(SUM(d.paper_amount), 0)+IFNULL(SUM(d.coin_amount), 0) AS cash,
+				</if>
+				SUM(d.force_amount) AS pack,
+				SUM(d.other_amount) AS other -->
+				<!-- IFNULL( SUM( CASE WHEN a.TYPE_ID = '02' THEN a.DETAIL_AMOUNT ELSE 0 END ), 0 )+ IFNULL( SUM( CASE WHEN a.TYPE_ID = '01' THEN a.DETAIL_AMOUNT ELSE 0 END ), 0 ) AS amount --> 
+			<!-- FROM
+				door_order_detail d
+				LEFT JOIN center_accounts_door_main b ON d.TICKERTAPE = b.TICKERTAPE -->
+				<!-- 筛选中心总账业务类型为存款类型的记录：74、81 -->
+				<!-- AND ( b.BUSINESS_TYPE = ${centerAccounts.businessType.deposit} OR b.BUSINESS_TYPE = ${centerAccounts.businessType.tradition} )
+				 LEFT JOIN door_order_amount a ON d.ID = a.DETAIL_ID  -->
+			<!-- WHERE b.REPORT_ID IS NOT NULL 
+			GROUP BY
+				b.CLIENT_ID,
+				b.REPORT_ID,
+				b.SEVEN_CODE
+			) aa ON aa.CLIENT_ID = a.OFFICE_ID AND aa.REPORT_ID = a.REPORT_ID  -->
+			<!-- 筛选添加业务备注和不填的存款记录 -->
+			<!-- AND ( aa.SEVEN_CODE = a.SEVEN_CODE OR aa.SEVEN_CODE IS NULL )
+			</if> -->
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.report_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.report_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>
+		<!-- 添加日结金额筛选 ZXK start -->
+		<!-- 日结金额(开始) -->
+		<if test="reportMoneyStart != null and reportMoneyStart != ''">
+			AND a.total_amount >='${reportMoneyStart}'
+		</if>
+		<!-- 日结金额(结束) -->
+		<if test="reportMoneyEnd != null and reportMoneyEnd != ''">
+			AND  '${reportMoneyEnd}' >= a.total_amount
+		</if>
+		<!-- 添加日结金额筛选 ZXK end -->
+		<!-- 代付状态 -->
+		<if test="paidStatus != null and paidStatus != ''">
+			AND a.paid_status=#{paidStatus}
+		</if>
+		<!-- 商户机构ID -->
+		<if test="officeId != null and officeId != ''">
+			AND a.office_id=#{officeId}
+		</if>
+		<!-- 清分中心ID -->
+		<if test="rofficeId != null and rofficeId != ''">
+			AND a.roffice_id=#{rofficeId}
+		</if>
+		<!-- 日结ID -->
+		<if test="reportId != null and reportId != ''">
+			AND a.report_id=#{reportId}
+		</if>
+		<!-- add by lihe start 2019-08-26 -->
+		<!-- 处理人 -->
+        <if test="createBy != null and createBy.id != null and createBy.id != ''">
+			AND (a.create_by = #{createBy.id} OR a.update_by = #{createBy.id})
+		</if>
+		<!-- 商户结算类型 -->
+		<if test="settlementType != null and settlementType != ''">
+			AND a.SETTLEMENT_TYPE=#{settlementType}
+		</if>
+		<!-- 七位码 (模糊查询)-->
+		<if test="sevenCode != null and sevenCode != ''">
+				AND a.SEVEN_CODE like 
+				<if test="dbName == 'oracle'">'%,' || #{sevenCode} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{sevenCode}, '%')</if>
+		</if>
+		<!-- add by lihe end 2019-08-26 -->
+		<!-- add by lihe start 2019-12-31 -->
+		<!-- <if test="dayReportIdList != null and dayReportIdList.size != 0">
+			AND a.report_id IN 
+			<foreach collection="dayReportIdList" item="dayReportIdTag" separator="," open="(" close=")" index="index">
+				#{dayReportIdList[${index}]}
+			</foreach>
+		</if> -->
+		<!-- add by lihe end 2019-12-31 -->
+		<!-- update by huzhiyong 2020/06/18  导出功能 start -->
+		<if test="dayReportIdList != null and dayReportIdList.size != 0">
+			AND a.id IN 
+			<foreach collection="dayReportIdList" item="dayReportIdTag" separator="," open="(" close=")" index="index">
+				#{dayReportIdList[${index}]}
+			</foreach>
+		</if>
+		<!-- update by huzhiyong 2020/06/18  导出功能 end -->
+		<!-- 数据过滤 -->
+		  ${sqlMap.dsf}
+		</where>
+		GROUP BY a.report_id,a.office_id,a.SEVEN_CODE
+		<!-- 差错类型 -->
+		<if test="errorType != null and errorType != ''">
+			HAVING errorType= #{errorType}
+		</if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY A.PAID_STATUS DESC,
+						 A.REPORT_DATE DESC,
+						 A.PAID_DATE DESC
+			</otherwise>
+		</choose>
+	</select>
+	<!-- 优化财务日结查询列表  lihe 2020-03-26 end-->
+	
+	<select id="findAllList" resultType="DayReportDoorMerchan">
+		SELECT 
+			<include refid="dayReportDoorMerchanColumns"/>
+		FROM day_report_door_merchan a
+		<include refid="dayReportDoorMerchanJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO day_report_door_merchan(
+		    id,
+			report_id,
+			office_id,
+			office_name,
+			settlement_type,
+			in_amount,
+			out_amount,
+			total_amount,
+			paid_status,
+			report_date,
+			account_type,
+			del_flag,
+			roffice_id,
+			rname,
+			paid_amount,
+			trade_serial_number,
+			paid_date,
+			create_by,
+			create_name,
+			create_date,
+			update_by,
+			update_name,
+			update_date,
+			photo,
+			actural_report_amount,
+			remarks,
+			SEVEN_CODE
+		) VALUES (
+		    #{id},
+			#{reportId},
+			#{officeId},
+			#{officeName},
+			#{settlementType},
+			#{inAmount},
+			#{outAmount},
+			#{totalAmount},
+			#{paidStatus},
+			#{reportDate},
+			#{accountType},
+			#{delFlag},
+			#{rofficeId},
+			#{rname},
+			#{paidAmount},
+			#{tradeSerialNumber},
+			#{paidDate},
+		    #{createBy.id},
+		    #{createBy.name},
+	        #{createDate},
+		    #{updateBy.id},
+		    #{updateBy.name},
+		    #{updateDate},
+		    #{photo},
+		    #{acturalReportAmount},
+		    #{remarks},
+		    #{sevenCode}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE day_report_door_merchan SET 	
+		    id = #{id},
+			report_id = #{reportId},
+			office_id = #{officeId},
+			office_name = #{officeName},
+			settlement_type = #{settlementType},
+			in_amount = #{inAmount},
+			out_amount = #{outAmount},
+			total_amount = #{totalAmount},
+			paid_status = #{paidStatus},
+			report_date = #{reportDate},
+			account_type = #{accountType},
+			roffice_id=#{rofficeId},
+			rname=#{rname},
+			paid_amount=#{paidAmount},
+			trade_serial_number=#{tradeSerialNumber},
+			paid_date=#{paidDate},
+			create_by=#{createBy.id},
+			create_name=#{createBy.name},
+			create_date=#{createDate},
+			update_by=#{updateBy.id},
+			update_name=#{updateBy.name},
+			update_date=#{updateDate},
+			photo=#{photo},
+			actural_report_amount = #{acturalReportAmount},
+			remarks = #{remarks},
+			SEVEN_CODE=#{sevenCode}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE day_report_door_merchan SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 获取当前商户上次日结时间   lihe start 2019-08-16 -->
+	<select id="getLastDayReportDate" resultType="DayReportDoorMerchan">
+		SELECT
+				d.OFFICE_ID AS merchantId,
+				<if test="dbName == 'oracle'">TO_CHAR(MAX(d.CREATE_DATE),'yyyy-mm-dd hh24:mi:ss') AS dayReportDate</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(MAX(d.CREATE_DATE), '%Y-%m-%d %H:%i:%s') AS dayReportDate</if>
+			FROM
+				DAY_REPORT_DOOR_MERCHAN d
+			WHERE
+				d.SETTLEMENT_TYPE = ${centerAccounts.businessType.deposit}
+			<if test="officeId != null and officeId != ''">
+			 AND d.OFFICE_ID = #{officeId}
+			</if>
+			<if test="rofficeId != null and rofficeId != ''">
+			 AND d.ROFFICE_ID = #{rofficeId}
+			</if>
+			<!-- 创建时间(结束) -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND 
+				<if test="dbName == 'oracle'">'${searchDateEnd}' > TO_CHAR(d.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' > DATE_FORMAT(d.create_date, '%Y-%m-%d %H:%i:%s')</if>
+			</if>
+			GROUP BY
+				d.OFFICE_ID
+	</select>
+	<!-- 获取当前商户上次日结时间   lihe end 2019-08-16 -->
+	
+	<!-- add by zhaohaoran start 2019-08-27 -->
+	<sql id="dayColumns">
+	    a.id AS "id",
+		a.report_id AS "reportId",
+		a.office_id AS "merchantId",
+		o2.name AS "merchantName",
+		a.settlement_type AS "settlementType",
+		a.in_amount AS "inAmount",
+		a.out_amount AS "outAmount",
+		a.total_amount AS "totalAmount",
+		a.paid_status AS "paidStatus",
+		a.report_date AS "reportDate",
+		a.account_type AS "accountType",
+		a.del_flag AS "delFlag",
+		a.roffice_id AS "rofficeId",
+		o3.name AS "rname",
+		a.paid_amount AS "paidAmount",
+		a.trade_serial_number AS "tradeSerialNumber",
+		a.paid_date AS "paidDate",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createBy.name",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_name AS "updateBy.name",
+		a.update_date AS "updateDate"
+	</sql>
+	
+	 <!-- 小程序获取划款列表   add by lihe start 2019-09-03 -->
+	 <select id="getTransferFundsList" resultType="DayReportDoorMerchan">
+	 	SELECT
+	 		a.report_id AS "reportId",
+			a.office_id AS "merchantId",
+			<!-- a.office_name AS "merchantName", -->
+			o.name AS "merchantName",
+			a.paid_status AS "paidStatus",
+			a.report_date AS "reportDate",
+			a.settlement_type AS "settlementType",
+			<if test="dbName == 'oracle'">
+			NVL(a.total_amount,0) AS "totalAmount",
+			NVL(a.paid_amount,0) AS "paidAmount",
+			</if>
+			<if test="dbName == 'mysql'">
+			COALESCE(a.total_amount,0) AS "totalAmount",
+			COALESCE(a.paid_amount,0) AS "paidAmount",
+			</if>
+			a.paid_date AS "paidDate"
+		FROM
+			day_report_door_merchan a
+		LEFT JOIN sys_office o ON a.office_id = o.id AND o.DEL_FLAG = #{DEL_FLAG_NORMAL}
+		LEFT JOIN sys_office o1 ON a.roffice_id = o1.id AND o1.DEL_FLAG = #{DEL_FLAG_NORMAL}
+		<where>
+			<!-- 代付状态 -->
+			<!-- <if test="paidStatus != null and paidStatus != ''">
+				(a.paid_status = #{paidStatus} OR 
+					<if test="dbName == 'oracle'">
+						TO_CHAR(a.report_date,'yyyy-mm-dd') = TO_CHAR(SYSDATE,'yyyy-mm-dd')
+						OR TO_CHAR(a.paid_date,'yyyy-mm-dd') = TO_CHAR(SYSDATE,'yyyy-mm-dd')
+					</if>
+					<if test="dbName == 'mysql'">
+						DATE_FORMAT(a.report_date, '%Y-%m-%d') = DATE_FORMAT(now(), '%Y-%m-%d')
+						OR DATE_FORMAT(a.paid_date, '%Y-%m-%d') = DATE_FORMAT(now(), '%Y-%m-%d')
+					</if>
+				)
+			</if> -->
+			<if test="paidStatusList != null and paidStatusList.size != 0">
+				(a.paid_status in 
+				<foreach collection="paidStatusList" item="paidStatus" separator="," open="(" close=")" index="index">
+				 	#{paidStatusList[${index}]}
+				</foreach>
+				OR 
+				<if test="dbName == 'oracle'">
+					TO_CHAR(a.report_date,'yyyy-mm-dd') = TO_CHAR(SYSDATE,'yyyy-mm-dd')
+					OR TO_CHAR(a.paid_date,'yyyy-mm-dd') = TO_CHAR(SYSDATE,'yyyy-mm-dd')
+				</if>
+				<if test="dbName == 'mysql'">
+					DATE_FORMAT(a.report_date, '%Y-%m-%d') = DATE_FORMAT(now(), '%Y-%m-%d')
+					OR DATE_FORMAT(a.paid_date, '%Y-%m-%d') = DATE_FORMAT(now(), '%Y-%m-%d')
+				</if>
+				)
+			</if>
+			<!-- 商户结算类型 -->
+			<if test="settlementType != null and settlementType != ''">
+				AND a.SETTLEMENT_TYPE = #{settlementType}
+			</if>
+			<!-- 商户结算类型列表 -->
+			<if test="settlementTypeList != null and settlementTypeList.size != 0">
+				AND (a.SETTLEMENT_TYPE in 
+				<foreach collection="settlementTypeList" item="settlementType" separator="," open="(" close=")" index="index">
+				 	#{settlementTypeList[${index}]}
+				</foreach>
+				)
+			</if>
+			<!-- 日结时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				AND 
+				<if test="dbName == 'oracle'">TO_CHAR(a.report_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+			</if>
+			<!-- 日结时间(结束) -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND 
+				<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.report_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s')</if>
+			</if>
+			<!-- 数据过滤 -->
+			${sqlMap.dsf}
+		</where>
+	    <choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.paid_status DESC,A.REPORT_DATE DESC
+			</otherwise>
+		</choose>
+	 </select>
+	 <!-- 小程序获取划款列表   add by lihe end 2019-09-03 -->
+	 
+	 <!-- 小程序获取应划款实划款总额   add by lihe start 2019-09-03 -->
+	 <select id="getTransferFundsTotal" resultType="DayReportDoorMerchan">
+	 	SELECT
+			<if test="dbName == 'oracle'">
+			NVL(SUM(a.total_amount),0) AS "totalAmount",
+			NVL(SUM(a.paid_amount),0) AS "paidAmount"
+			</if>
+			<if test="dbName == 'mysql'">
+			COALESCE(SUM(a.total_amount),0) AS "totalAmount",
+			COALESCE(SUM(a.paid_amount),0) AS "paidAmount"
+			</if>
+		FROM
+			day_report_door_merchan a
+		LEFT JOIN sys_office o ON a.office_id = o.id AND o.DEL_FLAG = #{DEL_FLAG_NORMAL}
+		LEFT JOIN sys_office o1 ON a.roffice_id = o1.id AND o1.DEL_FLAG = #{DEL_FLAG_NORMAL}
+		<where>
+			<!-- 代付状态 -->
+			<!-- <if test="paidStatus != null and paidStatus != ''">
+				(a.paid_status = #{paidStatus} OR 
+					<if test="dbName == 'oracle'">
+						TO_CHAR(a.report_date,'yyyy-mm-dd') = TO_CHAR(SYSDATE,'yyyy-mm-dd')
+						OR TO_CHAR(a.paid_date,'yyyy-mm-dd') = TO_CHAR(SYSDATE,'yyyy-mm-dd')
+					</if>
+					<if test="dbName == 'mysql'">
+						DATE_FORMAT(a.report_date, '%Y-%m-%d') = DATE_FORMAT(now(), '%Y-%m-%d')
+						OR DATE_FORMAT(a.paid_date, '%Y-%m-%d') = DATE_FORMAT(now(), '%Y-%m-%d')
+					</if>
+				)
+			</if> -->
+			<if test="paidStatusList != null and paidStatusList.size != 0">
+				(a.paid_status in 
+				<foreach collection="paidStatusList" item="paidStatus" separator="," open="(" close=")" index="index">
+				 	#{paidStatusList[${index}]}
+				</foreach>
+				OR 
+				<if test="dbName == 'oracle'">
+					TO_CHAR(a.report_date,'yyyy-mm-dd') = TO_CHAR(SYSDATE,'yyyy-mm-dd')
+					OR TO_CHAR(a.paid_date,'yyyy-mm-dd') = TO_CHAR(SYSDATE,'yyyy-mm-dd')
+				</if>
+				<if test="dbName == 'mysql'">
+					DATE_FORMAT(a.report_date, '%Y-%m-%d') = DATE_FORMAT(now(), '%Y-%m-%d')
+					OR DATE_FORMAT(a.paid_date, '%Y-%m-%d') = DATE_FORMAT(now(), '%Y-%m-%d')
+				</if>
+				)
+			</if>
+			<!-- 商户结算类型 -->
+			<if test="settlementType != null and settlementType != ''">
+				AND a.SETTLEMENT_TYPE = #{settlementType}
+			</if>
+			<!-- 商户结算类型列表 -->
+			<if test="settlementTypeList != null and settlementTypeList.size != 0">
+				AND (a.SETTLEMENT_TYPE in 
+				<foreach collection="settlementTypeList" item="settlementType" separator="," open="(" close=")" index="index">
+				 	#{settlementTypeList[${index}]}
+				</foreach>
+				)
+			</if>
+			<!-- 数据过滤 -->
+			${sqlMap.dsf}
+		</where>
+	</select>
+	 <!-- 小程序获取应划款实划款总额   add by lihe end 2019-09-03 -->
+	
+	<!--     根据商户ID和日结ID，查商户日结具体信息  start -->
+	<select id="getfindByMerchantIdAndReportId" resultType="DayReportDoorMerchan">
+	select  
+		<include refid="dayColumns"/>
+		from day_report_door_merchan a 
+		<include refid="dayReportDoorMerchanJoins"/>
+		where 
+		a.office_id=#{officeId}
+		and
+		a.report_id=#{reportId}
+		and 
+		a.del_flag = #{DEL_FLAG_NORMAL}
+	</select>  
+	 <!--   根据商户ID和日结ID，查商户日结具体信息  end-->
+	
+	
+	<!-- 门店(原商户,后修改)划款信息查询  start zxk -->
+	<select id="getMerTransferInfo" resultType="DayReportDoorMerchan">
+	SELECT
+		t1.merchantId AS merchantId,
+		t1.merchantName AS merchantName,
+		t1.paidStatus AS paidStatus,
+		t1.reportDate AS reportDate,
+		t1.paidDate AS paidDate,
+		<if test="dbName == 'oracle'">
+		NVL(t1.totalAmount,0) AS "totalAmount",
+		NVL(t1.paidAmount,0) AS "paidAmount",
+		</if>
+		<if test="dbName == 'mysql'">
+		COALESCE(t1.totalAmount,0) AS "totalAmount",
+		COALESCE(t1.paidAmount,0) AS "paidAmount",
+		</if>
+	    MAX(t1.createDate) AS updateDate,
+		MIN(t1.createDate) AS  startDate
+      FROM (SELECT 
+            a.create_date AS "createDate",
+			mer.office_id AS merchantId,
+			<!-- mer.office_name AS merchantName, -->
+			q.name AS merchantName,
+			mer.total_amount AS totalAmount,
+			mer.paid_amount AS paidAmount,
+			mer.paid_status AS paidStatus,
+			mer.report_date AS reportDate,
+			mer.paid_date AS paidDate
+          FROM center_accounts_door_main a
+          LEFT JOIN sys_office o
+            ON a.roffice_id = o.id
+          LEFT JOIN door_order_info p
+            ON p.order_id = A.BUSINESS_ID
+          LEFT JOIN sys_office q
+            ON a.client_id = q.id
+          LEFT JOIN DEPOSIT_ERROR R
+            ON A.BUSINESS_ID = R.ORDER_ID
+         LEFT JOIN  day_report_door_merchan mer
+            ON mer.office_id=q.id
+           AND mer.del_flag = #{DEL_FLAG_NORMAL}
+           AND mer.office_id = #{officeId}
+           AND mer.REPORT_ID = #{reportId} 
+         WHERE q.id = #{officeId}
+           AND a.REPORT_ID = #{reportId} 
+           AND a.business_type IN ('74', '79', '81', '82')
+           <!-- 业务类型集合 -->
+		 <!--  <if test="businessTypes != null and businessTypes.size != 0">
+			AND a.business_type in 
+			<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+			 	#{businessTypes[${index}]}
+			</foreach>
+		</if> -->
+           ) t1
+	</select>  
+	<!-- 查询明细表第一条时间  end zxk -->
+	
+	
+	<!-- 根据条件获取划款信息列表  add by lihe start 2019-08-29 -->
+	<select id="getTransferFundsListByUser" resultType="DayReportDoorMerchan">
+		SELECT 
+			case when a.photo is null then 1 else 0 end AS uploadFlag, 
+			<include refid="dayColumns"/>
+		FROM day_report_door_merchan a
+		<include refid="dayReportDoorMerchanJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.paid_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.paid_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.paid_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.paid_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>
+		<!-- 代付状态 -->
+		<if test="paidStatus != null and paidStatus != ''">
+			AND a.paid_status=#{paidStatus}
+		</if>
+		<!-- 商户机构ID -->
+		<if test="officeId != null and officeId != ''">
+			AND a.office_id=#{officeId}
+		</if>
+		<!-- 清分中心ID -->
+		<if test="rofficeId != null and rofficeId != ''">
+			AND a.roffice_id=#{rofficeId}
+		</if>
+		<!-- 处理人 -->
+        <if test="updateBy != null and updateBy.id != null and updateBy.id != ''">
+			AND a.update_by = #{updateBy.id}
+		</if>
+		<!-- 商户结算类型 -->
+		<if test="settlementType != null and settlementType != ''">
+			AND a.SETTLEMENT_TYPE=#{settlementType}
+		</if>
+		<!-- 商户结算类型列表 -->
+		<if test="settlementTypeList != null and settlementTypeList.size != 0">
+			AND (a.SETTLEMENT_TYPE in 
+			<foreach collection="settlementTypeList" item="settlementType" separator="," open="(" close=")" index="index">
+			 	#{settlementTypeList[${index}]}
+			</foreach>
+			)
+		</if>
+		<!-- 数据过滤 -->
+		  ${sqlMap.dsf}
+		</where>
+		<!-- 未代付记录在前,若有多个未代付记录，按日结时间降序排列 -->
+		ORDER BY A.PAID_STATUS DESC,
+			A.PAID_DATE DESC
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	<!-- 根据条件获取划款信息列表  add by lihe start 2019-08-29 -->
+	
+	<!-- 根据条件查询日结列表（接口用）  add by XL start 2019-09-01 -->
+	<select id="findListForApp" resultType="DayReportDoorMerchan">
+		SELECT 
+			a.id AS "id",
+			a.report_id AS "reportId",
+			a.office_id AS "officeId",
+			o2.name AS "officeName",
+			<!-- a.office_name AS "officeName", -->
+			a.settlement_type AS "settlementType",
+			a.in_amount AS "inAmount",
+			a.out_amount AS "outAmount",
+			<choose>
+				<when test="clientForApp != null and clientForApp != ''">
+					t3.TOTAL_AMOUNT AS "totalAmount",
+				</when>
+				<otherwise>
+					a.total_amount AS "totalAmount",
+				</otherwise>
+			</choose>
+			a.paid_status AS "paidStatus",
+			a.report_date AS "reportDate",
+			a.account_type AS "accountType",
+			a.del_flag AS "delFlag",
+			a.roffice_id AS "rofficeId",
+			o3.name AS "rname",
+			a.paid_amount AS "paidAmount",
+			a.trade_serial_number AS "tradeSerialNumber",
+			a.paid_date AS "paidDate",
+			a.create_by AS "createBy.id",
+			a.create_name AS "createBy.name",
+			a.create_date AS "createDate",
+			a.update_by AS "updateBy.id",
+			a.update_name AS "updateBy.name",
+			a.update_date AS "updateDate"
+		FROM day_report_door_merchan a
+		<include refid="dayReportDoorMerchanJoins"/>
+		<if test="clientForApp != null and clientForApp != ''">
+			LEFT JOIN (
+				SELECT 
+					t1.REPORT_ID,t1.CLIENT_ID,t2.PARENT_ID,t1.TOTAL_AMOUNT
+				FROM
+					(
+						SELECT
+							REPORT_ID,CLIENT_ID,
+							<if test="dbName=='oracle'">
+								SUM(NVL(IN_AMOUNT,0)-NVL(OUT_AMOUNT,0)) AS "total_Amount"
+							</if>
+							<if test="dbName=='mysql'">
+								SUM(IFNULL(IN_AMOUNT,0)-IFNULL(OUT_AMOUNT,0)) AS "total_Amount"
+							</if>
+						FROM
+							center_accounts_door_main
+						WHERE
+							CLIENT_ID = #{clientForApp} AND BUSINESS_TYPE IN ('74','79')
+						GROUP BY REPORT_ID,CLIENT_ID
+					) t1
+				LEFT JOIN sys_office t2 ON t1.CLIENT_ID = t2.id
+			) t3 ON t3.REPORT_ID = a.REPORT_ID AND a.OFFICE_ID = t3.PARENT_ID	
+		</if>	
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		<if test="clientForApp != null and clientForApp != ''">
+			AND t3.CLIENT_ID=#{clientForApp}
+		</if>
+			<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.report_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.report_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>
+		<!-- 代付状态 -->
+		<!-- <if test="paidStatus != null and paidStatus != ''">
+			AND (a.paid_status=#{paidStatus} OR 
+				<if test="dbName == 'oracle'">
+					TO_CHAR(a.report_date,'yyyy-mm-dd')= TO_CHAR(SYSDATE,'yyyy-mm-dd')
+				</if>
+				<if test="dbName == 'mysql'">
+					DATE_FORMAT(a.report_date, '%Y-%m-%d')= DATE_FORMAT(now(), '%Y-%m-%d')
+				</if>
+			)
+		</if> -->
+		<if test="paidStatusList != null and paidStatusList.size != 0">
+			AND (a.paid_status in 
+			<foreach collection="paidStatusList" item="paidStatus" separator="," open="(" close=")" index="index">
+			 	#{paidStatusList[${index}]}
+			</foreach>
+			OR 
+			<if test="dbName == 'oracle'">
+				TO_CHAR(a.report_date,'yyyy-mm-dd')= TO_CHAR(SYSDATE,'yyyy-mm-dd')
+			</if>
+			<if test="dbName == 'mysql'">
+				DATE_FORMAT(a.report_date, '%Y-%m-%d')= DATE_FORMAT(now(), '%Y-%m-%d')
+			</if>
+			)
+		</if>
+		<!-- 商户机构ID -->
+		<if test="officeId != null and officeId != ''">
+			AND a.office_id=#{officeId}
+		</if>
+		<!-- 清分中心ID -->
+		<if test="rofficeId != null and rofficeId != ''">
+			AND a.roffice_id=#{rofficeId}
+		</if>
+		<!-- 日结ID -->
+		<if test="reportId != null and reportId != ''">
+			AND a.report_id=#{reportId}
+		</if>
+		<!-- 处理人 -->
+        <if test="createBy != null and createBy.id != null and createBy.id != ''">
+			AND (a.create_by = #{createBy.id} OR a.update_by = #{createBy.id})
+		</if>
+		<!-- 商户结算类型 -->
+		<if test="settlementType != null and settlementType != ''">
+			AND a.SETTLEMENT_TYPE=#{settlementType}
+		</if>
+		<!-- 数据过滤 -->
+		  ${sqlMap.dsf}
+		</where>
+		<!-- 未代付记录在前,若有多个未代付记录，按日结时间降序排列 -->
+		ORDER BY A.PAID_STATUS DESC,
+			A .REPORT_DATE DESC
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	<!-- 根据条件查询日结列表（接口用）  add by XL end 2019-09-01 -->
+
+	<!-- 根据条件查询商户列表（接口用）  add by ZXK start 2019-11-27 -->
+	<select id="findMerchanListForApp" resultType="DayReportDoorMerchan">
+		SELECT o2.PARENT_ID as officeId,
+		       s1.name as officeName,
+			   SUM(IFNULL(a.TOTAL_AMOUNT,0)) AS totalAmount
+		FROM day_report_door_merchan a
+		<include refid="dayReportDoorMerchanJoins"/>
+		LEFT JOIN sys_office s1
+		ON o2.PARENT_ID = s1.ID
+		<where>
+		a.del_flag = #{DEL_FLAG_NORMAL}
+			<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.report_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.report_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>
+		<!-- 处理人 -->
+        <if test="updateBy != null and updateBy.id != null and updateBy.id != ''">
+			AND a.update_by = #{updateBy.id}
+		</if>
+		<!-- 商户结算类型 -->
+		<if test="settlementType != null and settlementType != ''">
+			AND a.SETTLEMENT_TYPE=#{settlementType}
+		</if>
+		<if test="paidStatusList != null and paidStatusList.size != 0">
+			AND (a.paid_status in 
+			<foreach collection="paidStatusList" item="paidStatus" separator="," open="(" close=")" index="index">
+			 	#{paidStatusList[${index}]}
+			</foreach>
+			OR 
+			<if test="dbName == 'oracle'">
+				TO_CHAR(a.report_date,'yyyy-mm-dd')= TO_CHAR(SYSDATE,'yyyy-mm-dd')
+			</if>
+			<if test="dbName == 'mysql'">
+				DATE_FORMAT(a.report_date, '%Y-%m-%d')= DATE_FORMAT(now(), '%Y-%m-%d')
+			</if>
+			)
+		</if>
+		<!-- 数据过滤 -->
+		  ${sqlMap.dsf}
+		</where>
+		
+		
+		GROUP BY o2.PARENT_ID
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	<!-- 根据条件查询日结列表（接口用）  add by ZXK end 2019-11-27 -->
+	
+	<!-- 商户确认汇款金额    add by lihe start 2019-11-27-->
+	<update id="confirm">
+		UPDATE day_report_door_merchan SET
+			paid_status = #{paidStatus},
+			confirm_by=#{confirmBy.id},
+			confirm_name=#{confirmBy.name},
+			confirm_date=#{confirmDate}
+		WHERE id = #{id}
+	</update>
+	<!-- 商户确认汇款金额    add by lihe end 2019-11-27-->
+	
+	<!-- 获取该中心最新传统结算时间    add by wqj start 2020-3-13-->
+	<select id="getTraditionalsaveMaxDate" resultType="Date">
+		SELECT MAX(a.report_date)
+		FROM day_report_door_merchan a
+		<where> 
+		a.SETTLEMENT_TYPE='03'
+		<if test="id != null and id != ''">
+				AND a.ROFFICE_ID = #{id}
+		</if>
+		</where>
+	</select>
+	<!-- 获取该中心最新传统结算时间   add by wqj start 2020-3-13-->
+	
+	<!-- 获取日结金额合计   add by lihe 2020-04-14 start-->
+	<select id="getSummation" resultType="DayReportDoorMerchan">
+		SELECT
+			<if test="dbName == 'oracle'">
+				<!-- 存款总额 -->
+				NVL(SUM(aa.total_amount),0) AS "totalAmount",
+				<!-- 汇款总额 -->
+				NVL(SUM(aa.paid_amount),0) AS "paidAmount",
+				<!-- 纸币数量 -->
+				NVL(SUM(aa.paperMoneyCount),0) AS 'paperMoneyCount',
+				<!-- 硬币数量 -->
+				<!-- NVL(SUM(aa.coinMoneyCount),0)  AS 'coinMoneyCount', -->
+				<!-- 存款总额 -->
+				NVL(SUM(aa.saveTotal),0)  AS 'saveTotal',
+				<!-- 硬币金额 -->
+				<!-- NVL(SUM(aa.coinMoneyTotal),0) AS 'coinMoneyTotal', -->
+				<!-- 纸币金额 -->
+				NVL(SUM(aa.paperMoneyTotal),0) AS 'paperMoneyTotal',
+				<!-- 速存金额 -->
+				NVL(SUM(aa.cash),0) AS 'cash',
+				<!-- 强制金额 -->
+				NVL(SUM(aa.pack),0) AS 'pack',
+				<!-- 其他金额 -->
+				NVL(SUM(aa.other),0) AS 'other',
+				<!-- 实际结算金额 -->
+				NVL(SUM(a.ACTURAL_REPORT_AMOUNT),0) AS 'acturalReportAmount'
+			</if>
+			<if test="dbName == 'mysql'">
+				<!-- 存款总额 -->
+				IFNULL(SUM(aa.total_amount),0) AS "totalAmount",
+				<!-- 汇款总额 -->
+				IFNULL(SUM(aa.paid_amount),0) AS "paidAmount",
+				<!-- 纸币数量 -->
+				IFNULL(SUM(aa.paperMoneyCount),0) AS 'paperMoneyCount',
+				<!-- 硬币数量 -->
+				<!-- IFNULL(SUM(aa.coinMoneyCount),0)  AS 'coinMoneyCount', -->
+				<!-- 存款总额 -->
+				IFNULL(SUM(aa.saveTotal),0)  AS 'saveTotal',
+				<!-- 硬币金额 -->
+				<!-- IFNULL(SUM(aa.coinMoneyTotal),0) AS 'coinMoneyTotal', -->
+				<!-- 纸币金额 -->
+				IFNULL(SUM(aa.paperMoneyTotal),0) AS 'paperMoneyTotal',
+				<!-- 速存金额 -->
+				IFNULL(SUM(aa.cash),0) AS 'cash',
+				<!-- 强制金额 -->
+				IFNULL(SUM(aa.pack),0) AS 'pack',
+				<!-- 其他金额 -->
+				IFNULL(SUM(aa.other),0) AS 'other',
+				<!-- 实际结算金额 -->
+				IFNULL(SUM(aa.actural_report_amount),0) AS 'acturalReportAmount'
+			</if>
+		FROM (
+			SELECT
+				a.total_amount,
+				a.paid_amount,
+				a.actural_report_amount,
+				<if test="dbName == 'oracle'">
+				NVL( SUM( d.paper_count ), 0 ) + NVL( SUM( d.coin_count ), 0 ) AS 'saveTotal',
+				NVL( SUM( d.paper_amount ), 0 ) + NVL( SUM( d.coin_amount ), 0 ) AS 'cash',
+				</if>
+				<if test="dbName == 'mysql'">
+				IFNULL( SUM( d.paper_count ), 0 ) + IFNULL( SUM( d.coin_count ), 0 ) AS 'saveTotal',
+				IFNULL( SUM( d.paper_amount ), 0 ) + IFNULL( SUM( d.coin_amount ), 0 ) AS 'cash',
+				</if>
+				SUM( d.paper_count ) AS 'paperMoneyCount',
+				SUM( d.paper_amount ) AS 'paperMoneyTotal',
+				SUM( d.force_amount ) AS 'pack',
+				SUM( d.other_amount ) AS 'other'
+			FROM
+			day_report_door_merchan a
+			<include refid="dayReportDoorMerchanJoins"/>
+			<!-- 按门店、日结ID及七位码获取明细金额子查询 -->
+			LEFT JOIN center_accounts_door_main b ON b.CLIENT_ID = a.OFFICE_ID AND b.REPORT_ID = a.REPORT_ID 
+			AND ( b.SEVEN_CODE = a.SEVEN_CODE OR b.SEVEN_CODE IS NULL ) 
+			LEFT JOIN door_order_detail d ON d.TICKERTAPE = b.TICKERTAPE
+			<where>
+				a.del_flag = #{DEL_FLAG_NORMAL}
+				<!-- 创建时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				AND 
+				<if test="dbName == 'oracle'">TO_CHAR(a.report_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+			</if>
+			<!-- 创建时间(结束) -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND 
+				<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.report_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s')</if>
+			</if>
+			<!-- 添加日结金额筛选 ZXK start -->
+			<!-- 日结金额(开始) -->
+			<if test="reportMoneyStart != null and reportMoneyStart != ''">
+				AND a.total_amount >='${reportMoneyStart}'
+			</if>
+			<!-- 日结金额(结束) -->
+			<if test="reportMoneyEnd != null and reportMoneyEnd != ''">
+				AND  '${reportMoneyEnd}' >= a.total_amount
+			</if>
+			<!-- 添加日结金额筛选 ZXK end -->
+			<!-- 代付状态 -->
+			<if test="paidStatus != null and paidStatus != ''">
+				AND a.paid_status=#{paidStatus}
+			</if>
+			<!-- 商户机构ID -->
+			<if test="officeId != null and officeId != ''">
+				AND a.office_id=#{officeId}
+			</if>
+			<!-- 清分中心ID -->
+			<if test="rofficeId != null and rofficeId != ''">
+				AND a.roffice_id=#{rofficeId}
+			</if>
+			<!-- 日结ID -->
+			<if test="reportId != null and reportId != ''">
+				AND a.report_id=#{reportId}
+			</if>
+			<!-- add by lihe start 2019-08-26 -->
+			<!-- 处理人 -->
+	        <if test="createBy != null and createBy.id != null and createBy.id != ''">
+				AND (a.create_by = #{createBy.id} OR a.update_by = #{createBy.id})
+			</if>
+			<!-- 商户结算类型 -->
+			<if test="settlementType != null and settlementType != ''">
+				AND a.SETTLEMENT_TYPE=#{settlementType}
+			</if>
+			<!-- 七位码 (模糊查询)-->
+			<if test="sevenCode != null and sevenCode != ''">
+				AND a.SEVEN_CODE like 
+				<if test="dbName == 'oracle'">'%,' || #{sevenCode} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{sevenCode}, '%')</if>
+			</if>
+			<!-- add by lihe end 2019-08-26 -->
+			<!-- add by lihe start 2019-12-31 -->
+			<if test="dayReportIdList != null and dayReportIdList.size != 0">
+				AND a.report_id IN 
+				<foreach collection="dayReportIdList" item="dayReportIdTag" separator="," open="(" close=")" index="index">
+					#{dayReportIdList[${index}]}
+				</foreach>
+			</if>
+			<!-- add by lihe end 2019-12-31 -->
+			<!-- 数据过滤 -->
+			  ${sqlMap.dsf}
+			</where>
+			GROUP BY a.report_id,a.office_id,a.SEVEN_CODE
+		) aa
+	</select>
+	<!-- 获取日结金额合计   add by lihe 2020-04-14 end-->
+	
+	<!-- 门店日结导出账户相关列表(转账导出)  ZXK  2019-12-16-->
+	<select id="findDayReportAccountExportList" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.DayReportAccountExport">
+		SELECT 
+			a.SEVEN_CODE AS remark,
+			s.PAYER_ACCOUNT_ID AS payerAccountId,
+			s.PAYER_ACCOUNT_NAME AS payerAccountName,
+			s.PAYEE_ACCOUNT_id AS payeeAccountId,
+			s.PAYEE_ACCOUNT_NAME AS payeeAccountName,
+			s.PAYEE_BANK_NAME AS payeeBankName,
+			<!-- a.TOTAL_AMOUNT AS amount, -->
+			<!-- 金额显示为实际日结金额  -->
+			IFNULL(a.ACTURAL_REPORT_AMOUNT,a.TOTAL_AMOUNT) AS amount,
+			substring(a.SEVEN_CODE,-2,2) as sevenDate
+			from day_report_door_merchan a
+			LEFT JOIN sys_office s
+			  ON  SUBSTR( a.SEVEN_CODE , 1 , 5 ) = s.`CODE` AND s.DEL_FLAG = ${delFlag.valid}
+			LEFT JOIN sys_office o2 ON o2.id = a.office_id and o2.del_flag = ${delFlag.valid}
+		<where>
+			 s.TYPE = '10'
+			 AND a.TOTAL_AMOUNT > 0
+		    <if test="dayReportIdList != null and dayReportIdList.size != 0">
+			 AND a.ID IN 
+				<foreach collection="dayReportIdList" item="dayReportIdTag" separator="," open="(" close=")" index="index">
+					#{dayReportIdList[${index}]}
+				</foreach>
+		    </if>
+		    <!-- 商户结算类型 -->
+			<if test="settlementType != null and settlementType != ''">
+				AND a.SETTLEMENT_TYPE=#{settlementType}
+			</if>
+			<!-- 添加日结金额筛选 ZXK start -->
+			<!-- 日结金额(开始) -->
+			<if test="reportMoneyStart != null and reportMoneyStart != ''">
+				AND a.total_amount >='${reportMoneyStart}'
+			</if>
+			<!-- 日结金额(结束) -->
+			<if test="reportMoneyEnd != null and reportMoneyEnd != ''">
+				AND  '${reportMoneyEnd}' >= a.total_amount
+			</if>
+			<!-- 添加日结金额筛选 ZXK end -->
+			<!-- 代付状态 -->
+			<if test="paidStatus != null and paidStatus != ''">
+				AND a.paid_status=#{paidStatus}
+			</if>
+			<!-- 机构ID(门店检索) -->
+			<if test="officeId != null and officeId != ''">
+				AND a.office_id=#{officeId}
+			</if>
+			<!-- 七位码 (模糊查询)-->
+			<if test="sevenCode != null and sevenCode != ''">
+					AND a.SEVEN_CODE like 
+					<if test="dbName == 'oracle'">'%,' || #{sevenCode} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{sevenCode}, '%')</if>
+			</if>
+			<!-- 创建时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				AND 
+				<if test="dbName == 'oracle'">TO_CHAR(a.report_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+			</if>
+			<!-- 创建时间(结束) -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND 
+				<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.report_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s')</if>
+			</if>
+		     ${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY sevenDate,
+				         A.PAID_STATUS DESC,
+						 A .REPORT_DATE DESC
+			</otherwise>
+		</choose>
+	</select>
+</mapper>

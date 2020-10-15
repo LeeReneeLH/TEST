@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.allocation.v02.dao.PbocAllAllocateItemsDao">
+    
+	<sql id="pbocAllAllocateItemsColumns">
+		a.all_items_id AS "allItemsId",
+		a.all_id AS "allId",
+		a.box_no AS "boxNo",
+		a.regist_type AS "registType",
+		a.currency AS "currency",
+		a.classification AS "classification",
+		a.cash AS "cash",
+		a.denomination AS "denomination",
+		a.unit AS "unit",
+		a.money_number AS "moneyNumber",
+		a.money_amount AS "moneyAmount",
+		a.sets AS "sets",
+		a.bak AS "bak",
+		a.goods_Id as "goodsId"
+	</sql>
+	
+    <select id="findListByAllId" parameterType="java.lang.String" resultType="PbocAllAllocateItem">
+		SELECT 
+			<include refid="pbocAllAllocateItemsColumns"/>
+		FROM pboc_all_allocate_items a
+			WHERE a.all_id=#{id}
+	</select>
+	
+	<!-- 按流水号，登记种别 查询物品列表 -->
+	<select id="findItemsList" resultType="PbocAllAllocateItem">
+		SELECT 
+			<include refid="pbocAllAllocateItemsColumns"/>
+		FROM 
+			pboc_all_allocate_items a
+		WHERE
+			a.all_id = #{allId}
+			and a.regist_type = #{registType}
+			
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO pboc_all_allocate_items(
+			all_items_id,
+			all_id,
+			box_no,
+			regist_type,
+			currency,
+			classification,
+			cash,
+			denomination,
+			unit,
+			money_number,
+			money_amount,
+			sets,
+			bak,
+			goods_id
+		) VALUES (
+			#{allItemsId},
+			#{allId},
+			#{boxNo},
+			#{registType},
+			#{currency},
+			#{classification},
+			#{cash},
+			#{denomination},
+			#{unit},
+			#{moneyNumber},
+			#{moneyAmount},
+			#{sets},
+			#{bak},
+			#{goodsId}
+		)
+	</insert>
+	
+	<update id="deleteBYAllId">
+		DELETE FROM pboc_all_allocate_items 
+		WHERE all_id = #{allId}
+	</update>
+	<update id="deleteBYAllIdAndRegistType">
+		DELETE FROM pboc_all_allocate_items 
+		WHERE all_id = #{allId}
+		AND regist_type = #{registType}
+	</update>
+</mapper>

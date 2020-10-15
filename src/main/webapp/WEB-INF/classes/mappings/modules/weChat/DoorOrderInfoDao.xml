@@ -1,0 +1,576 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.weChat.v03.dao.DoorOrderInfoDao">
+
+	<sql id="doorOrderInfoColumns">
+		a.id AS "id",
+		a.order_id AS "orderId",
+		a.door_id AS "doorId",
+		o1.name AS "doorName",
+		a.amount AS "amount",
+		a.accept_by AS "acceptBy",
+		a.accept_date AS "acceptDate",
+		a.status AS "status",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.rfid AS "rfid",
+		a.del_flag AS "delFlag",
+		a.order_date AS "orderDate",
+		a.method AS "method",
+        a.total_count AS "totalCount",
+		<!-- b.name AS "acceptName", -->
+		c.name AS "updateName",
+		d.name AS "createName",
+		a.office_id AS "office.id",
+		o.name AS "office.name",
+		a.equipment_id AS "equipmentId",
+		e.series_number AS "equipmentName",
+		a.bag_capacity AS "bagCapacity"
+	</sql>
+	
+	<sql id="MydoorOrderInfoColumns">
+		a.id AS "id",
+		a.order_id AS "orderId",
+		a.door_id AS "doorId",
+		a.door_name AS "doorName",
+		a.amount AS "amount",
+		a.accept_by AS "acceptBy",
+		a.accept_date AS "acceptDate",
+		a.status AS "status",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.rfid AS "rfid",
+		a.del_flag AS "delFlag",
+		a.order_date AS "orderDate",
+		a.method AS "method",
+		a.office_id AS "office.id",
+		a.office_name AS "office.name",
+		a.equipment_id AS "equipmentId"
+	</sql>
+	
+	<sql id="doorOrderInfoJoins">
+		<!-- LEFT JOIN sys_user b ON b.id = a.accept_by -->
+		LEFT JOIN sys_office o ON o.id = a.office_id
+		LEFT JOIN sys_user c ON c.id = a.update_by AND c.del_flag = #{DEL_FLAG_NORMAL}
+		LEFT JOIN sys_user d ON d.id = a.create_by AND d.del_flag = #{DEL_FLAG_NORMAL}
+		LEFT JOIN EQUIPMENT_INFO e ON e.id = a.equipment_id
+		LEFT JOIN sys_office o1 ON o1.id = a.door_id
+	</sql>
+    
+	<select id="get" resultType="DoorOrderInfo">
+		SELECT 
+			<include refid="doorOrderInfoColumns"/>
+		FROM door_order_info a
+		<include refid="doorOrderInfoJoins"/>
+		WHERE a.id = #{id}
+	</select>
+
+	<select id="getByCondition" resultType="DoorOrderInfo">
+		SELECT
+		<include refid="doorOrderInfoColumns"/>
+		FROM door_order_info a
+		<include refid="doorOrderInfoJoins"/>
+		<where>
+			<if test="id != null and id != ''">
+				 a.id = #{id}
+			</if>
+			<if test="doorId != null and doorId != ''">
+				and a.door_id = #{doorId}
+			</if>
+			<if test="status != null and status != ''">
+				and a.status = #{status}
+			</if>
+			<if test="equipmentId != null and equipmentId != ''">
+				and a.equipment_id = #{equipmentId}
+			</if>
+			<if test="orderId != null and orderId != ''">
+				and a.order_id = #{orderId}
+			</if>
+			<if test="rfid != null and rfid != ''">
+				and a.rfid = #{rfid}
+			</if>
+		</where>
+		${sqlMap.dsf}
+		LIMIT 1
+	</select>
+	
+	<select id="findList" resultType="DoorOrderInfo">
+			SELECT 
+				<include refid="doorOrderInfoColumns"/>
+			   <!-- 微信端查询显示 业务备注 add:zxk -->
+			   , doe.REMARKS AS remarks
+			FROM door_order_info a
+			<include refid="doorOrderInfoJoins"/>
+			<if test="(null != updateName and updateName != '')||(tickertape != null and tickertape != '')||(remarks != null and remarks != '')">
+				LEFT JOIN (
+				select  de.ORDER_ID,
+						de.TICKERTAPE,
+						<!-- 业务备注 20220-04-16 gzd-->
+						de.REMARKS,
+						u.NAME AS UPDATE_NAME 
+				from door_order_detail de 
+				left join sys_user u on de.CREATE_BY = u.ID 
+					 AND u.del_flag = ${delFlag.valid} 
+				<where>
+					<!-- 凭条 -->
+					<if test="tickertape != null and tickertape != ''">
+						AND TICKERTAPE like 
+						<if test="dbName == 'oracle'">'%,' || #{tickertape} || ',%'</if>
+						<if test="dbName == 'mysql'">CONCAT('%', #{tickertape}, '%')</if>
+					</if>
+					<!-- 存款人 -->
+					<if test="null != updateName and updateName != ''">
+						AND u.NAME like 
+						<if test="dbName == 'oracle'">'%,' || #{updateName} || ',%'</if>
+						<if test="dbName == 'mysql'">CONCAT('%', #{updateName}, '%')</if>
+					</if>
+					<!-- 业务备注 20220-04-16 gzd-->
+					<if test="null != remarks and remarks != ''">
+						AND de.REMARKS like 
+						<if test="dbName == 'oracle'">'%,' || #{remarks} || ',%'</if>
+						<if test="dbName == 'mysql'">CONCAT('%', #{remarks}, '%')</if>
+					</if>
+				</where>
+				GROUP BY de.ORDER_ID
+				) dod on dod.order_id = a.order_id
+			</if>
+			<!-- 微信端显示备注 -->
+			  LEFT JOIN   door_order_detail doe  ON doe.ORDER_ID = a.ORDER_ID AND a.METHOD = '2'
+			<where>
+				a.del_flag = #{DEL_FLAG_NORMAL}
+				<if test="acceptBy != null and acceptBy != ''">
+					AND a.accept_by = #{acceptBy}
+				</if>
+				<if test="doorId != null and doorId != ''">
+					AND a.door_id = #{doorId}
+				</if>
+	            <if test="equipmentId != null and equipmentId != ''">
+	                AND a.equipment_id = #{equipmentId}
+	            </if>
+				<if test="status != null and status != ''">
+					AND a.status = #{status}
+				</if>
+				<if test="method != null and method != ''">
+					AND a.method = #{method}
+				</if>
+				<!-- <if test="rfid != null and rfid != ''">
+					AND a.rfid = #{rfid}
+				</if> -->
+				<if test="office != null and office.id != null and office.id != ''">
+					AND a.office_id = #{office.id}
+				</if>
+				<if test="statusList != null and statusList.size != 0">
+					AND a.status in
+					<foreach collection="statusList" item="status" separator="," open="(" close=")" index="index">
+					 	 #{statusList[${index}]}
+					</foreach>
+				</if>
+				<if test="null != equipmentName and equipmentName != ''">
+					AND e.series_number like 
+					<if test="dbName == 'oracle'">'%,' || #{equipmentName} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{equipmentName}, '%')</if>
+				</if>
+				<if test="null != rfid and rfid != ''">
+					AND a.rfid like 
+					<if test="dbName == 'oracle'">'%,' || #{rfid} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{rfid}, '%')</if>
+				</if>
+				<if test="searchDateStart != null and searchDateStart != ''">
+		            <if test="dbName == 'oracle'">AND TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+					<if test="dbName=='mysql'">AND DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		        </if>
+		        <if test="searchDateEnd != null and searchDateEnd != ''">
+		            <if test="dbName == 'oracle'">AND '${searchDateEnd}' >= TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+					<if test="dbName=='mysql'">AND '${searchDateEnd}'>=DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+		        </if>
+		        <!-- 总金额 范围查询使用  start-->
+				<if test="beforeAmount != null and beforeAmount != ''">
+		            AND a.amount >= #{beforeAmount}
+		        </if>
+		        <if test="afterAmount != null and afterAmount != ''">
+		            AND #{afterAmount} >= a.amount
+		        </if>
+		        <!-- 总金额范围  end-->
+		        <!-- 存款人或凭条模糊查询使用 -->
+		        <if test="(null != updateName and updateName != '')||(tickertape != null and tickertape != '')||(remarks != null and remarks != '')">
+					AND dod.ORDER_ID is not null
+				</if>
+				${sqlMap.dsf}
+			</where>
+			<choose>
+				<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+					ORDER BY ${page.orderBy}
+				</when>
+				<otherwise>
+					ORDER BY a.UPDATE_DATE DESC,
+				 <!-- 排序优化 当更新时间一致时 按创建时间排序  add:zxk-->
+					         a.CREATE_DATE DESC
+				</otherwise>
+			</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO door_order_info(
+			id,
+			order_id,
+			door_id,
+			door_name,
+			amount,
+			accept_by,
+			accept_date,
+			status,
+			update_by,
+			update_date,
+			create_by,
+			create_date,
+			rfid,
+			del_flag,
+			order_date,
+			method,
+			allot_status,
+			total_count,
+			office_id,
+			office_name,
+			equipment_id,
+			bag_capacity
+		) VALUES (
+			#{id},
+			#{orderId},
+			#{doorId},
+			#{doorName},
+			#{amount},
+			#{acceptBy},
+			#{acceptDate},
+			#{status},
+			#{updateBy.id},
+			#{updateDate},
+			#{createBy.id},
+			#{createDate},
+			#{rfid},
+			#{delFlag},
+			#{orderDate},
+			#{method},
+			#{allotStatus},
+			#{totalCount},
+			#{office.id},
+			#{office.name},
+			#{equipmentId},
+			#{bagCapacity}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE door_order_info SET 	
+			door_id = #{doorId},
+			door_name = #{doorName},
+			amount = #{amount},
+			accept_by = #{acceptBy},
+			accept_date = #{acceptDate},
+			status = #{status},
+			rfid = #{rfid},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			order_date = #{orderDate},
+			total_count = #{totalCount},
+			office_id = #{office.id},
+			office_name = #{office.name},
+			equipment_id = #{equipmentId},
+			bag_capacity = #{bagCapacity}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE door_order_info SET 
+			del_flag = #{DEL_FLAG_DELETE},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate}
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 操作管理员密码的取得-->
+	<select id="findManagePassword" resultType="string">
+	SELECT
+        case when a.AUTH_PASSWORD is null then ' ' else a.AUTH_PASSWORD end
+    FROM SYS_USER a
+    WHERE 
+       a.USER_TYPE = '20'
+      AND a.del_flag = '0'
+      AND a.LOGIN_NAME = #{userName}
+	</select>
+	
+	<!-- qph  Begin-->
+	<!--  通过日期和门店编号查询数据 -->
+	<select id="getByorderDate" resultType="DoorOrderInfo">
+		SELECT
+		 <include refid="MydoorOrderInfoColumns"/>
+		FROM door_order_info a
+        LEFT JOIN sys_office d ON a.door_id = d.id
+		where
+		a.del_flag = '0' 
+		AND a.status = '0'
+      
+		<if test="doorid != null and doorid != ''">
+				AND  a.door_id = #{doorid}
+		</if>
+		<if test="orderdate != null and orderdate != ''">
+				AND a.order_date = #{orderdate}
+		</if>
+	</select>
+	
+	<!--  PC端查询该门店当天是否有预约 -->
+	<select id="getByorderDate1" resultType="DoorOrderInfo">
+		SELECT
+		 <include refid="MydoorOrderInfoColumns"/>
+		FROM door_order_info a
+		LEFT JOIN sys_office d ON a.door_id = d.id
+		where
+		a.del_flag = '0' 
+		
+		AND a.method = '1' 
+		AND a.status = '2'
+		
+		<if test="doorId != null and doorId != ''">
+				AND  a.door_id = #{doorId}
+		</if>
+		<if test="orderDate != null and orderDate != ''">
+				AND a.order_date = #{orderDate}
+		</if>
+	</select>
+	<!-- 修改总金额 -->
+		<update id="updateAmount">
+		UPDATE  door_order_info a SET 	
+			amount = #{amount},
+			update_date = #{updateDate},
+			total_count = #{totalCount}
+		WHERE del_flag = '0' and order_id = #{orderId}
+		<if test="doorId != null and doorId != ''">
+				 AND door_id = #{doorId}
+		</if>
+
+		<if test="orderDate != null and orderDate != ''">
+				AND order_date = #{orderDate}
+		</if>
+		<!--
+		AND EXISTS
+		 (SELECT 1
+		          FROM sys_office d
+		         WHERE a.door_id = d.id
+                   AND SYSDATE >= (trunc(a.create_date + (case when to_number(to_char(a.create_date,'hh24'))  >= to_number(nvl(trim(d.CUT_TIME),'0')) then 0 else -1 end))+to_number(nvl(trim(d.CUT_TIME),'0'))/24)
+                   AND SYSDATE &lt; (trunc(a.create_date + (case when to_number(to_char(a.create_date,'hh24'))  >= to_number(nvl(trim(d.CUT_TIME),'0')) then 1 else 0 end) )+to_number(nvl(trim(d.CUT_TIME),'0'))/24)
+		 
+		 )
+		 -->
+		 
+	</update>
+		
+	<!-- 更新预约状态(更改为已确认)-->
+	<update id="updateStatusconfirm">
+		UPDATE door_order_info a  SET 
+			status = '2',
+			update_date = #{updateDate}
+		WHERE status = '0'		
+		<if test="doorId != null and doorId != ''">
+				AND door_id = #{doorId}
+			</if>
+		
+		<if test="orderDate != null and orderDate != ''">
+				AND order_date = #{orderDate}
+		</if>
+        <if test="equipmentId != null and equipmentId != ''">
+            AND a.equipment_id = #{equipmentId}
+        </if>
+		<!--
+		AND EXISTS
+		 (SELECT 1
+		          FROM sys_office d
+		         WHERE a.door_id = d.id
+                   AND SYSDATE >= (trunc(a.create_date + (case when to_number(to_char(a.create_date,'hh24'))  >= to_number(nvl(trim(d.CUT_TIME),'0')) then 0 else -1 end))+to_number(nvl(trim(d.CUT_TIME),'0'))/24)
+                   AND SYSDATE &lt; (trunc(a.create_date + (case when to_number(to_char(a.create_date,'hh24'))  >= to_number(nvl(trim(d.CUT_TIME),'0')) then 1 else 0 end) )+to_number(nvl(trim(d.CUT_TIME),'0'))/24)
+
+		 )
+		 -->
+	</update>
+	<!-- qph  END-->
+	
+	<!-- 根据用户获取缴存列表  add by lihe start 2019-08-27 -->
+	<select id="getDoorListByUser" resultType="DoorOrderInfo">
+		SELECT 
+			<if test="dbName == 'oracle'">
+			TO_CHAR(doi.startDate, 'yyyy-mm-dd hh24:mi') AS startDate,
+			TO_CHAR(doi.endDate, 'yyyy-mm-dd hh24:mi') AS endDate,
+			</if>
+			<if test="dbName=='mysql'">
+			DATE_FORMAT(doi.startDate, '%Y-%m-%d %H:%i') AS startDate,
+			DATE_FORMAT(doi.endDate, '%Y-%m-%d %H:%i') AS endDate,
+			</if>
+			<!-- 明细总金额 -->
+			de.totalAmount AS "detailAmount",
+			<include refid="doorOrderInfoColumns"/>
+		FROM door_order_info a
+		LEFT JOIN (
+			SELECT
+				i.ORDER_ID,d.create_by,SUM( d.AMOUNT ) AS totalAmount 
+			FROM
+				door_order_info i
+				LEFT JOIN door_order_detail d ON i.ORDER_ID = d.ORDER_ID 
+			<where>
+				<if test="createBy != null and createBy.id != null and createBy.id != ''">
+					d.create_by = #{createBy.id}
+				</if> 
+				<if test="searchDateStart != null and searchDateStart != ''">
+		            <if test="dbName == 'oracle'">AND TO_CHAR(d.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+					<if test="dbName=='mysql'">AND DATE_FORMAT(d.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		        </if>
+		        <if test="searchDateEnd != null and searchDateEnd != ''">
+		            <if test="dbName == 'oracle'">AND '${searchDateEnd}' >= TO_CHAR(d.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+					<if test="dbName=='mysql'">AND '${searchDateEnd}'>=DATE_FORMAT(d.CREATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+		        </if>
+			</where>
+			GROUP BY
+				i.ORDER_ID,
+				d.create_by
+			) de ON a.ORDER_ID = de.ORDER_ID
+		<include refid="doorOrderInfoJoins"/>
+		left join(
+			SELECT
+				ORDER_ID,
+				MAX(CREATE_DATE) AS endDate,
+				MIN(CREATE_DATE) AS startDate
+			FROM
+				door_order_detail
+			<where>
+				del_flag = #{DEL_FLAG_NORMAL}
+				<if test="searchDateStart != null and searchDateStart != ''">
+		            <if test="dbName == 'oracle'">AND TO_CHAR(CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+					<if test="dbName=='mysql'">AND DATE_FORMAT(CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		        </if>
+		        <if test="searchDateEnd != null and searchDateEnd != ''">
+		            <if test="dbName == 'oracle'">AND '${searchDateEnd}' >= TO_CHAR(CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+					<if test="dbName=='mysql'">AND '${searchDateEnd}'>=DATE_FORMAT(CREATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+		        </if>
+		        <if test="createBy != null and createBy.id != null and createBy.id != ''">
+					AND create_by = #{createBy.id}
+				</if>
+	        </where>
+			GROUP BY
+				ORDER_ID
+		) doi on doi.ORDER_ID = a.ORDER_ID
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="office != null and office.id != null and office.id != ''">
+				AND a.office_id = #{office.id}
+			</if>
+			<if test="statusList != null and statusList.size != 0">
+				AND a.status in 
+				<foreach collection="statusList" item="status" separator="," open="(" close=")" index="index">
+				 	 #{statusList[${index}]}
+				</foreach>
+			</if>
+	       <!--  <if test="searchDateStart == null or searchDateStart == ''">
+	        AND 
+		        <if test="dbName == 'oracle'">
+				TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= TO_CHAR(doi.startDate, 'yyyy-mm-dd hh24:mi:ss')
+				</if>
+				<if test="dbName=='mysql'">
+				DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >= DATE_FORMAT(doi.startDate, '%Y-%m-%d %H:%i:%s')
+				</if>
+	        </if>
+	        <if test="searchDateEnd == null or searchDateEnd == ''">
+	        AND 
+	         <if test="dbName == 'oracle'">
+				TO_CHAR(doi.endDate, 'yyyy-mm-dd hh24:mi:ss') >= TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss')
+				</if>
+				<if test="dbName=='mysql'">
+				DATE_FORMAT(doi.endDate, '%Y-%m-%d %H:%i:%s') >= DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s')
+				</if>
+	        </if> -->
+	        <if test="createBy != null and createBy.id != null and createBy.id != ''">
+				AND de.create_by = #{createBy.id}
+			</if>
+	        AND doi.ORDER_ID IS NOT NULL
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				<!-- 改为按存款时间排序 by guojian start -->
+				<!-- ORDER BY a.order_id DESC -->
+				ORDER BY a.CREATE_DATE desc
+				<!-- 改为按存款时间排序 by guojian end -->
+			</otherwise>
+		</choose>
+	</select>
+	<!-- 根据用户获取缴存列表   add by lihe end 2019-08-27 -->
+
+    <!-- 获取设备余额信息 -->
+    <select id="getEquipmentBalanceInfo" resultType="map">
+        SELECT MAX(INFO.AMOUNT)        AS AMOUNT,
+               MAX(INFO.EQUIPMENT_ID)  AS EQUIPMENT_ID,
+               DETAIL.ORDER_ID         AS ORDER_ID,
+               SUM(ifnull(AMOUNT.COUNT_ZHANG,0)) AS COUNT_ZHANG
+        FROM DOOR_ORDER_AMOUNT AMOUNT
+                 LEFT JOIN DOOR_ORDER_DETAIL DETAIL ON DETAIL.ID = AMOUNT.DETAIL_ID
+                 LEFT JOIN DOOR_ORDER_INFO INFO ON DETAIL.ORDER_ID = INFO.ORDER_ID
+        WHERE INFO.EQUIPMENT_ID = #{eqpId}
+          AND INFO.STATUS = ${doorOrder.status.register}
+          AND DETAIL.DEL_FLAG = ${delFlag.valid}
+          AND INFO.DEL_FLAG = ${delFlag.valid}
+        GROUP BY DETAIL.ORDER_ID
+    </select>
+    <!-- 查询其他设备是否有重复包号 -->
+    <select id="getRepeatBagNo" resultType="string">
+        SELECT RFID
+        FROM DOOR_ORDER_INFO
+        WHERE STATUS = ${doorOrder.status.register}
+          AND RFID = #{bagNo}
+          AND EQUIPMENT_ID <![CDATA[<>]]> #{eqpId}
+          AND DOOR_ORDER_INFO.DEL_FLAG = ${delFlag.valid}
+    </select>
+
+	<!-- 查找当前包号是否有正在登记或确认状态的存款 -->
+	<select id="getNonTaskDownOrder" resultType="com.coffer.businesses.modules.weChat.v03.entity.DoorOrderInfo">
+		SELECT RFID
+		FROM DOOR_ORDER_INFO
+		WHERE STATUS = '${doorOrder.status.confirm}'
+			AND RFID = #{bagNo}
+			AND DOOR_ORDER_INFO.DEL_FLAG = '${delFlag.valid}'
+	</select>
+	
+	<!-- 获取设备状态信息是否为'在用'  add:ZXk 2020-6-23  -->
+    <select id="getEquipmentStatus" resultType="com.coffer.businesses.modules.weChat.v03.entity.DoorOrderInfo">
+		SELECT
+			a.id AS "id",
+			a.status AS "status"
+		FROM door_order_info a
+		WHERE a.EQUIPMENT_ID = #{eqpId}
+		AND a.status = '0'
+		AND a.DEL_FLAG = ${delFlag.valid}
+		ORDER BY UPDATE_DATE DESC
+    </select>
+    
+    <select id="getInfoByEqpIds" resultType="com.coffer.businesses.modules.weChat.v03.entity.DoorOrderInfo">
+		SELECT
+			doi.EQUIPMENT_ID,
+			doi.BAG_CAPACITY,
+			doi.AMOUNT,
+			IFNULL(sum( dod.paper_count ), 0) + IFNULL(sum( dod.COIN_COUNT ), 0) AS moneyCount 
+		FROM door_order_info doi
+			LEFT JOIN door_order_detail dod ON doi.order_id = dod.order_id 
+		WHERE doi.EQUIPMENT_ID in 
+		<foreach collection="eqpIds" item="eqpId" index="index" open="(" close=")" separator=",">
+			#{eqpId}
+		</foreach>
+		AND doi.status = '0'
+		AND doi.DEL_FLAG = ${delFlag.valid}
+		<!-- AND dod.DEL_FLAG = ${delFlag.valid} -->
+		GROUP BY
+			doi.order_id
+    </select>
+    
+</mapper>

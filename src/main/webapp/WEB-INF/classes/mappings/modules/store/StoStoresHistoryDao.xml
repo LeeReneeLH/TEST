@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoStoresHistoryDao">
+    
+	<sql id="stoStoresHistoryColumns">
+		a.sto_id AS "stoId",
+		a.goods_id AS "goodsId",
+		a.goods_name AS "goodsName",
+		a.sto_num AS "stoNum",
+		a.amount AS "amount",
+		a.change_num AS "changeNum",
+		a.office_id AS "office.id",
+		a.sto_status AS "stoStatus",
+		a.goods_type AS "goodsType",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createName",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_name AS "updateName",
+		a.update_date AS "updateDate",
+		a.del_flag AS "delFlag",
+		a.remarks AS "remarks",
+		a.business_id AS "businessId",
+		o7.name AS "office.name", 
+		o7.name AS "officeName"
+	</sql>
+	
+	<sql id="stoStoresHistoryJoins">
+		LEFT JOIN sys_office o7 ON o7.id = a.office_id
+	</sql>
+    
+	<select id="get" resultType="StoStoresHistory">
+		SELECT 
+			<include refid="stoStoresHistoryColumns"/>
+		FROM sto_stores_history a
+		<include refid="stoStoresHistoryJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="StoStoresHistory">
+		SELECT 
+			<include refid="stoStoresHistoryColumns"/>
+		FROM sto_stores_history a
+		<include refid="stoStoresHistoryJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="goodsId != null and goodsId != ''">
+				AND a.goods_id = #{goodsId}
+			</if>
+			<if test="stoStatus != null and stoStatus != ''">
+				AND a.sto_status = #{stoStatus}
+			</if>
+			<if test="goodsType != null and goodsType != ''">
+				AND a.goods_type = #{goodsType}
+			</if>
+			<!-- 开始时间 -->
+			<if test="createTimeStart != null and createTimeStart != ''">
+				<if test="dbName == 'oracle'">and TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >= TO_CHAR(#{createTimeStart}, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName == 'mysql'">and DATE_FORMAT(a.create_date, '%Y-%m-%d H%:i%:S') >= DATE_FORMAT(#{createTimeStart}, '%Y-%m-%d H%:i%:S')</if>
+			</if>
+			<!-- 结束时间 -->
+			<if test="createTimeEnd != null and createTimeEnd != ''">
+				<if test="dbName == 'oracle'">and TO_CHAR(#{createTimeEnd}, 'yyyy-mm-dd hh24:mi:ss') >= TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName == 'mysql'">and DATE_FORMAT(#{createTimeEnd}, '%Y-%m-%d H%:i%:S') >= DATE_FORMAT(a.create_date, '%Y-%m-%d H%:i%:S') </if>
+			</if>
+			<!-- 数据范围过滤 -->
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.create_date DESC, a.goods_id
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="StoStoresHistory">
+		SELECT 
+			<include refid="stoStoresHistoryColumns"/>
+		FROM sto_stores_history a
+		<include refid="stoStoresHistoryJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO sto_stores_history(
+			sto_id,
+			goods_id,
+			goods_name,
+			sto_num,
+			amount,
+			change_num,
+			office_id,
+			sto_status,
+			goods_type,
+			create_by,
+			create_name,
+			create_date,
+			update_by,
+			update_name,
+			update_date,
+			del_flag,
+			remarks,
+			business_id
+		) VALUES (
+			#{stoId},
+			#{goodsId},
+			#{goodsName},
+			#{stoNum},
+			#{amount},
+			#{changeNum},
+			#{office.id},
+			#{stoStatus},
+			#{goodsType},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate},
+			#{delFlag},
+			#{remarks},
+			#{businessId}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE sto_stores_history SET 	
+			sto_id = #{stoId},
+			goods_id = #{goodsId},
+			goods_name = #{goodsName},
+			sto_num = #{stoNum},
+			amount = #{amount},
+			change_num = #{changeNum},
+			office_id = #{office.id},
+			sto_status = #{stoStatus},
+			goods_type = #{goodsType},
+			create_name = #{createName},
+			update_by = #{updateBy.id},
+			update_name = #{updateName},
+			update_date = #{updateDate},
+			remarks = #{remarks},
+			business_id = #{businessId}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE sto_stores_history SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+		
+	<update id="updateById">
+		update sto_stores_history 
+   		set del_flag = #{DEL_FLAG_DELETE}, 
+   			update_date = #{updateDate}, 
+   			update_by = #{updateBy.id}
+ 		where business_id = #{businessId}
+   		and del_flag = #{DEL_FLAG_NORMAL}
+	</update>
+	<!-- 获取当前盘点信息之后是否存在库存变更信息 -->
+	<select id="getStoreAfterStock" resultType="StoStoresHistory">
+		SELECT 
+			<include refid="stoStoresHistoryColumns"/>
+		FROM sto_stores_history a
+		<include refid="stoStoresHistoryJoins"/>
+ 		WHERE a.office_id = #{office.id}
+   		<if test="dbName == 'oracle'">and TO_CHAR(a.create_date, 'yyyyMMddhh24missff3') > TO_CHAR(#{createDate}, 'yyyyMMddhh24missff3')</if>
+   		<if test="dbName == 'mysql'">and DATE_FORMAT(a.create_date, '%Y%m%d%H%i%S%f') > DATE_FORMAT(#{createDate}, '%Y%m%d%H%i%S%f')</if>
+	</select>
+	
+</mapper>

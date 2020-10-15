@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.clear.v03.dao.OrderClearDetailDao">
+    <!-- 预约清分明细表 -->
+    <!-- 查询明细表信息字段 -->
+  	<sql id="orderClearDetailColumns">
+  		t_aaitem.detail_id AS "detailId",
+	  	t_aaitem.in_no AS "inNo",
+	  	t_aaitem.currency as "currency",
+		t_aaitem.denomination AS "denomination" ,
+		t_aaitem.unit_id AS "unitId",
+		t_aaitem.count_dqf AS "countDqf",
+		t_aaitem.count_yqf AS "countYqf",
+		t_aaitem.count AS "totalCount",
+		t_aaitem.total_amt AS "totalAmt"
+	</sql>
+	
+	
+	<!-- 按交款单号，预约清分明细列表 -->
+	<select id="findItemsList" resultType="com.coffer.businesses.modules.clear.v03.entity.OrderClearDetail">
+	    SELECT 
+		  <include refid="orderClearDetailColumns"/>
+	    FROM order_clear_detail t_aaitem
+	    WHERE
+	      1=1
+	      and t_aaitem.IN_NO = #{inNo} 
+	      and t_aaitem.DEL_FLAG='0'
+	    order by t_aaitem.denomination
+	</select>
+	
+	
+	<!-- 按机构查询，预约清分明细列表 -->
+	<select id="findListByOffice" resultType="com.coffer.businesses.modules.clear.v03.entity.OrderClearDetail">
+	    SELECT 
+			t_aaitem.denomination AS "denomination" ,
+			sum(t_aaitem.count_dqf) AS "countDqf",
+			sum(t_aaitem.count_yqf) AS "countYqf",
+			sum(t_aaitem.total_amt) AS "totalAmt"
+	    FROM order_clear_main a,order_clear_detail t_aaitem
+	    WHERE
+	      1=1
+	      and a.IN_NO = t_aaitem.IN_NO
+	      and a.DEL_FLAG='0'
+	      and t_aaitem.DEL_FLAG='0'
+	      
+		<!-- 登记机构 -->
+		<if test="registerOffice != null and registerOffice != ''">
+			AND a.register_office = '${registerOffice}'
+		</if>
+        <!-- 当日 -->
+		<if test="dbName == 'oracle'">AND TO_CHAR(A.register_date, 'yyyy-mm-dd') = TO_CHAR(#{registerDate}, 'yyyy-mm-dd')</if>
+		<if test="dbName == 'mysql'">AND DATE_FORMAT(A.register_date, '%Y-%m-%d') = DATE_FORMAT(#{registerDate}, '%Y-%m-%d')</if>
+	      
+	    group by t_aaitem.denomination
+	    order by t_aaitem.denomination
+	</select>
+	
+	
+	
+	<!-- 明细表数据做成 -->
+	<insert id="insert">
+		INSERT INTO order_clear_detail(
+		   detail_id,
+		   in_no,
+		   currency,
+		   denomination,
+		   unit_id,
+		   count_dqf,
+		   count_yqf,
+		   count,
+		   total_amt,
+		   create_by,
+		   create_name,
+		   create_date,
+		   update_by,
+		   update_name,
+		   update_date,
+		   del_flag,
+		   remarks
+		) VALUES (
+			#{id},
+			#{inNo},
+			#{currency},
+			#{denomination},
+			#{unitId},
+			#{countDqf},
+			#{countYqf},
+			#{totalCount},
+			#{totalAmt},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate},
+			#{delFlag},
+			#{remarks}
+		)
+	</insert>
+	
+	<!-- 数据删除-->
+	<update id="delete">
+		UPDATE order_clear_detail SET 
+			del_flag = #{DEL_FLAG_DELETE},
+			update_by = #{updateBy.id}, 
+			update_name = #{updateBy.name},
+			update_date = #{updateDate}
+		WHERE in_no = #{inNo}
+	</update>
+	
+</mapper>

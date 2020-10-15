@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.clear.v03.dao.ClTaskMainDao">
+    
+	<sql id="clTaskMainColumns">
+	a.task_no AS "taskNo",
+	a.currency AS "currency",
+	a.unit AS "unit",
+	a.classification AS "classification",
+	a.cash AS "cash",
+	a.denomination AS "denomination",
+	a.sets AS "sets",
+	a.bus_type AS "busType",
+	a.task_type AS "taskType",
+	a.tran_status AS "tranStatus",
+	a.plan_type AS "planType",
+	a.join_man_no AS "joinManNo",
+	a.join_man_name AS "joinManName",
+	a.total_count AS "totalCount",
+	a.total_amt AS "totalAmt",
+	a.operator_by AS "operatorBy",
+	a.operator_name AS "operatorName",
+	a.operate_date AS "operateDate",
+	a.check_status AS "checkStatus",
+	a.check_type AS "checkType",
+	a.create_by AS "createBy",
+	a.create_name AS "createName",
+	a.create_date AS "createDate",
+	a.update_by AS "updateBy",
+	a.update_name AS "updateName",
+	a.update_date AS "updateDate",
+	a.office_id	AS "office.id",
+	a.office_name AS "office.name"
+	</sql>
+	
+	<sql id="clTaskMainJoins">
+	</sql>
+    
+	<select id="get" resultType="ClTaskMain">
+		SELECT 
+			<include refid="clTaskMainColumns"/>
+		FROM cl_task_main a
+		<include refid="clTaskMainJoins"/>
+		WHERE a.task_no = #{taskNo}
+	</select>
+	
+	<select id="findList" resultType="ClTaskMain">
+		SELECT 
+			<include refid="clTaskMainColumns"/>
+		FROM cl_task_main a
+		<include refid="clTaskMainJoins"/>
+		left join sys_office o 
+			on a.office_id=o.id
+		<where>
+				1 = 1
+			 <!-- 主表：登记时间(开始) -->
+	        <if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <!-- 主表：登记时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	        
+	         <!-- 主表：操作时间(开始) -->
+	        <if test="operateDateStart != null and operateDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(a.operate_date, 'yyyy-mm-dd hh24:mi:ss') >='${operateDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.operate_date, '%Y-%m-%d %H:%i:%s') >='${operateDateStart}'</if>
+	        </if>
+	        <!-- 主表：操作时间(结束) -->
+	        <if test="operateDateEnd != null and operateDateEnd != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">'${operateDateEnd}' >= TO_CHAR(a.operate_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${operateDateEnd}' >= DATE_FORMAT(a.operate_date, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	        <!-- 主表：任务类型 -->
+	        <if test="taskType != null and taskType != ''">
+	            AND a.task_type = '${taskType}'
+	        </if>
+	        <!-- 追加业务类型查询条件  修改人：wxz 修改时间：2017-9-4 begin  -->
+	        <if test="busType != null and busType != ''">
+				AND a.bus_type =  #{busType}
+			</if>
+			<!-- end -->
+			<!-- 追加业务类型查询条件  修改人：qph 修改时间：2017-10-16 begin  -->
+	        <if test="planType != null and planType != ''">
+				AND a.plan_type =  #{planType}
+			</if>
+			
+			<if test="taskTypes != null and taskTypes.size != 0">
+				AND a.task_type in
+				<foreach collection="taskTypes" item="tasktype"
+					separator="," open="(" close=")" index="">
+				#{tasktype}
+				</foreach>
+			</if>
+			<!-- end -->
+			
+			 <!-- add-start by QPH 2017-11-14 -->
+			<if test="office != null and office.id != null and office.id != ''">
+				AND A.OFFICE_ID = '${office.id}'
+			</if>
+			<!-- end -->
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			ORDER BY a.create_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="ClTaskMain">
+		SELECT 
+			<include refid="clTaskMainColumns"/>
+		FROM cl_task_main a
+		<include refid="clTaskMainJoins"/>
+		<where>
+			
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO cl_task_main(
+			task_no,
+			currency,
+			classification,
+			cash,
+			denomination,
+			unit,
+			sets,
+			bus_type,
+			task_type,
+			tran_status,
+			plan_type,
+			join_man_no,
+			join_man_name,
+			total_count,
+			total_amt,
+			operator_by,
+			operator_name,
+			operate_date,
+			check_status,
+			check_type,
+			create_by,
+			create_name,
+			create_date,
+			update_by,
+			update_name,
+			update_date,
+			<!-- add-start by QPH 2017-11-14 -->
+			office_id,
+		    office_name
+		    <!-- end -->
+		) VALUES (
+			#{taskNo},
+			#{currency},
+			#{classification},
+			#{cash},
+			#{denomination},
+			#{unit},
+			#{sets},
+			#{busType},
+			#{taskType},
+			#{tranStatus},
+			#{planType},
+			#{joinManNo},
+			#{joinManName},
+			#{totalCount},
+			#{totalAmt},
+			#{operatorBy},
+			#{operatorName},
+			#{operateDate},
+			#{checkStatus},
+			#{checkType},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate},
+			<!-- add-start by QPH 2017-11-14 -->
+			#{office.id},
+			#{office.name}
+		    <!-- end -->
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE cl_task_main SET 	
+			task_no = #{taskNo},
+			currency = #{currency},
+			classification = #{classification},
+			cash = #{cash},
+			denomination = #{denomination},
+			unit = #{unit},
+			sets = #{sets},
+			bus_type = #{busType},
+			task_type = #{taskType},
+			tran_status = #{tranStatus},
+			plan_type = #{planType},
+			join_man_no = #{joinManNo},
+			join_man_name = #{joinManName},
+			total_count = #{totalCount},
+			total_amt = #{totalAmt},
+			operator_by = #{operatorBy},
+			operator_name = #{operatorName},
+			operate_date = #{operateDate},
+			check_status = #{checkStatus},
+			check_type = #{checkType},
+			create_by = #{createBy.id},
+			create_name = #{createName},
+			create_date = #{createDate},
+			update_by = #{updateBy.id},
+			update_name = #{updateBy.name},
+			update_date = #{updateDate}
+		WHERE task_no = #{taskNo}
+	</update>
+	
+	<update id="delete">
+		DELETE FROM cl_task_main
+		WHERE task_no = #{taskNo}
+	</update>
+	
+	
+	<select id="getClearGroupByUserId" resultType="ClTaskDetail">
+		SELECT 
+			m.denomination AS denomination,
+ 			sum(d.TOTAL_COUNT) AS totalCount
+		FROM cl_task_main m
+		LEFT JOIN cl_task_detail d ON m.TASK_NO = d.M_ID
+		<where>
+				1 = 1
+			 <!-- 主表：登记时间(开始) -->
+	        <if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(m.operate_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(m.operate_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <!-- 主表：登记时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(m.operate_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(m.operate_date, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	        <!-- 主表：任务类型 -->
+	        <if test="taskType != null and taskType != ''">
+	            AND m.task_type = '${taskType}'
+	        </if>			
+			 <!-- add-start by QPH 2017-11-14 -->
+			<if test="office != null and office.id != null and office.id != ''">
+				AND m.OFFICE_ID = #{office.id}
+			</if>
+			<if test="taskTypes != null and taskTypes.size != 0">
+				AND m.task_type in
+				<foreach collection="taskTypes" item="tasktype"
+					separator="," open="(" close=")" index="">
+				#{tasktype}
+				</foreach>
+			</if>
+			 <if test="busType != null and busType != ''">
+				AND m.bus_type =  #{busType}
+			</if>
+			<if test="userList != null and userList.size != 0">
+				AND d.emp_no in
+				<foreach collection="userList" item="userId"
+					separator="," open="(" close=")" index="">
+				#{userId}
+				</foreach>
+			</if>
+			
+		</where>
+		GROUP BY m.denomination
+	</select>
+	
+</mapper>

@@ -1,0 +1,691 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.doorOrder.v01.dao.EquipmentInfoDao">
+    
+	<sql id="equipmentInfoColumns">
+		a.id AS "id",
+		a.name AS "name",
+		a.aoffice_id AS "aOffice.id",
+		a.aoffice_name AS "aOffice.name",
+		a.vinoffice_id AS "vinOffice.id",
+		a.vinoffice_name AS "vinOffice.name",
+		a.status AS "status",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createName",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_name AS "updateName",
+		a.update_date AS "updateDate",
+		a.del_flag AS "delFlag",
+		a.is_use AS "isUse",
+		<!-- add-start by ZXK 2019-07-17 -->
+		a.series_number AS "seriesNumber",
+		a.type AS "type",
+		a.ip AS "IP",
+		<!-- end -->
+        a.conn_status AS "connStatus"
+	</sql>
+	
+	<sql id="equipmentInfoJoins">
+		LEFT JOIN sys_office b ON b.id = a.aoffice_id and b.del_flag = ${delFlag.valid}
+		LEFT JOIN sys_office c ON c.id = b.parent_id and c.del_flag = ${delFlag.valid}
+	</sql>
+    
+	<select id="get" resultType="EquipmentInfo">
+		SELECT 
+			<include refid="equipmentInfoColumns"/>
+		FROM equipment_info a
+		<include refid="equipmentInfoJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="EquipmentInfo">
+	SELECT a.pOfficeId AS pOfficeId,
+		   a.pOfficeName AS pOfficeName,
+		   a.surplusAmount AS surplusAmount,
+		   <include refid="equipmentInfoColumns"/>
+		   FROM(
+				SELECT 
+					c.id AS pOfficeId,
+					c.name AS pOfficeName,
+					<!-- 追加设备余额  lihe start -->
+					<if test="dbName == 'oracle'">
+					NVL(M.SURPLUS_AMOUNT,0) AS surplusAmount,
+					</if>
+					<if test="dbName == 'mysql'">
+					COALESCE(M.SURPLUS_AMOUNT,0) AS surplusAmount,
+					</if>
+					<!-- 追加设备余额  lihe end -->
+					E.id AS id,
+					E.name AS name,
+					E.aoffice_id AS aoffice_id,
+					b.name AS aoffice_name,
+					E.vinoffice_id AS vinoffice_id,
+					d.name AS vinoffice_name,
+					E.status AS status,
+					E.create_by AS create_by,
+					E.create_name AS create_name,
+					E.create_date AS create_date,
+					E.update_by AS update_by,
+					E.update_name AS update_name,
+					E.update_date AS update_date,
+					E.del_flag AS del_flag,
+					E.is_use AS is_use,
+					E.series_number AS series_number,
+					E.type AS type,
+					E.ip AS ip,
+			        E.conn_status AS conn_status
+				FROM equipment_info E
+				LEFT JOIN sys_office b ON b. ID = E.aoffice_id
+				LEFT JOIN sys_office c ON c. ID = b.parent_id
+				LEFT JOIN sys_office d ON d. ID = E.vinoffice_id
+				<!-- 追加设备余额  lihe start -->
+				LEFT JOIN (
+					SELECT
+						cm.EQUIPMENT_ID AS EQUIPMENT_ID,
+						cm.SURPLUS_AMOUNT AS SURPLUS_AMOUNT
+					FROM
+						CLEAR_ADD_MONEY cm
+					LEFT JOIN (
+						SELECT EQUIPMENT_ID,MAX(UPDATE_DATE) AS max_date FROM CLEAR_ADD_MONEY
+						WHERE
+							DEL_FLAG = '0'
+							<if test="dbName == 'oracle'">
+							AND CREATE_DATE &lt;= SYSDATE
+							</if>
+							<if test="dbName == 'mysql'">
+							AND CREATE_DATE &lt;= now()
+							</if>
+						GROUP BY EQUIPMENT_ID
+					) am ON am.	EQUIPMENT_ID = cm.EQUIPMENT_ID AND am.max_date = cm.UPDATE_DATE
+					 WHERE cm.UPDATE_DATE is NOT null AND am.max_date is NOT null
+				) M ON M.EQUIPMENT_ID = E.ID
+				<!-- 追加设备余额  lihe end -->
+				<where>
+					E.del_flag = #{DEL_FLAG_NORMAL}
+					<if test="null != vinOffice and vinOffice.id != null and vinOffice.id != ''">
+						<!-- 已绑定其他清分中心的设备不在列表显示 -->
+						AND (
+							E.vinoffice_id = #{vinOffice.id} OR (
+								E.STATUS = '0' and (
+									e.vinoffice_id = '' or e.vinoffice_id is null
+								)
+							)
+						)
+					</if>
+					<if test="id != null and id != ''">
+						AND E.id LIKE 
+							<if test="dbName == 'oracle'">'%'||#{id}||'%'</if>
+							<if test="dbName == 'mssql'">'%'+#{id}+'%'</if>
+							<if test="dbName == 'mysql'">concat('%',#{id},'%')</if>
+					</if>
+					<if test="seriesNumber != null and seriesNumber != ''">
+						AND E.series_number LIKE 
+							<if test="dbName == 'oracle'">'%'||#{seriesNumber}||'%'</if>
+							<if test="dbName == 'mssql'">'%'+#{seriesNumber}+'%'</if>
+							<if test="dbName == 'mysql'">concat('%',#{seriesNumber},'%')</if>
+					</if>
+					<if test="null != aOffice and aOffice.id != null and aOffice.id != ''">
+						AND E.aoffice_id = #{aOffice.id}
+					</if>
+					<if test="isUse != null and isUse != ''">
+						AND E.is_use = #{isUse}
+					</if>
+					<if test="connStatus != null and connStatus != ''">
+						AND E.conn_status = #{connStatus}
+					</if>
+					<!-- 创建时间(开始) -->
+					<if test="searchDateStart != null and searchDateStart != ''">
+						AND 
+						<if test="dbName == 'oracle'">TO_CHAR(E.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+						<if test="dbName=='mysql'">DATE_FORMAT(E.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+					</if>
+					<!-- 创建时间(结束) -->
+					<if test="searchDateEnd != null and searchDateEnd != ''">
+						AND 
+						<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(E.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+						<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(E.create_date, '%Y-%m-%d %H:%i:%s')</if>
+					</if>
+					<if test="connStatusList != null and connStatusList.size != 0">
+						AND E.conn_status in 
+						<foreach collection="connStatusList" item="connStatusListTag" separator="," open="(" close=")" index="index">
+						 	#{connStatusList[${index}]}
+						</foreach>
+					</if>
+					${sqlMap.dsf}
+				</where>
+			) a
+		<where>
+			<if test="status != null and status != ''">
+				a.status = #{status}
+			</if>
+			<if test="pOfficeId != null and pOfficeId != ''">
+				AND a.pOfficeId = #{pOfficeId}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="EquipmentInfo">
+		SELECT 
+			<include refid="equipmentInfoColumns"/>
+		FROM equipment_info a
+		<include refid="equipmentInfoJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 查询门店是否已绑定机具 -->
+	<select id="checkDoorBinded" resultType="EquipmentInfo">
+		SELECT 
+			<include refid="equipmentInfoColumns"/>
+		FROM equipment_info a
+		<include refid="equipmentInfoJoins"/>
+		WHERE a.aoffice_id = #{id}
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO equipment_info(
+			id,
+			name,
+			aoffice_id,
+			aoffice_name,
+			vinoffice_id,
+			vinoffice_name,
+			status,
+			create_by,
+			create_name,
+			create_date,
+			update_by,
+			update_name,
+			update_date,
+			del_flag,
+			is_use,
+            series_number,
+            type,
+		    IP,
+            conn_status
+		) VALUES (
+			#{id},
+			#{name},
+			#{aOffice.id},
+			#{aOffice.name},
+			#{vinOffice.id},
+			#{vinOffice.name},
+			#{status},
+			#{createBy.id},
+			#{createBy.name},
+			#{createDate},
+			#{updateBy.id},
+			#{updateBy.name},
+			#{updateDate},
+			#{delFlag},
+			#{isUse},
+			#{seriesNumber},
+            #{type},
+            #{IP},
+		    #{connStatus}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE equipment_info SET 	
+			name = #{name},
+            aoffice_id = #{aOffice.id},
+            aoffice_name = #{aOffice.name},
+            vinoffice_id = #{vinOffice.id},
+            vinoffice_name = #{vinOffice.name},
+            status = #{status},
+			update_by = #{updateBy.id},
+			update_name = #{updateBy.name},
+			update_date = #{updateDate},
+			is_use = #{isUse},
+		    SERIES_NUMBER = #{seriesNumber},
+		    TYPE = #{type},
+		    IP = #{IP},
+		    conn_status = #{connStatus}
+		WHERE id = #{id}
+		AND del_flag = #{DEL_FLAG_NORMAL}
+	</update>
+	
+	<update id="delete">
+		UPDATE equipment_info SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 按照机具连线状态查询机具数量 -->
+	<select id="getCountByConnStatus" resultType="EquipmentInfo">
+		SELECT
+			E.CONN_STATUS AS connStatus,
+			COUNT(E.ID) AS COUNT
+		FROM
+			EQUIPMENT_INFO E
+		LEFT JOIN SYS_OFFICE A ON A.ID = E.AOFFICE_ID
+		WHERE
+				A.DEL_FLAG = #{DEL_FLAG_NORMAL}
+			AND E.DEL_FLAG = #{DEL_FLAG_NORMAL}
+			<if test="null != merchantId and merchantId != ''">
+				AND A.PARENT_ID = #{merchantId}
+			</if>
+			<if test="null != aOffice and aOffice.id != null and aOffice.id != ''">
+				AND E.aoffice_id = #{aOffice.id}
+			</if>
+			<if test="null != vinOffice and vinOffice.id != null and vinOffice.id != ''">
+				AND E.vinoffice_id = #{vinOffice.id}
+			</if>
+			${sqlMap.dsf}
+		GROUP BY
+			E.CONN_STATUS
+	</select>
+
+    <!-- 条件更新 yinkai -->
+    <update id="updateByCondition">
+        UPDATE equipment_info SET
+        name = #{name},
+        <if test="null != aOffice and aOffice.id != null and aOffice.id != ''">
+            aoffice_id = #{aOffice.id},
+            aoffice_name = #{aOffice.name},
+        </if>
+        <if test="null != vinOffice and vinOffice.id != null and vinOffice.id != ''">
+            vinoffice_id = #{vinOffice.id},
+            vinoffice_name = #{vinOffice.name},
+        </if>
+        <if test="null != status and '' != status">
+            status = #{status},
+        </if>
+        update_by = #{updateBy.id},
+        update_name = #{updateBy.name},
+        update_date = #{updateDate},
+        <if test="null != isUse and '' != isUse">
+            is_use = #{isUse},
+        </if>
+        SERIES_NUMBER = #{seriesNumber},
+        TYPE = #{type},
+        IP = #{IP},
+        conn_status = #{connStatus}
+        WHERE id = #{id}
+		AND del_flag = #{DEL_FLAG_NORMAL}
+    </update>
+    
+    <!-- add by lihe 查询机具历史使用记录  时间：2019-10-30 start-->
+    <select id="getHistoryUseRecords" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.HistoryUseRecords">
+    	SELECT
+    	 <!-- 机具序列号 -->
+		 e.SERIES_NUMBER AS "seriesNumber",
+		 <!-- 区域（商户名称） -->
+		 so2.NAME AS 'countyName',
+		 <!-- 纸币数量 -->
+		 dod.paperCount,
+		 <!-- 纸币金额 -->
+		 dod.paperAmount,
+		 <!-- 强制金额 -->
+		 dod.forceAmount,
+		 <!-- 其他金额 -->
+		 dod.otherAmount,
+		 <!-- 总数量 -->
+		 dod.totalCount as "count",
+		 <!-- 总金额 -->
+		 dod.amount,
+		 <!-- 更换钞袋时间 -->
+		 c.changeDate AS "changeDate",
+		 <!-- 上次更换款袋时间 -->
+		 c.lastChangeDate AS "lastChangeDate",
+		 <!-- 归属机构 -->
+		 do.id AS "aOffice.id",
+		 do.NAME AS "officeName", 
+		 <!-- 维护机构 -->
+		 so1.id AS "vinOffice.id",
+		 so1.NAME AS "vinOffice.name",
+		 <!-- 包号 -->
+		 doi.RFID AS "bagNo",
+		 <!-- 订单编号 -->
+		 dod.ORDER_ID AS "orderId"
+	FROM
+	<!-- 查询上一次更换款袋时间 !-->
+	(
+		SELECT
+		c1.EQUIPMENT_ID,
+		c1.changeDate,
+		c1.BUSINESS_ID,
+		max( c2.CHANGE_DATE ) AS 'lastChangeDate' 
+	FROM
+		( SELECT EQUIPMENT_ID, max( CHANGE_DATE ) AS 'changeDate', BUSINESS_ID FROM clear_add_money WHERE TYPE = 1 AND BUSINESS_ID != '' GROUP BY BUSINESS_ID ) c1
+		LEFT JOIN ( SELECT EQUIPMENT_ID, CHANGE_DATE FROM clear_add_money WHERE TYPE = 1 AND BUSINESS_ID != '' ) c2 ON c1.EQUIPMENT_ID = c2.EQUIPMENT_ID 
+		AND c1.changeDate > c2.CHANGE_DATE 
+	GROUP BY
+		BUSINESS_ID
+	) c
+	LEFT JOIN equipment_info e ON c.equipment_id = e.id
+	LEFT JOIN sys_office do ON e.AOFFICE_ID = do.ID
+	LEFT JOIN sys_office so1 ON e.vinoffice_id = so1.ID
+	LEFT JOIN sys_office so2 ON do.PARENT_ID = so2.ID
+	<!-- 连接清机加钞表中的清机状态记录 -->
+	LEFT JOIN clear_plan_info cpi ON c.BUSINESS_ID = cpi.ID 
+	LEFT JOIN door_order_info doi ON cpi.PLAN_ID = doi.ORDER_ID
+		<!--
+		SELECT d.ORDER_ID, d.RFID, 
+					<if test="dbName=='oracle'">
+						NVL(SUM(a.COUNT_ZHANG),0) AS paperCount,
+						NVL(SUM(a.COUNT_ZHANG), 0) AS count,
+						NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.force} THEN a.DETAIL_AMOUNT else 0 END),0) AS forceAmount,
+						NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.paper} THEN a.DETAIL_AMOUNT else 0 END),0) AS paperAmount,
+						NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.other} THEN a.DETAIL_AMOUNT else 0 END),0) AS otherAmount,
+						NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.force} THEN a.DETAIL_AMOUNT else 0 END),0)+NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.paper} THEN a.DETAIL_AMOUNT else 0 END),0) AS amount
+					</if>
+					<if test="dbName=='mysql'">
+						IFNULL(SUM(a.COUNT_ZHANG),0) AS paperCount,
+						IFNULL(SUM(a.COUNT_ZHANG), 0) AS count,
+						IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.force} THEN a.DETAIL_AMOUNT else 0 END),0) AS forceAmount,
+						IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.paper} THEN a.DETAIL_AMOUNT else 0 END),0) AS paperAmount,
+						IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.other} THEN a.DETAIL_AMOUNT else 0 END),0) AS otherAmount,
+						IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.force} THEN a.DETAIL_AMOUNT else 0 END),0)+IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.paper} THEN a.DETAIL_AMOUNT else 0 END),0) AS amount
+					</if>
+					FROM
+						door_order_detail d
+					LEFT JOIN door_order_amount a ON d.ID = a.DETAIL_ID
+					GROUP BY
+						d.ORDER_ID,
+						d.RFID) a ON a.RFID = di.RFID AND a.ORDER_ID = cp.PLAN_ID
+					-->
+		LEFT JOIN(
+		SELECT
+		d.ORDER_ID,
+		<if test="dbName=='oracle'">
+			NVL( SUM( d.PAPER_COUNT ), 0 ) + NVL( SUM( d.COIN_COUNT ), 0 ) AS paperCount,
+			<!-- 金额(纸币+硬币) -->
+			NVL( SUM( d.PAPER_AMOUNT ), 0 ) + NVL( SUM( d.COIN_AMOUNT ), 0 ) AS paperAmount,
+			<!-- 强制金额 -->
+			NVL( SUM( d.FORCE_AMOUNT ), 0 ) AS forceAmount,
+			<!-- 其他金额 -->
+			NVL( SUM( d.OTHER_AMOUNT ), 0 ) AS otherAmount,
+			<!-- 数量(纸币+硬币) -->
+		    NVL( SUM( d.PAPER_COUNT ), 0 ) + NVL( SUM( d.COIN_COUNT ), 0 ) AS totalCount,
+		    <!-- 总金额 -->
+			NVL( SUM( d.amount ), 0) AS amount
+		</if>
+		<if test="dbName=='mysql'">
+			IFNULL( SUM( d.PAPER_COUNT ), 0 ) + IFNULL( SUM( d.COIN_COUNT ), 0 ) AS paperCount,
+			<!-- 金额(纸币+硬币) -->
+			IFNULL( SUM( d.PAPER_AMOUNT ), 0 ) + IFNULL( SUM( d.COIN_AMOUNT ), 0 ) AS paperAmount,
+			<!-- 强制金额 -->
+			IFNULL( SUM( d.FORCE_AMOUNT ), 0 ) AS forceAmount,
+			<!-- 其他金额 -->
+			IFNULL( SUM( d.OTHER_AMOUNT ), 0 ) AS otherAmount,
+			<!-- 数量(纸币+硬币) -->
+		    IFNULL( SUM( d.PAPER_COUNT ), 0 ) + IFNULL( SUM( d.COIN_COUNT ), 0 ) AS totalCount,
+		    <!-- 总金额 -->
+			IFNULL( SUM( d.amount ), 0) AS amount
+		</if>
+		FROM
+		door_order_detail d
+		GROUP BY
+		d.ORDER_ID ) dod ON doi.ORDER_ID = dod.ORDER_ID		
+		<!-- 查询上一次更换款袋时间 start
+		LEFT JOIN (
+			SELECT
+				a.EQUIPMENT_ID,
+				a.CHANGE_DATE AS 'cDate',
+				MAX(cc.CHANGE_DATE) AS 'CHANGE_DATE'
+			FROM
+				clear_add_money a
+			 过滤清机状态下的机具及更换款袋时间 start
+			LEFT JOIN (
+				SELECT
+					b.CHANGE_DATE,
+					b.EQUIPMENT_ID
+				FROM
+					clear_add_money b
+				WHERE
+					b.TYPE = ${add.type.clean}
+				and b.business_id != ''
+			) cc ON a.CHANGE_DATE > cc.CHANGE_DATE AND cc.EQUIPMENT_ID = a.EQUIPMENT_ID
+			
+			过滤清机状态下的机具及更换款袋时间 end 
+			WHERE
+				a.TYPE = ${add.type.clean}
+			GROUP BY
+				a.CHANGE_DATE
+		) t ON t.cDate = c.CHANGE_DATE
+		AND t.EQUIPMENT_ID = c.EQUIPMENT_ID -->
+		<!-- 查询上一次更换款袋时间 end -->
+		<where>
+			e.del_flag = #{DEL_FLAG_NORMAL}
+			<!-- 更换时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				AND 
+				<if test="dbName == 'oracle'">TO_CHAR(c.changeDate, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(c.changeDate, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+			</if>
+			<!-- 更换时间(结束) -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND 
+				<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(c.changeDate,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(c.changeDate, '%Y-%m-%d %H:%i:%s')</if>
+			</if>
+			<if test="null != id and id != ''">
+				AND e.id like 
+				<if test="dbName == 'oracle'">'%,' || #{id} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{id}, '%')</if>
+			</if>
+			<if test="null != seriesNumber and seriesNumber != ''">
+				AND e.series_number like 
+				<if test="dbName == 'oracle'">'%,' || #{seriesNumber} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{seriesNumber}, '%')</if>
+			</if>
+			<if test="null != bagNo and bagNo != ''">
+				AND doi.RFID like 
+				<if test="dbName == 'oracle'">'%,' || #{bagNo} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{bagNo}, '%')</if>
+			</if>
+			<if test="null != coinBoxNo and coinBoxNo != ''">
+				AND doi.RFID like 
+				<if test="dbName == 'oracle'">'%,' || #{coinBoxNo} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{coinBoxNo}, '%')</if>
+			</if>
+			 <if test="null != aOffice and aOffice.id != null and aOffice.id != ''">
+				AND e.aoffice_id = #{aOffice.id}
+			</if>
+			<!-- 机构树筛选 gzd 2020-04-08 start -->
+			<if test="null != aOffice and aOffice.id != null and aOffice.id != ''">
+				AND (e.aoffice_id = #{aOffice.id} or 
+					do.PARENT_IDS like  
+				<if test="dbName == 'oracle'">'%,' || #{aOffice.id} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{aOffice.id}, '%')</if>
+					)
+			</if>
+			<!-- 机构树筛选 gzd 2020-04-08 end -->
+			<if test="null != vinOffice and vinOffice.id != null and vinOffice.id != ''">
+				AND e.vinoffice_id = #{vinOffice.id}
+			</if>
+			AND e.`STATUS` = ${door.equipment.bind}
+			AND dod.ORDER_ID IS NOT NULL
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY e.SERIES_NUMBER,e.UPDATE_DATE,c.changeDate DESC
+			</otherwise>
+		</choose>
+    </select>
+	<!-- add by lihe 查询机具历史使用记录  时间：2019-10-30 end-->
+	
+	<!-- add by lihe 查询存款明细记录  时间：2019-11-01 start-->
+	<select id="getDepositDetail" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.HistoryUseRecordsDetail">
+		SELECT
+			<!-- 结算批次 -->
+			d.ORDER_ID AS settleBatches,
+			<!-- 包号 -->
+			d.RFID AS bagNo,
+			<!-- CONCAT(d.tickertape,"_",d.DETAIL_ID) AS depositBatches, -->
+			<!-- 存款批次（凭条号） -->
+			d.tickertape AS depositBatches,
+			<!-- 柜员登录名 -->
+			u.LOGIN_NAME AS clerk,
+			<!-- 柜员名称 -->
+			u.`NAME` AS clerkName,
+			<!-- 存款时间 -->
+			d.CREATE_DATE AS depositTime,
+			<!-- 款项日期 -->
+			d.CREATE_DATE AS depositDate,
+			<if test="dbName=='oracle'">
+				<!-- 强制金额 -->
+				NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.force} THEN a.DETAIL_AMOUNT else 0 END),0) AS forceAmount,
+				<!-- 纸币金额 -->
+				NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.paper} THEN a.DETAIL_AMOUNT else 0 END),0) AS paperAmount,
+				<!-- 其他金额 -->
+				NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.other} THEN a.DETAIL_AMOUNT else 0 END),0) AS otherAmount,
+				<!-- 总金额(不包含其他金额) -->
+				<!-- 2020/04/20 hzy 避免微信存款 其他金额 导致总金额显示总额 -->
+				DECODE(NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.force} THEN a.DETAIL_AMOUNT else 0 END),0)+NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.paper} THEN a.DETAIL_AMOUNT else 0 END),0)+NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.other} THEN a.DETAIL_AMOUNT else 0 END)),0),'0',d.amount,NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.force} THEN a.DETAIL_AMOUNT else 0 END),0)+NVL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.paper} THEN a.DETAIL_AMOUNT else 0 END),0))AS amount,
+				<!-- 2020/04/20 hzy 避免微信存款 其他金额 导致总金额显示总额 -->
+				<!-- 100元 -->
+				NVL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.hundred} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS hundred,
+				<!-- 50元 -->
+				NVL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.fifty} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS fifty,
+				<!-- 20元 -->
+				NVL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.twenty} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS twenty,
+				<!-- 10元 -->
+				NVL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.ten} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS ten,
+				<!-- 5元 -->
+				NVL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.five} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS five,
+				<!-- 2元 -->
+				NVL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.two} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS two,
+				<!-- 1元 -->
+				NVL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.one} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS one,
+				<!-- 5角 -->
+				NVL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.fiveCorners} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS fiveCorners,
+				<!-- 2角 -->
+				NVL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.twoCorners} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS twoCorners,
+				<!-- 1角 -->
+				NVL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.oneCorners} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS oneCorners,
+			</if>
+			<if test="dbName=='mysql'">
+				IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.force} THEN a.DETAIL_AMOUNT else 0 END),0) AS forceAmount,
+				IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.paper} THEN a.DETAIL_AMOUNT else 0 END),0) AS paperAmount,
+				IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.other} THEN a.DETAIL_AMOUNT else 0 END),0) AS otherAmount,
+				<!-- 2020/04/20 hzy 避免微信存款 其他金额 导致总金额显示总额 -->
+				IF(IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.force} THEN a.DETAIL_AMOUNT else 0 END),0)+IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.paper} THEN a.DETAIL_AMOUNT else 0 END),0)+IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.other} THEN a.DETAIL_AMOUNT else 0 END),0)=0,d.amount,IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.force} THEN a.DETAIL_AMOUNT else 0 END),0)+IFNULL(SUM(CASE WHEN a.TYPE_ID = ${door.saveMethod.paper} THEN a.DETAIL_AMOUNT else 0 END),0)) AS amount,
+				<!-- 2020/04/20 hzy 避免微信存款 其他金额 导致总金额显示总额 -->
+				IFNULL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.hundred} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS hundred,
+				IFNULL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.fifty} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS fifty,
+				IFNULL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.twenty} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS twenty,
+				IFNULL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.ten} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS ten,
+				IFNULL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.five} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS five,
+				IFNULL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.two} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS two,
+				IFNULL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.one} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS one,
+				IFNULL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.fiveCorners} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS fiveCorners,
+				IFNULL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.twoCorners} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS twoCorners,
+				IFNULL(SUM(CASE WHEN a.DENOMINATION = ${door.deposit.oneCorners} THEN a.COUNT_ZHANG ELSE 0 END ),0) AS oneCorners,
+			</if>
+			<!-- 机具编号（机具序列号） -->
+			e.series_number AS equipmentId,
+			<!-- 区域（商户名称） -->
+			IFNUll(pr.NAME,sp.`NAME`)AS "countyName",
+			<!-- pr.NAME AS "countyName", -->
+			<!-- o.COUNTY_NAME AS countyName, -->
+			<!-- 归属公司 -->			
+			IFNULL(DO.`NAME`,so.name) AS officeName,
+			<!-- do.`NAME` AS officeName, -->
+			<!-- 业务类型（即存款方式） -->
+			s.LABEL AS saveMethod
+		FROM
+			door_order_detail d
+		LEFT JOIN door_order_amount a ON d.ID = a.DETAIL_ID
+		LEFT JOIN sys_dict s ON s.TYPE = 'save_method' AND s.`VALUE` = a.TYPE_ID AND s.DEL_FLAG = ${delFlag.valid}
+		LEFT JOIN (SELECT ID, `NAME`,LOGIN_NAME,office_id FROM sys_user WHERE DEL_FLAG = #{DEL_FLAG_NORMAL}) u ON d.CREATE_BY = u.ID
+		<!-- hzy 查询存款人对应的门店 公司 start -->
+		left join (SELECT id,`NAME`,PARENT_ID FROM sys_office WHERE DEL_FLAG = #{DEL_FLAG_NORMAL}) so on so.id = u.office_id
+		left join (SELECT id,`NAME` FROM sys_office WHERE DEL_FLAG = #{DEL_FLAG_NORMAL}) sp on so.PARENT_ID = sp.id
+		<!-- end -->
+		LEFT JOIN door_order_info i ON i.ORDER_ID = d.ORDER_ID
+		LEFT JOIN equipment_info e ON i.EQUIPMENT_ID = e.ID
+		LEFT JOIN sys_office do ON do.ID = e.AOFFICE_ID AND do.DEL_FLAG = ${delFlag.valid}
+		LEFT JOIN sys_office pr ON pr.ID = do.PARENT_ID AND pr.DEL_FLAG = ${delFlag.valid}
+		<where>
+			<!-- 存入时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				AND 
+				<if test="dbName == 'oracle'">TO_CHAR(d.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(d.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+			</if>
+			<!-- 存入时间(结束) -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND 
+				<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(d.CREATE_DATE,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(d.CREATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+			</if>
+			<if test="null != equipmentId and equipmentId != ''">
+				AND e.ID = #{equipmentId}
+				AND e.DEL_FLAG = #{DEL_FLAG_NORMAL}
+			</if>
+			<if test="null != bagNo and bagNo != ''">
+				AND d.RFID = #{bagNo}
+			</if>
+			<if test="null != orderId and orderId != ''">
+				AND d.ORDER_ID = #{orderId}
+			</if>
+			<if test="null != depositBatches and depositBatches != ''">
+				AND d.tickertape like 
+				<if test="dbName == 'oracle'">'%,' || #{depositBatches} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{depositBatches}, '%')</if>
+			</if>
+			<if test="null != clerkName and clerkName != ''">
+				AND u.`NAME` like 
+				<if test="dbName == 'oracle'">'%,' || #{clerkName} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{clerkName}, '%')</if>
+			</if>
+			<if test="null != saveMethodValue and saveMethodValue != ''">
+				AND s.`VALUE` = #{saveMethodValue}
+			</if>
+			${sqlMap.dsf}
+		</where>
+		GROUP BY
+			d.ORDER_ID,
+			d.RFID,
+			s.LABEL,
+			d.tickertape,
+			d.CREATE_BY,
+			d.CREATE_DATE
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY d.CREATE_DATE,d.tickertape,s.LABEL DESC
+			</otherwise>
+		</choose>
+	</select>
+	<!-- add by lihe 查询存款明细记录  时间：2019-11-01 end-->
+
+	<!-- add by yinkai 查询商户下的所有设备 时间：2020年4月16日 start -->
+	<select id="findEquipmentByMerchant" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.EquipmentInfo">
+		SELECT
+			<include refid="equipmentInfoColumns"/>
+		FROM
+			equipment_info a
+			LEFT JOIN sys_office door ON door.id = a.aoffice_id
+		WHERE
+			door.parent_id = ${id}
+	</select>
+	<!-- add by yinkai 查询商户下的所有设备 时间：2020年4月16日 end -->
+</mapper>

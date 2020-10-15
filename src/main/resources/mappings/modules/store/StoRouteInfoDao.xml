@@ -1,0 +1,357 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoRouteInfoDao">
+
+	<sql id="stoRouteInfoColumns">
+		a.route_id AS "routeInfo.routeId",
+		a.route_name AS "routeInfo.routeName",
+		a.detail_num AS "routeInfo.detailNum",
+		a.route_type AS "routeInfo.routeType",
+		a.rfid AS "routeInfo.rfid",
+		a.escort_id1 AS "routeInfo.escortInfo1.escortId",
+		a.escort_id2 AS	"routeInfo.escortInfo2.escortId",
+		a.remarks AS "routeInfo.remarks",
+		a.create_by AS "routeInfo.createBy.id",
+		a.create_date AS "routeInfo.createDate",
+		a.update_by AS "routeInfo.updateBy.id",
+		a.update_date AS "routeInfo.updateDate",
+		a.del_flag AS "routeInfo.delFlag",
+		<!-- 添加字段，线路的所属机构  修改人：xp 修改时间：2017-8-22 begin-->
+		a.office_id AS "routeInfo.curOffice.id",
+		<!-- end -->
+		a.car_no AS "routeInfo.carNo",
+		o1.escort_name AS "routeInfo.escort1.escortName",
+		o2.escort_name AS "routeInfo.escort2.escortName",
+		b.detail_id AS "routeDetail.detailId",
+		b.route_id AS "routeDetail.route.routeId",
+		b.office_id AS "routeDetail.office.id",
+		o3.name AS "routeDetail.office.name",
+		o3.longitude AS "routeDetail.office.longitude",
+		o3.latitude AS "routeDetail.office.latitude",
+		o3.trade_flag AS "routeDetail.office.tradeFlag",
+		c.route_lnglat AS "routeInfo.routeLnglat",
+		c.route_plan_color AS "routeInfo.routePlanColor",
+		c.car_track_color AS "routeInfo.carTrackColor"
+	</sql>
+	
+	<!-- 查询出线路主表字段，保存到关联的Entity里 -->
+	<resultMap id="StoRouteInfoResult" type="com.coffer.businesses.modules.store.v01.entity.StoRouteInfo">
+	    <id column="routeInfo.routeId" property="routeId" />
+	    <result column="routeInfo.routeName" property="routeName"/>
+	    <result column="routeInfo.detailNum" property="detailNum"/>
+	    <result column="routeInfo.routeType" property="routeType"/>
+	    <result column="routeInfo.rfid" property="rfid"/>
+ 	    <result column="routeInfo.escortInfo1.escortId" property="escortInfo1.escortId"/>
+	    <result column="routeInfo.escortInfo2.escortId" property="escortInfo2.escortId"/>
+	    <result column="routeInfo.carNo" property="carNo"/>
+	    <result column="routeInfo.remarks" property="remarks"/>
+	    <result column="routeInfo.createBy.id" property="createBy.id"/>
+	    <result column="routeInfo.createDate" property="createDate"/>
+	    <result column="routeInfo.updateBy.id" property="updateBy.id"/>
+	    <result column="routeInfo.updateDate" property="updateDate"/>
+	    <!-- 添加字段，线路的所属机构  修改人：xp 修改时间：2017-8-22 begin-->
+	    <result column="routeInfo.curOffice.id" property="curOffice.id"/>
+	    <!-- end -->
+	    <result column="routeInfo.routeLnglat" property="routeLnglat"/>
+	    <result column="routeInfo.routePlanColor" property="routePlanColor"/>
+	    <result column="routeInfo.carTrackColor" property="carTrackColor"/>
+	    <result column="routeInfo.delFlag" property="delFlag"/>
+	    <result column="routeInfo.escort1.escortName" property="escortInfo1.escortName"/>
+	    <result column="routeInfo.escort2.escortName" property="escortInfo2.escortName"/>
+	    <!-- 添加字段，线路的所属机构  修改人：xp 修改时间：2017-8-22 begin-->
+	    <association column = "routeInfo.curOffice.id" property = "curOffice" javaType = "com.coffer.core.modules.sys.entity.Office" select = "com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy"></association>
+	   	<!-- end -->
+	    <!--  线路详细信息 -->
+	    <collection property="stoRouteDetailList" ofType="com.coffer.businesses.modules.store.v01.entity.StoRouteDetail" fetchType="lazy">
+	        <id column="routeDetail.detailId" property="detailId"/>
+	        <result column="routeDetail.route.routeId" property="route.routeId"/>
+	        <result column="routeDetail.office.id" property="office.id"/>
+	        <result column="routeDetail.office.name" property="office.name"/>
+	        <result column="routeDetail.office.tradeFlag" property="office.tradeFlag"/>
+	        <result column="routeDetail.office.longitude" property="office.longitude"/>
+	        <result column="routeDetail.office.latitude" property="office.latitude"/>
+	    </collection>
+	    
+	</resultMap>
+
+	<sql id="stoRouteInfoJoins">
+		LEFT JOIN sto_escort_info o1 ON o1.escort_id = a.escort_id1
+		LEFT JOIN sto_escort_info o2 ON o2.escort_id = a.escort_id2,
+		sto_route_detail b
+		LEFT JOIN sys_office o3 ON o3.id = b.office_id,
+		sto_route_plan_info c
+	</sql>
+	<sql id="stoRouteInfoColumnsFindPage">
+		a.route_id AS "routeInfo.routeId",
+		a.route_name AS "routeInfo.routeName",
+		a.detail_num AS "routeInfo.detailNum",
+		a.route_type AS "routeInfo.routeType",
+		a.rfid AS "routeInfo.rfid",
+		a.escort_id1 AS "routeInfo.escortInfo1.escortId",
+		a.escort_id2 AS	"routeInfo.escortInfo2.escortId",
+		a.remarks AS "routeInfo.remarks",
+		a.car_no AS "routeInfo.carNo",
+		a.create_by AS "routeInfo.createBy.id",
+		a.create_date AS "routeInfo.createDate",
+		a.update_by AS "routeInfo.updateBy.id",
+		a.update_date AS "routeInfo.updateDate",
+		<!-- 添加字段，线路的所属机构  修改人：xp 修改时间：2017-8-22 begin-->
+		a.office_id AS "routeInfo.curOffice.id",
+		<!-- end -->
+		a.del_flag AS "routeInfo.delFlag",
+		o1.escort_name AS "routeInfo.escort1.escortName",
+		o2.escort_name AS "routeInfo.escort2.escortName"
+	</sql>
+	<sql id="stoRouteInfoJoinsFindPage">
+		LEFT JOIN sto_escort_info o1 ON o1.escort_id = a.escort_id1
+		LEFT JOIN sto_escort_info o2 ON o2.escort_id = a.escort_id2,
+		(select DISTINCT route_id from sto_route_detail LEFT JOIN sys_office o4 ON o4.id = office_id
+			WHERE o4.del_flag='0'
+			<if test="office !=null and office.id != null and office.id != '' ">
+				and office_id = #{office.id}
+			</if>
+			<!-- 数据范围过滤 -->
+			${sqlMap.dsf}
+			) b
+		
+	</sql>
+	<!-- 接口查询使用 -->
+	<sql id="stoRouteInfoJoinsInterface">
+		LEFT JOIN sto_escort_info o1 ON o1.escort_id = a.escort_id1
+		LEFT JOIN sto_escort_info o2 ON o2.escort_id = a.escort_id2
+		LEFT JOIN sto_route_detail b ON a.route_id = b.route_id
+		LEFT JOIN sys_office o3 ON o3.id = b.office_id,
+		(select DISTINCT route_id from sto_route_detail LEFT JOIN sys_office o4 ON o4.id = office_id
+			WHERE o4.del_flag='0'
+			<if test="office !=null and office.id != null and office.id != '' ">
+				and office_id = #{office.id}
+			</if>
+			) b1
+	</sql>
+	<select id="get" resultMap="StoRouteInfoResult">
+		SELECT
+		<include refid="stoRouteInfoColumns" />
+		FROM sto_route_info a
+		<include refid="stoRouteInfoJoins" />
+		WHERE a.route_id = b.route_id
+		and c.del_flag = '0'
+		and c.route_id = a.route_id
+		and a.route_id = #{routeId}
+		and a.del_flag = '0'
+	</select>
+	
+	<!--  <select id="get" resultMap="StoRouteInfoResult">
+		SELECT
+		<include refid="stoRouteInfoColumns" />
+		FROM sto_route_info a
+		<include refid="stoRouteInfoJoins" />
+		WHERE a.route_id = #{id}
+	</select>-->
+	
+	<select id="findByRouteId" resultMap="StoRouteInfoResult">
+		SELECT
+		<include refid="stoRouteInfoColumns" />
+		FROM sto_route_info a
+		<include refid="stoRouteInfoJoins" />
+		WHERE a.route_id = b.route_id
+		and a.route_id = #{routeId}
+		and a.del_flag = '0'
+	</select>
+
+	<select id="findList" resultMap="StoRouteInfoResult">
+		SELECT
+		<include refid="stoRouteInfoColumnsFindPage" />
+		FROM sto_route_info a
+		<include refid="stoRouteInfoJoinsFindPage" />
+		<where>
+			a.route_id = b.route_id
+			<if test="delFlag == null or delFlag == ''">
+				and a.del_flag != #{DEL_FLAG_DELETE}
+			</if>
+			<if test="delFlag != null and delFlag != ''">
+				and a.del_flag = #{delFlag}
+			</if>
+			<if test="routeName != null and routeName != '' ">
+				and a.route_name like 
+				<!-- '%' || #{routeName} || '%' -->
+				<if test="dbName == 'oracle'">'%' || #{routeName} || '%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{routeName}, '%')</if>
+			</if>
+			<if test="routeType != null and routeType != '' ">
+				and a.route_type = #{routeType}
+			</if>
+			<if test="escortId != null and escortId != '' ">
+				and (a.escort_id1 = #{escortId} or a.escort_id2 =#{escortId})
+			</if>
+			<if test="carNo != null and carNo != '' ">
+				and a.car_no = #{carNo}
+			</if>
+			<if test="curOffice != null and curOffice.id != null and curOffice.id != '' ">
+				and a.office_id = #{curOffice.id}
+			</if>
+			
+
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	<!-- 接口查询使用 -->
+	<select id="findInterfaceList" resultMap="StoRouteInfoResult">
+		SELECT
+		<include refid="stoRouteInfoColumns" />
+		FROM sto_route_info a
+		<include refid="stoRouteInfoJoinsInterface" />
+		<where>
+			a.route_id = b1.route_id
+			and a.del_flag = '0'
+			<if test="routeName != null and routeName != '' ">
+				and a.route_name like 
+				<!-- '%' || #{routeName} || '%' -->
+				<if test="dbName == 'oracle'">'%' || #{routeName} || '%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{routeName}, '%')</if>
+			</if>
+			<if test="escortId != null and escortId != '' ">
+				and (a.escort_id1 = #{escortId} or a.escort_id2 =#{escortId})
+			</if>
+
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="findAllList" resultMap="StoRouteInfoResult">
+		SELECT
+		<include refid="stoRouteInfoColumns" />
+		FROM sto_route_info a
+		<include refid="stoRouteInfoJoins" />
+		<where>
+			a.route_id = b.route_id
+			
+			and a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="getMaxTemporarySeq" resultType="java.lang.String">
+		SELECT max(a.route_Name)
+		FROM sto_route_info a
+		WHERE a.route_type = #{routeType}
+		and a.create_Date &gt;= #{startDate}
+		and a.create_Date &lt;= #{endDate}
+		and a.del_flag = '0'
+	</select>
+
+	<insert id="insert">
+		INSERT INTO sto_route_info(
+		route_id,
+		route_name,
+		detail_num,
+		route_type,
+		rfid,
+		escort_id1,
+		escort_id2,
+		remarks,
+		car_no,
+		create_by,
+		create_date,
+		update_by,
+		update_date,
+		<!-- 添加字段，线路的所属机构  修改人：xp 修改时间：2017-8-22 begin-->
+		office_id,
+		<!-- end -->
+		del_flag
+		) VALUES (
+		#{routeId},
+		#{routeName},
+		#{detailNum},
+		#{routeType},
+		#{rfid},
+		#{escortInfo1.id},
+		#{escortInfo2.id},
+		#{remarks},
+		#{carNo},
+		#{createBy.id},
+		#{createDate},
+		#{updateBy.id},
+		#{updateDate},
+		<!-- 添加字段，线路的所属机构  修改人：xp 修改时间：2017-8-22 begin-->
+		#{curOffice.id},
+		<!-- end -->
+		#{delFlag}
+		)
+	</insert>
+
+	<update id="update">
+		UPDATE sto_route_info SET
+		<!-- box_no = #{boxNo}, -->
+		route_name = #{routeName},
+		detail_num = #{detailNum},
+		route_type = #{routeType},
+		escort_id1 = #{escortInfo1.id},
+		escort_id2 = #{escortInfo2.id},
+		remarks = #{remarks},
+		car_no = #{carNo},
+		update_by = #{updateBy.id},
+		update_date = #{updateDate}
+		WHERE route_id = #{routeId}
+	</update>
+
+	<update id="delete">
+		UPDATE sto_route_info SET
+		del_flag = '1'
+		WHERE route_id = #{routeId}
+	</update>
+	<update id="deleteByRouteId">
+		UPDATE sto_route_info SET
+		del_flag = '1'
+		WHERE route_id = #{routeId}
+	</update>
+
+	<select id="searchStoRouteInfoByOffice" resultMap="StoRouteInfoResult">
+		SELECT
+		<include refid="stoRouteInfoColumns" />
+		FROM sto_route_info a
+		<include refid="stoRouteInfoJoins" />
+		WHERE a.route_id = b.route_id
+		and b.office_id = #{officeId}
+		and a.del_flag = '0'
+	</select>
+	
+	<!-- 查询出线路主表字段，保存到关联的Entity里 -->
+	<resultMap id="StoRouteMapResult" type="com.coffer.businesses.modules.store.v01.entity.StoRouteInfo">
+	    <id column="ROUTE_ID" property="routeId" />
+	    <result column="ROUTE_NAME" property="routeName"/>
+	    <result column="CAR_NO" property="carNo"/>
+	    <association column = "OFFICE_ID" property = "curOffice" javaType = "com.coffer.core.modules.sys.entity.Office" select = "com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy"></association>
+	    <!--  线路详细信息 -->
+	    <collection property="stoRouteDetailList" column="ROUTE_ID" javaType="ArrayList" ofType="com.coffer.businesses.modules.store.v01.entity.StoRouteDetail"
+	    select="com.coffer.businesses.modules.store.v01.dao.StoRouteDetailDao.findListByRouteId" fetchType="lazy" />
+	</resultMap>
+	
+	<select id="findRouteInfoListByOfficeId" resultMap="StoRouteMapResult">
+		SELECT ROUTE_ID,ROUTE_NAME,CAR_NO,OFFICE_ID
+		FROM sto_route_info
+		WHERE office_id = #{officeId} 
+		AND del_flag = '0'
+	</select>
+	
+</mapper>

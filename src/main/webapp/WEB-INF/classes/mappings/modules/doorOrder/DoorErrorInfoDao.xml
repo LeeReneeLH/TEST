@@ -1,0 +1,539 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.doorOrder.v01.dao.DoorErrorInfoDao">
+    
+	<sql id="doorErrorInfoColumns">
+		a.error_no AS "errorNo",
+		a.business_id AS "businessId",
+		a.out_row_no AS "outRowNo",
+		a.tickertape AS "tickertape",
+		a.cust_no AS "custNo",
+		cust.name AS "custName",
+		a.error_type AS "errorType",
+		a.status AS "status",
+		a.office_id AS "office.id",
+		a.company_id AS "companyId",
+		a.company_name AS "companyName",
+		a.clear_man_no AS "clearManNo",
+		a.clear_man_name AS "clearManName",
+		a.makesure_man_no AS "makesureManNo",
+		a.makesure_man_name AS "makesureManName",
+		a.input_amount AS "inputAmount",
+		a.check_amount AS "checkAmount",
+		a.diff_amount AS "diffAmount",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createBy.name",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_name AS "updateBy.name",
+		a.update_date AS "updateDate",
+		a.del_flag AS "delFlag",
+		o.name AS "office.name"
+	</sql>
+	
+	<sql id="doorErrorInfoJoins">
+		LEFT JOIN sys_office o ON o.id = a.office_id
+		LEFT JOIN sys_office cust on cust.id = a.cust_no
+	</sql>
+    
+	<select id="get" resultType="DoorErrorInfo">
+		SELECT 
+			<include refid="doorErrorInfoColumns"/>
+		FROM door_error_info a
+		<include refid="doorErrorInfoJoins"/>
+		WHERE a.error_no = #{errorNo}
+	</select>
+	
+	<select id="findList" resultType="DoorErrorInfo">
+		SELECT 
+			<include refid="doorErrorInfoColumns"/>
+			<!-- 导出专用字段 start ZXK-->
+			,o.name AS "officeName",
+			<!-- a.create_date AS "registerDate" -->
+			DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s') AS "registerDate"
+		FROM door_error_info a
+		<include refid="doorErrorInfoJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="businessId != null and businessId != ''">
+				AND a.business_id = #{businessId }
+			</if>
+			<if test="office != null and office.id != null and office.id !=''">
+				AND a.office_id = #{office.id }
+			</if>
+			<if test="outRowNo != null and outRowNo != ''">
+				AND a.out_row_no = #{outRowNo}
+			</if>
+			<if test="errorType != null and errorType != ''">
+				AND a.error_type = #{errorType}
+			</if>
+			<if test="status !=null and status != ''">
+				AND a.status = #{status} 
+			</if>
+			<!-- <if test="custNo != null and custNo != ''">
+				AND a.cust_no = #{custNo}
+			</if> -->
+			<if test="custNo != null and custNo != ''">
+				AND (a.cust_no = #{custNo} OR cust.PARENT_IDS LIKE
+					<if test="dbName == 'oracle'">'%,' || #{custNo} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{custNo}, '%')</if>
+				)
+			</if>
+			<if test="clearManNo != null and clearManNo != ''">
+				AND a.clear_man_no = #{clearManNo}
+			</if>
+			<if test="makesureManNo != null and makesureManNo != ''">
+				AND a.makesure_man_no = #{makesureManNo}
+			</if>
+			<if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'"> '${searchDateEnd}'>=DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	        <!-- 屏蔽'平账'状态记录 add: ZXK status -->
+	            AND  a.`STATUS` != '5'
+	        <!-- 屏蔽'平账'状态记录  end -->
+	        ${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 2020-03-05  ZXK 商户清点差错列表   -->
+	<select id="findMerchantList" resultType="DoorErrorInfo">
+		SELECT 
+				a.error_no AS "errorNo",
+				a.business_id AS "businessId",
+				a.out_row_no AS "outRowNo",
+				a. STATUS AS "status",
+				a.office_id AS "office.id",
+				a.input_amount AS "inputAmount",
+				a.check_amount AS "checkAmount",
+				a.diff_amount AS "diffAmount",
+				a.del_flag AS "delFlag",
+				o. NAME AS "office.name",
+				mc.ID AS merchantId,
+				mc. NAME AS merchantName,
+				<!-- gzd 2020-09-04 -->
+				ABS( SUM( CASE WHEN a.`STATUS` = 0 THEN CASE WHEN a.ERROR_TYPE = 2 THEN a.diff_amount ELSE 0-a.diff_amount END ELSE 0 END) ) AS "merchantAmount",
+				CASE WHEN sum( CASE WHEN a.`STATUS` = 0 THEN CASE WHEN a.ERROR_TYPE = 2 THEN a.diff_amount ELSE 0-a.diff_amount END ELSE 0 END ) > 0 THEN 2 
+					 WHEN sum( CASE WHEN a.`STATUS` = 0 THEN CASE WHEN a.ERROR_TYPE = 2 THEN a.diff_amount ELSE 0-a.diff_amount END ELSE 0 END ) = 0 THEN "" 
+					 ELSE 3 
+			END AS "errorType" 
+			   <!-- ABS(SUM(CASE WHEN a.ERROR_TYPE = 2 THEN a.diff_amount ELSE 0-a.diff_amount END)) AS "merchantAmount",
+			   CASE WHEN sum(CASE WHEN a.ERROR_TYPE = 2 THEN a.diff_amount ELSE 0-a.diff_amount END) > 0 THEN 2 WHEN sum(CASE WHEN a.ERROR_TYPE = 2 THEN a.diff_amount ELSE 0-a.diff_amount END)=0 THEN "" ELSE 3 END AS "errorType" -->
+			FROM door_error_info a
+		<include refid="doorErrorInfoJoins"/>
+		LEFT JOIN sys_office mc ON mc.id = cust.PARENT_ID
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<!-- gzd 2020-09-04 -->
+			<!-- and a.`STATUS` = 0 -->
+			<if test="businessId != null and businessId != ''">
+				AND a.business_id = #{businessId }
+			</if>
+			<if test="office != null and office.id != null and office.id !=''">
+				AND a.office_id = #{office.id }
+			</if>
+			<if test="outRowNo != null and outRowNo != ''">
+				AND a.out_row_no = #{outRowNo}
+			</if>
+			<!-- <if test="errorType != null and errorType != ''">
+				AND a.error_type = #{errorType}
+			</if> -->
+			<if test="status !=null and status != ''">
+				AND a.status = #{status} 
+			</if>
+			<if test="custNo != null and custNo != ''">
+				AND a.cust_no = #{custNo}
+			</if>
+			<if test="merchantId != null and merchantId != ''">
+				AND mc.id = #{merchantId}
+			</if>
+			<if test="clearManNo != null and clearManNo != ''">
+				AND a.clear_man_no = #{clearManNo}
+			</if>
+			<if test="makesureManNo != null and makesureManNo != ''">
+				AND a.makesure_man_no = #{makesureManNo}
+			</if>
+			<if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'"> '${searchDateEnd}'>=DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	        ${sqlMap.dsf}
+		</where>
+		 GROUP BY mc.ID
+		 HAVING  1=1
+		 <if test="errorType != null and errorType != ''">
+				AND errorType = #{errorType}
+			</if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="DoorErrorInfo">
+		SELECT 
+			<include refid="doorErrorInfoColumns"/>
+		FROM door_error_info a
+		<include refid="doorErrorInfoJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO door_error_info(
+			error_no,
+			business_id,
+			out_row_no,
+			tickertape,
+			cust_no,
+			cust_name,
+			error_type,
+			status,
+			office_id,
+			office_name,
+			company_id,
+			company_name,
+			clear_man_no,
+			clear_man_name,
+			makesure_man_no,
+			makesure_man_name,
+			input_amount,
+			check_amount,
+			diff_amount,
+			create_by,
+			create_name,
+			create_date,
+			update_by,
+			update_name,
+			update_date,
+			del_flag
+		) VALUES (
+			#{errorNo},
+			#{businessId},
+			#{outRowNo},
+			#{tickertape},
+			#{custNo},
+			#{custName},
+			#{errorType},
+			#{status},
+			#{office.id},
+			#{office.name},
+			#{companyId},
+			#{companyName},
+			#{clearManNo},
+			#{clearManName},
+			#{makesureManNo},
+			#{makesureManName},
+			#{inputAmount},
+			#{checkAmount},
+			#{diffAmount},
+			#{createBy.id},
+			#{createBy.name},
+			#{createDate},
+			#{updateBy.id},
+			#{updateBy.name},
+			#{updateDate},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE door_error_info SET
+			business_id = #{businessId},
+			out_row_no = #{outRowNo},
+			tickertape = #{tickertape},
+			cust_no = #{custNo},
+			cust_name = #{custName},
+			error_type = #{errorType},
+			status = #{status},
+			office_id = #{office.id},
+			office_name = #{office.name},
+			company_id = #{companyId},
+			company_name = #{companyName},
+			clear_man_no = #{clearManNo},
+			clear_man_name = #{clearManName},
+			makesure_man_no = #{makesureManNo},
+			makesure_man_name = #{makesureManName},
+			input_amount = #{inputAmount},
+			check_amount = #{checkAmount},
+			diff_amount = #{diffAmount},
+			update_by = #{updateBy.id},
+			update_name = #{updateBy.name},
+			update_date = #{updateDate}
+		WHERE error_no = #{errorNo}
+	</update>
+	
+	<update id="delete">
+		UPDATE door_error_info SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE error_no = #{errorNo}
+	</update>
+	
+	<!-- 2020-03-05 gzd 添加门店差错列表 begin -->
+	<select id="findDoorList" resultType="DoorErrorInfo">
+		SELECT 
+			a.cust_no AS "custNo",
+			cust.name AS "custName",
+			CASE WHEN sum(CASE WHEN a.ERROR_TYPE = 2 THEN a.diff_amount ELSE 0-a.diff_amount END)>0 THEN 2 WHEN sum(CASE WHEN a.ERROR_TYPE = 2 THEN a.diff_amount ELSE 0-a.diff_amount END)=0 THEN "" ELSE 3 END AS "errorType",
+			 a.status AS "status", 
+			a.office_id AS "office.id",
+			a.company_id AS "companyId",
+			a.company_name AS "companyName",
+			SUM(a.input_amount) AS "inputAmount",
+			SUM(a.check_amount) AS "checkAmount",
+			<!-- ABS(SUM(CASE WHEN a.ERROR_TYPE = 2 THEN a.diff_amount ELSE 0-a.diff_amount END)) AS "diffAmount", -->
+			<!-- 平账记录显示  金额不计入 add:zxk 2020-8-27 -->
+			 ABS(SUM(
+				   CASE
+				   WHEN a.ERROR_TYPE = 2  THEN a.diff_amount
+				   WHEN a.ERROR_TYPE = 3  THEN 0 - a.diff_amount
+				   ELSE 0 END
+			     	)
+		      	) AS "diffAmount",
+		     <!-- 状态特殊处理 金额大于0时状态转换为登记不受平账记录影响  add:zxk 2020-8-27 -->
+				<!-- CASE WHEN ABS(
+				SUM(
+					CASE
+				   WHEN a.ERROR_TYPE = 2 AND a.STATUS = '0' THEN a.diff_amount
+				   WHEN a.ERROR_TYPE = 3 AND a.STATUS = '0' THEN 0 - a.diff_amount
+				   ELSE 0 END
+					)
+				)  &gt; 0  THEN 0	ELSE  STATUS  END AS "status", -->
+			o.name AS "office.name",
+			o.name AS "officeName",
+			cust.parent_id AS officeId
+		FROM door_error_info a
+		LEFT JOIN sys_office o ON o.id = a.office_id
+		LEFT JOIN sys_office cust ON cust.id = a.cust_no
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			AND a.status IN ("0","5")
+			<if test="businessId != null and businessId != ''">
+				AND a.business_id = #{businessId }
+			</if>
+			<if test="office != null and office.id != null and office.id !=''">
+				AND a.office_id = #{office.id }
+			</if>
+			<if test="officeId != null and officeId !=''">
+				AND cust.parent_id = #{officeId } 
+			</if>
+			<if test="outRowNo != null and outRowNo != ''">
+				AND a.out_row_no = #{outRowNo}
+			</if>
+			<if test="custNo != null and custNo != ''">
+				AND a.cust_no = #{custNo}
+			</if>
+			<if test="clearManNo != null and clearManNo != ''">
+				AND a.clear_man_no = #{clearManNo}
+			</if>
+			<if test="makesureManNo != null and makesureManNo != ''">
+				AND a.makesure_man_no = #{makesureManNo}
+			</if>
+			<if test="status != null and status != ''">
+				AND a.status = #{status}
+			</if>
+			<if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'"> '${searchDateEnd}'>=DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	        ${sqlMap.dsf}
+		</where>
+		GROUP BY a.cust_no, a.`STATUS`
+		<if test="errorType != null and errorType != ''">
+			HAVING errorType = #{errorType}
+		</if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	<!-- 2020-03-05 gzd 添加门店差错列表  end -->
+	
+	<!-- 2020-03-06 gzd 添加门店差错明细 begin -->
+	<select id="findDoorDetailList" resultType="DoorErrorInfo">
+		SELECT 
+			<include refid="doorErrorInfoColumns"/>,
+			ccm.rfid AS bagNo,
+			doi.id AS doiId,
+			o.name AS "officeName",
+			cust.parent_id AS officeId,
+			CASE WHEN (doi.`STATUS` = '2' OR doi.`STATUS` = '3') AND doi.METHOD = '4' THEN DATE_FORMAT( doi.CREATE_DATE,'%Y-%m-%d %H:%i:%s' )ELSE NULL END AS "lastTime",
+			CASE WHEN doi.`STATUS`='2' AND doi.METHOD='4' THEN DATE_FORMAT( doi.UPDATE_DATE, '%Y-%m-%d %H:%i:%s' ) 
+				 WHEN doi.`STATUS`='3' AND doi.METHOD='4' THEN DATE_FORMAT( c.UPDATE_DATE, '%Y-%m-%d %H:%i:%s' ) 
+				 WHEN doi.`STATUS`!='2' AND doi.`STATUS`!='3' AND doi.METHOD='4' THEN DATE_FORMAT( now(), '%Y-%m-%d %H:%i:%s' ) ELSE NULL END AS "thisTime"			
+		FROM door_error_info a
+		LEFT JOIN sys_office o ON o.id = a.office_id
+		LEFT JOIN sys_office cust ON cust.id = a.cust_no
+		LEFT JOIN check_cash_main ccm ON a.business_id = ccm.out_no
+		LEFT JOIN door_order_info doi ON a.business_id = doi.order_id
+		<!-- 查询清机时间使用 -->
+		LEFT JOIN (SELECT EQUIPMENT_ID,UPDATE_DATE,PLAN_ID FROM clear_plan_info WHERE STATUS = ${clearPlan.status.completed} AND PLAN_ID != '') c ON a.business_id = c.PLAN_ID
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			
+			<if test="businessId != null and businessId != ''">
+				AND a.business_id LIKE
+				<if test="dbName == 'oracle'">'%'||#{businessId}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{businessId}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{businessId},'%')</if>
+			</if>
+			<if test="bagNo != null and bagNo != ''">
+				AND ccm.rfid LIKE
+				<if test="dbName == 'oracle'">'%'||#{bagNo}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{bagNo}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{bagNo},'%')</if>
+			</if>
+			<if test="office != null and office.id != null and office.id !=''">
+				AND a.office_id = #{office.id }
+			</if>
+			<if test="officeId != null and officeId !=''">
+				AND cust.parent_id = #{officeId }
+			</if>
+			<if test="outRowNo != null and outRowNo != ''">
+				AND a.out_row_no = #{outRowNo}
+			</if>
+			<if test="errorType != null and errorType != ''">
+				AND a.error_type = #{errorType}
+			</if>
+			 <if test="status !=null and status != ''">
+				AND a.status = #{status} 
+			</if>
+			<if test="custNo != null and custNo != ''">
+				AND a.cust_no = #{custNo}
+			</if>
+			<if test="clearManNo != null and clearManNo != ''">
+				AND a.clear_man_no = #{clearManNo}
+			</if>
+			<if test="makesureManNo != null and makesureManNo != ''">
+				AND a.makesure_man_no = #{makesureManNo}
+			</if>
+			<if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'"> '${searchDateEnd}'>=DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	        <!-- 屏蔽'平账'状态记录 add: ZXK status -->
+	           <!--  AND  a.`STATUS` != '5' -->
+	        <!-- 屏蔽'平账'状态记录  end -->
+	        ${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	<!-- 2020-03-06 gzd 添加门店差错明细  end -->
+	<!-- 2020-06-02 gzd 添加门店差错明细合计 begin -->
+	<select id="findDoorDetailListPool" resultType="DoorErrorInfo">
+		SELECT 
+			CASE WHEN sum(CASE WHEN a.ERROR_TYPE = 2 THEN a.diff_amount ELSE 0-a.diff_amount END)>0 THEN 2 WHEN sum(CASE WHEN a.ERROR_TYPE = 2 THEN a.diff_amount ELSE 0-a.diff_amount END)=0 THEN "" ELSE 3 END AS "errorType",
+			ABS(SUM(CASE WHEN a.ERROR_TYPE = 2 THEN a.diff_amount ELSE 0-a.diff_amount END)) AS "diffAmount"			
+		FROM door_error_info a
+		LEFT JOIN sys_office o ON o.id = a.office_id
+		LEFT JOIN sys_office cust ON cust.id = a.cust_no
+		LEFT JOIN check_cash_main ccm ON a.business_id = ccm.out_no
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL} <!-- AND a.status = '0' -->
+			<if test="businessId != null and businessId != ''">
+				AND a.business_id LIKE
+				<if test="dbName == 'oracle'">'%'||#{businessId}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{businessId}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{businessId},'%')</if>
+			</if>
+			<if test="bagNo != null and bagNo != ''">
+				AND ccm.rfid LIKE
+				<if test="dbName == 'oracle'">'%'||#{bagNo}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{bagNo}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{bagNo},'%')</if>
+			</if>
+			<if test="office != null and office.id != null and office.id !=''">
+				AND a.office_id = #{office.id }
+			</if>
+			<if test="officeId != null and officeId !=''">
+				AND cust.parent_id = #{officeId }
+			</if>
+			<if test="outRowNo != null and outRowNo != ''">
+				AND a.out_row_no = #{outRowNo}
+			</if>
+			<if test="errorType != null and errorType != ''">
+				AND a.error_type = #{errorType}
+			</if>
+			<if test="status !=null and status != ''">
+				AND a.status = #{status} 
+			</if>
+			<if test="custNo != null and custNo != ''">
+				AND a.cust_no = #{custNo}
+			</if>
+			<if test="clearManNo != null and clearManNo != ''">
+				AND a.clear_man_no = #{clearManNo}
+			</if>
+			<if test="makesureManNo != null and makesureManNo != ''">
+				AND a.makesure_man_no = #{makesureManNo}
+			</if>
+			<if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'"> '${searchDateEnd}'>=DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	        ${sqlMap.dsf}
+		</where>
+	</select>
+	<!-- 2020-06-02 gzd 添加门店差错明细合计  end -->
+</mapper>

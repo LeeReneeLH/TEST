@@ -1,0 +1,21 @@
+{
+	"versionNo": "01",
+	"serviceNo": "18",
+	"officeId": "28900225",
+	"boxList": [
+		{
+			"boxNo": "0987654321",
+			"rfid": "12345678"
+		},
+		{
+			"boxNo": "9999999999",
+			"rfid": "11111111"
+		},
+		{
+			"boxNo": "6666666666",
+			"rfid": "44444444"
+		}
+	],
+	"userId": "ff8ae8fb874b4babb1c23d2b296bdec5",
+	"userName": "马志红"
+}

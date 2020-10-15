@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.weChat.v03.dao.DoorOrderAmountDao">
+    
+	<sql id="doorOrderAmountColumns">
+		a.id 			AS 	"id",
+		a.type_id 		AS 	"typeId",
+		a.detail_id		AS	"detailId",
+		a.currency 		AS 	"currency",
+		a.denomination 	AS 	"denomination",
+		a.unit_id 		AS 	"unitId",
+		/*a.par_value 	AS 	"parValue",*/
+		a.count_zhang 	AS 	"countZhang",
+		a.detail_amount AS 	"detailAmount",
+		a.row_no		AS	"rowNo"
+	</sql>
+	
+	<sql id="doorOrderAmountJoins">
+	</sql>
+    
+	<select id="get" resultType="DoorOrderAmount">
+		SELECT 
+			<include refid="doorOrderAmountColumns"/>
+		FROM door_order_amount a
+		<include refid="doorOrderAmountJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="DoorOrderAmount">
+		SELECT 
+			<include refid="doorOrderAmountColumns"/>
+		FROM door_order_amount a
+		<include refid="doorOrderAmountJoins"/>
+		<where>
+			<if test="detailId != null and detailId != ''">
+				AND a.detail_id = #{detailId}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="DoorOrderAmount">
+		SELECT 
+			<include refid="doorOrderAmountColumns"/>
+		FROM door_order_amount a
+		<include refid="doorOrderAmountJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.row_no ASC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO door_order_amount(
+			id,
+			type_id,
+			detail_id,
+			currency,
+			denomination,
+			unit_id,
+			par_value,
+			count_zhang,
+			detail_amount,
+			row_no
+		) VALUES (
+			#{id},
+			#{typeId},
+			#{detailId},
+			#{currency},
+			#{denomination},
+			#{unitId},
+			#{parValue},
+			#{countZhang},
+			#{detailAmount},
+			#{rowNo}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE door_order_amount SET 	
+			par_value = #{parValue},
+			count_zhang = #{countZhang},
+			detail_amount = #{detailAmount}
+			row_no = #{rowNo}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE door_order_amount SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	<select id="getDetailList" resultType="DoorOrderAmount">
+		SELECT
+			<include refid="doorOrderAmountColumns"/>
+	  	FROM door_order_amount a
+	  		LEFT JOIN door_order_detail d ON a.detail_id = d.id
+	  		LEFT JOIN door_order_Info i ON i.order_id = d.order_id
+	    WHERE d.id = #{detailId} and i.id = #{id}
+	    ORDER BY a.row_no ASC
+	</select>
+
+	<select id="getAmountList" resultType="DoorOrderAmount">
+		SELECT
+			<include refid="doorOrderAmountColumns"/>,
+			sto.LABEL as 'parValue'
+		FROM door_order_amount a
+			LEFT JOIN door_order_detail d ON a.detail_id = d.id
+			LEFT JOIN (select * from sto_dict where type in ('cnypden','cnyhden')) sto on a.DENOMINATION = sto.ID
+		WHERE d.id = #{detailId}
+		<if test="types != null and types != ''">
+			and a.type_id in
+			<foreach collection="types" open="(" separator="," close=")" item="typeId">
+				#{typeId}
+			</foreach>
+		</if>
+		<if test="types == null or types == '' ">
+			and a.type_id = '01'
+		</if>
+		ORDER BY a.row_no ASC
+	</select>
+	
+	<!-- 获取整体存款情况分析统计报表数据  add by lihe start 2020-01-06-->
+	<select id="getDepositCensusList" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.DepositCensusReport">
+		SELECT
+			<!-- 门店id -->
+			main.doorId AS doorId, 
+			main.doorId AS "office.id",
+			<!-- 门店名称 -->
+			o.NAME AS doorName,
+			o.NAME AS "office.name",
+			<!-- 结算办公室 -->
+			o.settle_office AS settleOffice,
+			<!-- 存款总次数 -->
+			main.totalCount AS totalCount,
+			<!-- 存款人数 -->
+			main.depositors AS depositors,
+			<!-- 存款天数 -->
+			main.depositDays AS depositDays,
+			<!-- 速存存款次数 -->
+			main.paperCount AS paperCount,
+			<!-- 强制存款次数 -->
+			main.forceCount AS forceCount,
+			<!-- 其他存款次数 -->
+			main.otherCount AS otherCount,
+			<!-- 速存存款次数占比 -->
+			ROUND(main.paperCount/main.totalCount,4) AS paperCountPercent,
+			<!-- 强制存款次数占比 -->
+			ROUND(main.forceCount/main.totalCount,4) AS forceCountPercent,
+			<!-- 其他存款次数占比 -->
+			ROUND(main.otherCount/main.totalCount,4) AS otherCountPercent,
+			<!-- 平均每天存款次数 -->
+			ROUND(main.totalCount/main.depositDays,0) AS aveCount,
+			<!-- 存款总金额 -->
+			main.totalAmount AS totalAmount,
+			<!-- 速存存款金额 -->
+			main.paperAmount AS paperAmount,
+			<!-- 强制存款金额 -->
+			main.forceAmount AS forceAmount,
+			<!-- 其他存款金额 -->
+			main.otherAmount AS otherAmount,
+			<!-- 速存存款金额占比 -->
+			ROUND(main.paperAmount/main.totalAmount,4) AS paperAmountPercent,
+			<!-- 强制存款金额占比 -->
+			ROUND(main.forceAmount/main.totalAmount,4) AS forceAmountPercent,
+			<!-- 其他存款金额占比 -->
+			ROUND(main.otherAmount/main.totalAmount,4) AS otherAmountPercent,
+			<!-- 平均每天存款金额 -->
+			ROUND(main.totalAmount/main.depositDays,2) AS aveAmount
+		FROM
+			<!-- 左联主表：门店id,门店名称，中心id，存款总金额，存款总次数，存款人数，存款天数 -->
+			(SELECT
+				doi.DOOR_ID AS doorId,
+				doi.OFFICE_ID AS officeId,
+				COUNT(detail.AMOUNT) AS totalCount,
+				COUNT(DISTINCT detail.CREATE_BY) AS depositors,
+				COUNT(DISTINCT DATE_FORMAT(detail.CREATE_DATE,'%Y-%m-%d')) AS depositDays,
+				SUM(CASE WHEN detail.COIN_AMOUNT != 0 THEN 1 ELSE 0 END) + SUM(CASE WHEN detail.PAPER_AMOUNT != 0 THEN 1 ELSE 0 END) AS paperCount,
+				SUM(CASE WHEN detail.FORCE_AMOUNT != 0 THEN 1 ELSE 0 END) AS forceCount,
+				SUM(CASE WHEN detail.OTHER_AMOUNT != 0 THEN 1 ELSE 0 END) AS otherCount,
+				SUM(detail.Amount) AS totalAmount,
+				SUM(detail.COIN_AMOUNT) + SUM(detail.PAPER_AMOUNT) AS paperAmount,
+				SUM(detail.FORCE_AMOUNT) AS forceAmount,
+				SUM(detail.OTHER_AMOUNT) AS otherAmount
+			FROM
+				door_order_info doi
+			LEFT JOIN door_order_detail detail ON doi.RFID = detail.RFID AND doi.ORDER_ID = detail.ORDER_ID
+			LEFT JOIN sys_office o ON o.ID = doi.DOOR_ID AND o.DEL_FLAG = ${delFlag.valid}
+			<where>
+				<!-- 存款方式：1-PC端；2-微信端；3-PDA；4-存款设备 -->
+				<if test="method != null and method != ''">
+					doi.METHOD = #{method}
+				</if>
+				<if test="office != null and office.id != '' and office.id != null">
+					AND doi.door_id = #{office.id}
+				</if>
+				<if test="methodList != null and methodList != ''">
+					AND	doi.METHOD in 
+					<foreach collection="methodList" item="methodTag" separator="," open="(" close=")" index="index">
+						#{methodList[${index}]}
+					</foreach>
+				</if>
+				<if test="doorId != null and doorId != ''">
+					AND (doi.door_id = #{doorId} or 
+						o.PARENT_IDS like  
+					<if test="dbName == 'oracle'">'%,' || #{doorId} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{doorId}, '%')</if>
+						)
+				</if>
+				<!-- 开始时间 -->
+				<if test="searchDateStart != null and searchDateStart != ''">
+					AND
+					<if test="dbName == 'oracle'">TO_CHAR(detail.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss')
+						>='${searchDateStart}'</if>
+					<if test="dbName=='mysql'">DATE_FORMAT(detail.CREATE_DATE, '%Y-%m-%d %H:%i:%s')
+						>='${searchDateStart}'</if>
+				</if>
+				<!-- 结束时间 -->
+				<if test="searchDateEnd != null and searchDateEnd != ''">
+					AND
+					<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(detail.CREATE_DATE,'yyyy-mm-dd
+						hh24:mi:ss')</if>
+					<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(detail.CREATE_DATE,
+						'%Y-%m-%d %H:%i:%s')</if>
+				</if>
+			</where>
+			GROUP BY
+				doi.DOOR_ID,
+				<!-- a.DOOR_NAME, -->
+				doi.OFFICE_ID
+			) main
+		LEFT JOIN SYS_OFFICE o ON o.id = main.doorId and o.del_flag = ${delFlag.valid}
+		LEFT JOIN SYS_OFFICE o2 ON o2.id = o.parent_id and o2.del_flag = ${delFlag.valid}
+		LEFT JOIN SYS_OFFICE o1 ON o1.id = main.officeId and o1.del_flag = ${delFlag.valid}
+		<where>
+			<!-- 机构过滤 -->
+			${sqlMap.dsf}
+			<if test="office != null and office.id != '' and office.id != null">
+				AND main.doorId = #{office.id}
+			</if>
+		</where>
+		GROUP BY
+			<!-- 按照门店分组 -->
+			main.doorId
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				
+			</otherwise>
+		</choose>	
+	</select>
+	<!-- 获取整体存款情况分析统计报表数据  add by lihe end 2020-01-06-->
+	
+</mapper>

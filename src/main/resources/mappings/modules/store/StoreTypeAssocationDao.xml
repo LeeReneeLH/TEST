@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoreTypeAssocationDao">
+    
+	<resultMap type="com.coffer.businesses.modules.store.v01.entity.StoreTypeAssocation" id="StoreTypeAssocationResult">
+		<id column="ID" property="id" />
+		<result column="STORE_ID" property="storeId" />
+		<result column="STORAGE_TYPE" property="storageType" />
+	</resultMap>
+
+	<sql id="Base_Column_List">
+		ID,
+		STORE_ID,
+		STORAGE_TYPE
+	</sql>
+	
+	<select id="getByStoreId" resultMap="StoreTypeAssocationResult">
+		SELECT 
+			<include refid="Base_Column_List"></include>
+		FROM STORE_TYPE_ASSOCATION
+		WHERE STORE_ID=#{storeId}
+	</select>
+	
+	<insert id="insert" >
+		INSERT INTO STORE_TYPE_ASSOCATION(
+			ID,
+			STORE_ID,
+			STORAGE_TYPE
+		) VALUES (
+			#{id},
+			#{storeId},
+			#{storageType}
+		)
+	</insert>
+	
+	<update id="deleteByStoreId">
+		DELETE FROM STORE_TYPE_ASSOCATION
+		WHERE STORE_ID=#{storeId}
+	</update>
+
+</mapper>

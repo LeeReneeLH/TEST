@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.doorOrder.v01.dao.ClearGroupDoorInfoDao">
+    
+	<sql id="clearGroupDoorInfoColumns">
+		a.id AS "id",
+		a.clear_group_id AS "clearGroupId",
+		a.door_id AS "doorId",
+		a.door_name AS "doorName",
+		a.equipment_id AS "equipmentId",
+		a.equipment_name AS "equipmentName",
+		a.del_flag AS "delFlag"
+	</sql>
+	
+	<sql id="clearGroupDoorInfoJoins">
+	</sql>
+    
+	<select id="get" resultType="ClearGroupDoorInfo">
+		SELECT 
+			<include refid="clearGroupDoorInfoColumns"/>
+		FROM clear_group_door_info a
+		<include refid="clearGroupDoorInfoJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="ClearGroupDoorInfo">
+		SELECT 
+			<include refid="clearGroupDoorInfoColumns"/>
+		FROM clear_group_door_info a
+		<include refid="clearGroupDoorInfoJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="ClearGroupDoorInfo">
+		SELECT 
+			<include refid="clearGroupDoorInfoColumns"/>
+		FROM clear_group_door_info a
+		<include refid="clearGroupDoorInfoJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO clear_group_door_info(
+			id,
+			clear_group_id,
+			door_id,
+			door_name,
+			equipment_id,
+			equipment_name,
+			del_flag
+		) VALUES (
+			#{id},
+			#{clearGroupId},
+			#{doorId},
+			#{doorName},
+			#{equipmentId},
+			#{equipmentName},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE clear_group_door_info SET 	
+			clear_group_id = #{clearGroupId},
+			door_id = #{doorId},
+			door_name = #{doorName},
+			equipment_id = #{equipmentId},
+			equipment_name = #{equipmentName}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE clear_group_door_info SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 根据清机组编号删除相关记录 -->
+	<update id="deleteByClearGroupId">
+		UPDATE clear_group_door_info SET 
+			del_flag = '1'
+		WHERE clear_group_id = #{clearGroupId}
+	</update>
+	
+	<!-- 检查表中是否有对应记录(非本id) -->
+	<select id="checkDoorsList" resultType="ClearGroupDoorInfo">
+		SELECT 
+			<include refid="clearGroupDoorInfoColumns"/>
+		FROM clear_group_door_info a
+		<include refid="clearGroupDoorInfoJoins"/>
+		WHERE a.del_flag = #{delFlag}
+		AND a.door_id = #{doorId}
+		<!-- AND a.clear_group_id <![CDATA[ <> ]]> #{clearGroupId}  -->
+	</select>
+	
+</mapper>

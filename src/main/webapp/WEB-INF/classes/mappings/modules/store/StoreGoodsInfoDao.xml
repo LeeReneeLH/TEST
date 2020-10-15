@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoreGoodsInfoDao">
+    
+	<resultMap type="com.coffer.businesses.modules.store.v01.entity.StoreGoodsInfo" id="StoreGoodsInfoResult">
+		<id column="ID" property="id" />
+		<result column="RFID" property="rfid" />
+		<result column="STORE_ID" property="storeId" />
+		<result column="BOX_NO" property="boxNo" />
+		<result column="BOX_TYPE" property="boxType" />
+		<result column="AMOUNT" property="amount" />
+		<result column="IN_STORE_ALL_ID" property="inStoreAllId" />
+		<result column="OUT_STORE_ALL_ID" property="outStoreAllId" />
+		<result column="IN_STORE_DATE" property="inStoreDate" />
+		<result column="OUT_STORE_DATE" property="outStoreDate" />
+		<result column="DEL_FLAG" property="delFlag" />
+		<result column="OUT_DATE" property="outDate" />
+		<result column="CREATE_BY" property="createBy.id" />
+		<result column="CREATE_NAME" property="createName" />
+		<result column="CREATE_DATE" property="createDate" />
+		<result column="UPDATE_BY" property="updateBy.id" />
+		<result column="UPDATE_NAME" property="updateName" />
+		<result column="UPDATE_DATE" property="updateDate" />
+		<result column="STORE_NAME" property="storeName" />
+		<!-- 登记机构 -->
+		<association property="office" column="OFFICE_ID" javaType="Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy"/>
+		<collection property="storeGoodsDetailList" column="ID" javaType="ArrayList" ofType="StoreGoodsDetail"
+		select="com.coffer.businesses.modules.store.v01.dao.StoreGoodsDetailDao.getByStoreGoodsId" fetchType="lazy" />
+	</resultMap>
+
+	<sql id="Base_Column_List">
+		ID,
+		STORE_ID,
+		RFID,
+		BOX_NO,
+		BOX_TYPE,
+		AMOUNT,
+		OFFICE_ID,
+		IN_STORE_ALL_ID,
+		OUT_STORE_ALL_ID,
+		IN_STORE_DATE,
+		OUT_STORE_DATE,
+		OUT_DATE,
+		DEL_FLAG,
+		CREATE_BY,
+		CREATE_NAME,
+		CREATE_DATE,
+		UPDATE_BY,
+		UPDATE_NAME,
+		UPDATE_DATE
+	</sql>
+	
+	<select id="findList" resultMap="StoreGoodsInfoResult">
+		SELECT 
+			goodsInfo.ID AS ID,
+			goodsInfo.STORE_ID AS STORE_ID,
+			goodsInfo.RFID AS RFID,
+			goodsInfo.BOX_NO AS BOX_NO,
+			goodsInfo.BOX_TYPE AS BOX_TYPE,
+			goodsInfo.AMOUNT AS AMOUNT,
+			goodsInfo.OFFICE_ID AS OFFICE_ID,
+			goodsInfo.IN_STORE_ALL_ID AS IN_STORE_ALL_ID,
+			goodsInfo.OUT_STORE_ALL_ID AS OUT_STORE_ALL_ID,
+			goodsInfo.IN_STORE_DATE AS IN_STORE_DATE,
+			goodsInfo.OUT_STORE_DATE AS OUT_STORE_DATE,
+			goodsInfo.OUT_DATE AS OUT_DATE,
+			goodsInfo.DEL_FLAG AS DEL_FLAG,
+			goodsInfo.CREATE_BY AS CREATE_BY,
+			goodsInfo.CREATE_NAME AS CREATE_NAME,
+			goodsInfo.CREATE_DATE AS CREATE_DATE,
+			goodsInfo.UPDATE_BY AS UPDATE_BY,
+			goodsInfo.UPDATE_NAME AS UPDATE_NAME,
+			goodsInfo.UPDATE_DATE AS UPDATE_DATE,
+			managementInfo.STORE_NAME AS STORE_NAME
+		FROM STORE_GOODS_INFO goodsInfo
+		LEFT JOIN STORE_MANAGEMENT_INFO managementInfo ON goodsInfo.STORE_ID = managementInfo.ID 
+		<where>
+			<!-- 状态 -->
+			<if test="delFlag != null and delFlag != ''">
+				AND goodsInfo.DEL_FLAG = #{delFlag}
+			</if>
+			<!-- 库房ID -->
+		    <if test="storeId != null and storeId !=''">
+				AND goodsInfo.STORE_ID = #{storeId}
+			</if>
+			<!-- 库房名称 -->
+			<if test="storeName != null and storeName !=''">
+				AND managementInfo.STORE_NAME LIKE 
+				<!-- '%'||#{storeName}||'%' -->
+				<if test="dbName == 'oracle'">'%'||#{storeName}||'%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%',#{storeName},'%')</if>
+			</if>
+			<!-- 箱子RFID -->
+			<if test="rfid != null and rfid !=''">
+				AND goodsInfo.RFID LIKE 
+				<!-- '%'||#{rfid}||'%' -->
+				<if test="dbName == 'oracle'">'%'||#{rfid}||'%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%',#{rfid},'%')</if>
+			</if>
+			<!-- 箱号 -->
+			<if test="boxNo != null and boxNo !=''">
+				AND goodsInfo.BOX_NO LIKE 
+				<!-- '%'||#{boxNo}||'%' -->
+				<if test="dbName == 'oracle'">'%'||#{boxNo}||'%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%',#{boxNo},'%')</if>
+			</if>
+			<!-- 箱子类型 -->
+			<if test="boxType != null and boxType !=''">
+				AND goodsInfo.BOX_TYPE = #{boxType}
+			</if>
+			
+			<!-- 入库时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				<!-- AND TO_CHAR(goodsInfo.IN_STORE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}' -->
+				<if test="dbName == 'oracle'">AND TO_CHAR(goodsInfo.IN_STORE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName == 'mysql'">AND date_format(goodsInfo.IN_STORE_DATE,'%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+			</if>
+			<!-- 入库时间(结束) -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				<!-- AND '${searchDateEnd}' >= TO_CHAR(goodsInfo.IN_STORE_DATE, 'yyyy-mm-dd hh24:mi:ss') -->
+				<if test="dbName == 'oracle'">AND '${searchDateEnd}' >= TO_CHAR(goodsInfo.IN_STORE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName == 'mysql'">AND '${searchDateEnd}' >= date_format(goodsInfo.IN_STORE_DATE,'%Y-%m-%d %H:%i:%S') </if>
+			</if>
+			
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY goodsInfo.UPDATE_DATE DESC
+			</otherwise>
+		</choose>
+		
+	</select>
+	
+	
+	<select id="get" resultMap="StoreGoodsInfoResult">
+		SELECT 
+			goodsInfo.ID AS ID,
+			goodsInfo.STORE_ID AS STORE_ID,
+			goodsInfo.RFID AS RFID,
+			goodsInfo.BOX_NO AS BOX_NO,
+			goodsInfo.BOX_TYPE AS BOX_TYPE,
+			goodsInfo.AMOUNT AS AMOUNT,
+			goodsInfo.OFFICE_ID AS OFFICE_ID,
+			goodsInfo.IN_STORE_ALL_ID AS IN_STORE_ALL_ID,
+			goodsInfo.OUT_STORE_ALL_ID AS OUT_STORE_ALL_ID,
+			goodsInfo.IN_STORE_DATE AS IN_STORE_DATE,
+			goodsInfo.OUT_STORE_DATE AS OUT_STORE_DATE,
+			goodsInfo.DEL_FLAG AS DEL_FLAG,
+			goodsInfo.OUT_DATE AS OUT_DATE,
+			goodsInfo.CREATE_BY AS CREATE_BY,
+			goodsInfo.CREATE_NAME AS CREATE_NAME,
+			goodsInfo.CREATE_DATE AS CREATE_DATE,
+			goodsInfo.UPDATE_BY AS UPDATE_BY,
+			goodsInfo.UPDATE_NAME AS UPDATE_NAME,
+			goodsInfo.UPDATE_DATE AS UPDATE_DATE,
+			managementInfo.STORE_NAME AS STORE_NAME
+		FROM STORE_GOODS_INFO goodsInfo
+		LEFT JOIN STORE_MANAGEMENT_INFO managementInfo ON goodsInfo.STORE_ID = managementInfo.ID 
+		WHERE goodsInfo.ID = #{id}
+		ORDER BY goodsInfo.UPDATE_DATE ASC
+	</select>
+	
+	<select id="getByStoreId" resultMap="StoreGoodsInfoResult">
+		SELECT 
+			goodsInfo.ID AS ID,
+			goodsInfo.STORE_ID AS STORE_ID,
+			goodsInfo.RFID AS RFID,
+			goodsInfo.BOX_NO AS BOX_NO,
+			goodsInfo.BOX_TYPE AS BOX_TYPE,
+			goodsInfo.AMOUNT AS AMOUNT,
+			goodsInfo.OFFICE_ID AS OFFICE_ID,
+			goodsInfo.IN_STORE_ALL_ID AS IN_STORE_ALL_ID,
+			goodsInfo.OUT_STORE_ALL_ID AS OUT_STORE_ALL_ID,
+			goodsInfo.IN_STORE_DATE AS IN_STORE_DATE,
+			goodsInfo.OUT_STORE_DATE AS OUT_STORE_DATE,
+			goodsInfo.OUT_DATE AS OUT_DATE,
+			goodsInfo.DEL_FLAG AS DEL_FLAG,
+			goodsInfo.CREATE_BY AS CREATE_BY,
+			goodsInfo.CREATE_NAME AS CREATE_NAME,
+			goodsInfo.CREATE_DATE AS CREATE_DATE,
+			goodsInfo.UPDATE_BY AS UPDATE_BY,
+			goodsInfo.UPDATE_NAME AS UPDATE_NAME,
+			goodsInfo.UPDATE_DATE AS UPDATE_DATE,
+			managementInfo.STORE_NAME AS STORE_NAME
+		FROM STORE_GOODS_INFO goodsInfo
+		LEFT JOIN STORE_MANAGEMENT_INFO managementInfo ON goodsInfo.STORE_ID = managementInfo.ID 
+		WHERE goodsInfo.STORE_ID = #{storeId}
+		ORDER BY goodsInfo.UPDATE_DATE ASC
+	</select>
+	
+	<insert id="insert" >
+		INSERT INTO STORE_GOODS_INFO(
+			ID,
+			STORE_ID,
+			RFID,
+			BOX_NO,
+			BOX_TYPE,
+			AMOUNT,
+			OFFICE_ID,
+			IN_STORE_ALL_ID,
+			OUT_STORE_ALL_ID,
+			IN_STORE_DATE,
+			OUT_STORE_DATE,
+			OUT_DATE,
+			CREATE_BY,
+			CREATE_NAME,
+			CREATE_DATE,
+			UPDATE_BY,
+			UPDATE_NAME,
+			UPDATE_DATE,
+			DEL_FLAG
+		) VALUES (
+			#{id},
+			#{storeId},
+			#{rfid},
+			#{boxNo},
+			#{boxType},
+			#{amount},
+			#{office.id},
+			#{inStoreAllId},
+			#{outStoreAllId},
+			#{inStoreDate},
+			#{outStoreDate},
+			#{outDate},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="deleteByRfidAndBoxNo">
+		UPDATE STORE_GOODS_INFO
+		SET DEL_FLAG = '1',
+			UPDATE_BY = #{updateBy.id},
+			UPDATE_NAME = #{updateBy.name},
+			UPDATE_DATE = #{updateDate}
+		WHERE RFID=#{rfid} AND BOX_NO = #{boxNo}
+	</update>
+
+</mapper>

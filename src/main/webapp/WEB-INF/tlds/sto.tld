@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<taglib xmlns="http://java.sun.com/xml/ns/j2ee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-jsptaglibrary_2_0.xsd"
+        version="2.0">
+
+    <description>JSTL 1.1 functions library</description>
+    <display-name>JSTL functions sys</display-name>
+    <tlib-version>1.1</tlib-version>
+    <short-name>fns</short-name>
+    <uri>http://java.sun.com/jsp/jstl/functionss</uri>
+
+    <!-- stoBoxInfoForm -->
+    <function>
+        <description>获取钞箱类型列表</description>
+        <name>getStoAtmBoxModList</name>
+        <function-class>com.coffer.businesses.modules.store.StoreCommonUtils</function-class>
+        <function-signature>java.util.List getStoAtmBoxModList()</function-signature>
+        <example>${sto:getStoAtmBoxModList()}</example>
+    </function>
+
+    <function>
+        <description>获取人员列表</description>
+        <name>getStoEscortinfoList</name>
+        <function-class>com.coffer.businesses.modules.store.StoreCommonUtils</function-class>
+        <function-signature>java.util.List getStoEscortinfoList(java.lang.String)
+        </function-signature>
+        <example>${sto:getStoEscortinfoList(getType)}</example>
+    </function>
+
+    <function>
+        <description>根据当前用户获取人员列表</description>
+        <name>getFilterStoEscortinfoList</name>
+        <function-class>com.coffer.businesses.modules.store.StoreCommonUtils</function-class>
+        <function-signature>java.util.List getFilterStoEscortinfoList(java.lang.String, java.lang.String)
+        </function-signature>
+        <example>${sto:getStoEscortinfoList(getType,officeId)}</example>
+    </function>
+
+    <function>
+        <description>根据用户获取当前机构所有未绑定线路的车辆列表</description>
+        <name>getStoCarInfoList</name>
+        <function-class>com.coffer.businesses.modules.store.StoreCommonUtils</function-class>
+        <function-signature>java.util.List getStoCarInfoList(java.lang.String)
+        </function-signature>
+        <example>${sto:getStoCarInfoList(id)}</example>
+    </function>
+
+    <function>
+        <description>获取当前机构所有车辆列表</description>
+        <name>getAllStoCarInfoList</name>
+        <function-class>com.coffer.businesses.modules.store.StoreCommonUtils</function-class>
+        <function-signature>java.util.List getAllStoCarInfoList(java.lang.String)
+        </function-signature>
+        <example>${sto:getAllStoCarInfoList(id)}</example>
+    </function>
+
+    <function>
+        <description>获取所有车辆列表</description>
+        <name>getStoCarInfoAllList</name>
+        <function-class>com.coffer.businesses.modules.store.StoreCommonUtils</function-class>
+        <function-signature>java.util.List getStoCarInfoAllList()
+        </function-signature>
+        <example>${sto:getStoCarInfoAllList()}</example>
+    </function>
+
+    <function>
+        <description>获取当前网点所在线路对应车辆列表</description>
+        <name>getStoCarInfoListByPoint</name>
+        <function-class>com.coffer.businesses.modules.store.StoreCommonUtils</function-class>
+        <function-signature>java.util.List getStoCarInfoListByPoint(java.lang.String)
+        </function-signature>
+        <example>${sto:getStoCarInfoListByPoint(officeId)}</example>
+    </function>
+
+    <!-- 获取加钞组信息列表 -->
+    <function>
+        <description>获取加钞组信息列表</description>
+        <name>getStoAddCashGroupList</name>
+        <function-class>com.coffer.businesses.modules.store.StoreCommonUtils</function-class>
+        <function-signature>java.util.List getStoAddCashGroupList()</function-signature>
+        <example>${sto:getStoAddCashGroupList()}</example>
+    </function>
+
+    <!-- 获取物品字典（无视delFlag） -->
+    <function>
+        <description>获取物品字典</description>
+        <name>getGoodDictList</name>
+        <function-class>com.coffer.businesses.common.utils.GoodDictUtils</function-class>
+        <function-signature>java.util.List getDictList(java.lang.String)</function-signature>
+        <example>${sto:getGoodDictList(type)}</example>
+    </function>
+
+    <!-- 获取物品标签（无视delFlag） -->
+    <function>
+        <description>获取物品标签</description>
+        <name>getGoodDictLabel</name>
+        <function-class>com.coffer.businesses.common.utils.GoodDictUtils</function-class>
+        <function-signature>java.lang.String getDictLabel(java.lang.String, java.lang.String, java.lang.String)
+        </function-signature>
+        <example>${sto:getGoodDictLabel(value, type, defaultValue)}</example>
+    </function>
+
+    <!-- 获取物品关联币种 -->
+    <function>
+        <description>获取物品关联币种</description>
+        <name>getReleCurrencyList</name>
+        <function-class>com.coffer.businesses.modules.store.StoreCommonUtils</function-class>
+        <function-signature>java.util.List getReleCurrencyList()</function-signature>
+        <example>${sto:getReleCurrencyList()}</example>
+    </function>
+    <!-- 获取物品名称 -->
+    <function>
+        <description>获取物品名称</description>
+        <name>getGoodsName</name>
+        <function-class>com.coffer.businesses.modules.store.StoreCommonUtils</function-class>
+        <function-signature>java.lang.String getGoodsName(java.lang.String)</function-signature>
+        <example>${sto:getGoodsName(goodsId)}</example>
+    </function>
+    <!-- 获取物品名称 -->
+    <function>
+        <description>获取人行物品缩略名称</description>
+        <name>getPbocGoodsNameByGoodId</name>
+        <function-class>com.coffer.businesses.modules.store.StoreCommonUtils</function-class>
+        <function-signature>java.lang.String getPbocGoodsNameByGoodId(java.lang.String)</function-signature>
+        <example>${sto:getPbocGoodsNameByGoodId(goodsId)}</example>
+    </function>
+    <!-- 获取特定币种的面值标签 -->
+    <function>
+        <description>获取特定币种的面值标签</description>
+        <name>getDenLabel</name>
+        <function-class>com.coffer.businesses.common.utils.GoodDictUtils</function-class>
+        <function-signature>java.lang.String getDenLabel(java.lang.String, java.lang.String, java.lang.String)
+        </function-signature>
+        <example>${sto:getDenLabel(currencyValue, denValue, defaultValue)}</example>
+    </function>
+
+    <!-- 获取物品字典（考虑delFlag） -->
+    <function>
+        <description>获取物品字典</description>
+        <name>getGoodDictListWithFg</name>
+        <function-class>com.coffer.businesses.common.utils.GoodDictUtils</function-class>
+        <function-signature>java.util.List getDictListWithFg(java.lang.String)</function-signature>
+        <example>${sto:getGoodDictListWithFg(type)}</example>
+    </function>
+
+    <!-- 获取物品字典（不考虑delFlag） -->
+    <function>
+        <description>获取物品字典</description>
+        <name>getGoodDictListWithOutFg</name>
+        <function-class>com.coffer.businesses.common.utils.GoodDictUtils</function-class>
+        <function-signature>java.util.List getDictListWithOutFg(java.lang.String)</function-signature>
+        <example>${sto:getGoodDictListWithOutFg(type)}</example>
+    </function>
+
+    <!-- 获取物品标签（考虑delFlag） -->
+    <function>
+        <description>获取物品标签</description>
+        <name>getGoodDictLabelWithFg</name>
+        <function-class>com.coffer.businesses.common.utils.GoodDictUtils</function-class>
+        <function-signature>java.lang.String getDictLabelWithFg(java.lang.String, java.lang.String, java.lang.String)
+        </function-signature>
+        <example>${sto:getGoodDictLabelWithFg(value, type, defaultValue)}</example>
+    </function>
+
+    <function>
+        <description>获取当前登录金融机构金库管理员和操作员信息</description>
+        <name>getCommercialBankUserInfoList</name>
+        <function-class>com.coffer.businesses.modules.store.StoreCommonUtils</function-class>
+        <function-signature>java.util.List getCommercialBankUserInfoList()
+        </function-signature>
+        <example>${sto:getCommercialBankUserInfoList()}</example>
+    </function>
+    <function>
+        <description>获取金融机构金库管理员和操作员信息</description>
+        <name>getCommercialBankUserInfoListByOffice</name>
+        <function-class>com.coffer.businesses.modules.store.StoreCommonUtils</function-class>
+        <function-signature>java.util.List getCommercialBankUserInfoList(java.lang.String)
+        </function-signature>
+        <example>${sto:getCommercialBankUserInfoListByOffice(officeId)}</example>
+    </function>
+    <!-- 将金额转化大写字符 -->
+    <function>
+        <description>获取金额转化后的大写字符</description>
+        <name>getUpperAmount</name>
+        <function-class>com.coffer.businesses.modules.store.StoreCommonUtils</function-class>
+        <function-signature>java.lang.String getUpperAmount(java.lang.String)</function-signature>
+        <example>${sto:getUpperAmount(currentAmount)}</example>
+    </function>
+
+    <!-- 获取车牌字典 -->
+    <function>
+        <description>获取车牌字典</description>
+        <name>getCarHeaderList</name>
+        <function-class>com.coffer.businesses.modules.store.StoreCommonUtils</function-class>
+        <function-signature>java.util.List getCarHeaderList()</function-signature>
+        <example>${sto:getCarHeaderList()}</example>
+    </function>
+
+    <!-- 获取门店字典 -->
+    <function>
+        <description>获取门店</description>
+        <name>getDoorList</name>
+        <function-class>com.coffer.businesses.modules.store.StoreCommonUtils</function-class>
+        <function-signature>java.util.List getDoorList()</function-signature>
+        <example>${sto:getDoorList()}</example>
+    </function>
+
+    <!-- 获取清分组名 -->
+    <function>
+        <description>获取清分组名</description>
+        <name>getClearingGroupName</name>
+        <function-class>com.coffer.businesses.modules.clear.ClearCommonUtils</function-class>
+        <function-signature>java.util.List getClearingGroupName(java.lang.String,java.lang.String)</function-signature>
+        <example>${sto:getClearingGroupName(groupStatus,groupType)}</example>
+    </function>
+
+    <!-- 根据用户类型以及机构获取用户信息 -->
+    <function>
+        <description>获取用户，根据用户类型和机构过滤</description>
+        <name>getUsersByTypeAndOffice</name>
+        <function-class>com.coffer.businesses.modules.store.StoreCommonUtils</function-class>
+        <function-signature>java.util.List getUsersByTypeAndOffice(java.lang.String, java.lang.String)
+        </function-signature>
+        <example>${fns:getUsersByTypeAndOffice(userType, officeId)}</example>
+    </function>
+
+    <!-- 根据机构类型获取系统机构表-->
+    <function>
+        <description>获取客户列表</description>
+        <name>getStoCustList</name>
+        <function-class>com.coffer.businesses.modules.store.StoreCommonUtils</function-class>
+        <function-signature>java.util.List getStoCustList(java.lang.String, boolean)
+        </function-signature>
+        <example>${sto:getStoCustList(types,isAll)}</example>
+    </function>
+    <!-- 根据机构类型获取对应系统机构表-->
+    <function>
+        <description>获取对应客户列表</description>
+        <name>getStoCorrespondenceCustList</name>
+        <function-class>com.coffer.businesses.modules.store.StoreCommonUtils</function-class>
+        <function-signature>java.util.List getStoCorrespondenceCustList(java.lang.String, boolean)
+        </function-signature>
+        <example>${sto:getStoCorrespondenceCustList(types,isAll)}</example>
+    </function>
+    <!-- 根据机构类型获取系统机构表-->
+    <function>
+        <description>获取员工信息</description>
+        <name>getBankUserList</name>
+        <function-class>com.coffer.businesses.modules.store.StoreCommonUtils</function-class>
+        <function-signature>java.util.List getBankUserList(java.lang.String)
+        </function-signature>
+        <example>${sto:getBankUserList(officeId)}</example>
+    </function>
+    <!-- 根据机构ID获取机构信息 -->
+    <function>
+        <description>根据机构ID获取机构信息</description>
+        <name>getOfficeById</name>
+        <function-class>com.coffer.businesses.modules.store.StoreCommonUtils</function-class>
+        <function-signature>com.coffer.core.modules.sys.entity.Office getOfficeById(java.lang.String)
+        </function-signature>
+        <example>${sto:getOfficeById(officeId)}</example>
+    </function>
+    <!-- 获取数字化金融服务平台机构-->
+    <function>
+        <description>获取数字化金融服务平台机构</description>
+        <name>getPlatform</name>
+        <function-class>com.coffer.businesses.modules.store.StoreCommonUtils</function-class>
+        <function-signature>java.util.List getPlatform()
+        </function-signature>
+        <example>${sto:getPlatform()}</example>
+    </function>
+</taglib>

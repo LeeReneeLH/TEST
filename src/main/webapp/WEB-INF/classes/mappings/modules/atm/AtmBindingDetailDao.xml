@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.atm.v01.dao.AtmBindingDetailDao">
+
+	<resultMap id="atmBindingDetailResult" type="AtmBindingDetail">
+		<id property="detailId" column="detailId" />
+		<result property="bindingId" column="bindingId" />
+		<result property="idObj" column="idObj" />
+		<result property="boxNo" column="boxNo" />
+		<result property="createBy.id" column="createBy.id" />
+		<result property="createName" column="createName" />
+		<result property="createDate" column="createDate" />
+		<result property="updateBy.id" column="updateBy.id" />
+		<result property="updateName" column="updateName" />
+		<result property="updateDate" column="updateDate" />
+		<result property="delFlag" column="delFlag" />
+	</resultMap>
+    
+	<sql id="atmBindingDetailColumns">
+		a.detail_id AS "detailId",
+		a.binding_id AS "bindingId",
+		a.id_obj AS "idObj",
+		a.box_no AS "boxNo",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createName",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_name AS "updateName",
+		a.update_date AS "updateDate",
+		a.del_flag AS "delFlag",
+		c.mod_name AS "modName"
+	</sql>
+	
+	<sql id="atmBindingDetailJoins">
+		LEFT JOIN sto_box_info b ON b.box_no = a.box_no
+		LEFT JOIN atm_box_mod c ON c.MOD_ID = b.MOD_ID
+	</sql>
+    
+	<select id="get" resultType="AtmBindingDetail">
+		SELECT 
+			<include refid="atmBindingDetailColumns"/>
+		FROM atm_binding_detail a
+		<include refid="atmBindingDetailJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="AtmBindingDetail">
+		SELECT 
+			<include refid="atmBindingDetailColumns"/>
+		FROM atm_binding_detail a
+		<include refid="atmBindingDetailJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="bindingId!=null and bindingId!=''">
+			AND	a.binding_id=#{bindingId}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="AtmBindingDetail">
+		SELECT 
+			<include refid="atmBindingDetailColumns"/>
+		FROM atm_binding_detail a
+		<include refid="atmBindingDetailJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="getAtmBindingDetailListByBoxNo" resultMap="atmBindingDetailResult">
+		SELECT 
+			<include refid="atmBindingDetailColumns"/>
+		FROM atm_binding_detail a
+		<include refid="atmBindingDetailJoins"/> 
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+				a.del_flag = #{delFlag}
+			 <if test="boxNo != '' and boxNo != null">
+			 	AND a.box_no = #{boxNo}
+			 </if>
+		</trim>
+			ORDER BY a.update_date DESC
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO atm_binding_detail(
+			detail_id,
+			binding_id,
+			id_obj,
+			box_no,
+			create_by,
+			create_name,
+			create_date,
+			update_by,
+			update_name,
+			update_date,
+			del_flag
+		) VALUES (
+			#{detailId},
+			#{bindingId},
+			#{idObj},
+			#{boxNo},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE atm_binding_detail SET 	
+			detail_id = #{detailId},
+			binding_id = #{bindingId},
+			id_obj = #{idObj},
+			box_no = #{boxNo},
+			create_name = #{createName},
+			update_by = #{updateBy.id},
+			update_name = #{updateName},
+			update_date = #{updateDate}
+		WHERE id = #{id}
+	</update>
+	
+	<select id="findBsBusi" resultType="AtmBindingDetail">
+		SELECT 
+			t.id_obj AS "idObj",
+			t.box_no AS "boxNo"
+		FROM julong.BS_BUSI t
+		WHERE trim(t.atm_no) is null
+		AND t.box_no = #{boxNo}
+	</select>
+	
+	<update id="updateBsBusiAtmNo">
+		UPDATE julong.bs_busi t SET 	
+			t.atm_no = #{atmNo}
+		WHERE t.id_obj = #{idObj}
+	</update>
+	
+	<!-- LLF 退库钞箱修改冠字号码表 -->
+	<update id="updateBsBusiBoxNo">
+		UPDATE julong.bs_busi t SET 	
+			t.box_no = ' '
+		WHERE t.id_obj IN
+		<foreach collection="list" item="idObj" separator="," open="(" close=")" index="">
+			#{idObj}
+		</foreach>
+	</update>
+	
+	<!-- LLF 查询清点钞箱绑定明细 -->
+	<select id="findByIdObj" resultType="String">
+		SELECT T.ID_OBJ
+  			FROM ATM_BINDING_DETAIL T
+ 		<include refid="whereBindingDetail"/>
+	</select>
+	
+	<!-- LLF 修改绑定明细钞箱清点状态 -->
+	<update id="updateBindingDetailFlag">
+		UPDATE ATM_BINDING_DETAIL T
+		SET T.del_flag = '1'
+		<include refid="whereBindingDetail"/>
+	</update>
+	
+	<!-- LLF 清点钞箱绑定明细查询条件 -->
+	<sql id="whereBindingDetail">
+		WHERE T.DEL_FLAG = #{delFlag}
+   			<if test="boxNos != null and boxNos.size()>0">
+				AND T.BOX_NO IN
+				<foreach collection="boxNos" item="boxNo" separator="," open="(" close=")" index="">
+				 	#{boxNo}
+				</foreach>
+			</if>
+	</sql>
+	
+	<update id="delete">
+		UPDATE atm_binding_detail SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	<delete id="delDetailByBindingId">
+		DELETE FROM atm_binding_detail
+		WHERE binding_id = #{bindingId}
+	</delete>
+	
+</mapper>

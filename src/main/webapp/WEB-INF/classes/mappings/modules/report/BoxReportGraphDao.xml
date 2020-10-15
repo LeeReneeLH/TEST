@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.report.v01.dao.BoxReportGraphDao">
+	
+	<!-- 各机构箱袋种类和数量查询 -->
+    <select id="findBoxNumGraph" parameterType="com.coffer.businesses.modules.report.v01.entity.StoBoxInfoGraphEntity" resultType="com.coffer.businesses.modules.report.v01.entity.StoBoxInfoGraphEntity">
+    	SELECT T_3.OFFICE_ID, 
+    		   TT.NAME OFFICE_NAME, 
+    		   T_3.BOX_TYPE, 
+			<!--NVL(T_4.BOX_NUM, 0) BOX_NUM -->
+    		<if test="dbName == 'oracle'">
+				NVL(T_4.BOX_NUM, 0) BOX_NUM
+			</if>	
+			<if test="dbName == 'mysql'">
+				IFNULL(T_4.BOX_NUM, 0) BOX_NUM
+			</if>
+  		FROM (SELECT T_1.OFFICE_ID, 
+  					 T_2.BOX_TYPE
+          		FROM (
+          			SELECT DISTINCT OFFICE_ID
+                  		FROM STO_BOX_INFO  
+                  				<where>
+                  					DEL_FLAG = '0'
+               						<if test="office!=null">
+               							<if test="office.id!='' and office.id!=null">
+               								AND OFFICE_ID IN (SELECT ID FROM SYS_OFFICE WHERE PARENT_IDS like
+               								<if test="dbName == 'oracle'">'%,' || #{office.id} || ',%'</if>
+											<if test="dbName == 'mysql'">CONCAT('%,', #{office.id}, ',%')</if>	
+											)
+               							</if>
+               						</if>
+               	   				</where>) T_1,
+               
+               		(SELECT DISTINCT BOX_TYPE 
+               			FROM STO_BOX_INFO
+               				   <where>
+                  					DEL_FLAG = '0'
+               						<if test="office!=null">
+               							<if test="office.id!='' and office.id!=null">
+               								AND OFFICE_ID IN (SELECT ID FROM SYS_OFFICE WHERE PARENT_IDS like
+               								<if test="dbName == 'oracle'">'%,' || #{office.id} || ',%'</if>
+											<if test="dbName == 'mysql'">CONCAT('%,', #{office.id}, ',%')</if>	
+											)
+               							</if>
+               						</if>
+               	   				</where>) T_2
+               ) T_3
+  		LEFT JOIN
+
+ 		(SELECT BOX_TYPE, OFFICE_ID, COUNT(BOX_TYPE) AS BOX_NUM
+    		FROM STO_BOX_INFO
+   		
+   		<where>
+   			DEL_FLAG = '0'
+   			<if test="office!=null">
+        		<if test="office.id!='' and office.id!=null">
+            		and OFFICE_ID IN (SELECT ID FROM SYS_OFFICE WHERE PARENT_IDS like
+            		<if test="dbName == 'oracle'">'%,' || #{office.id} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%,', #{office.id}, ',%')</if>	
+					)
+            	</if>
+            </if>
+        </where>
+   		GROUP BY BOX_TYPE, OFFICE_ID
+  
+  		) T_4
+    		ON T_3.OFFICE_ID = T_4.OFFICE_ID
+   		AND T_3.BOX_TYPE = T_4.BOX_TYPE
+
+  		LEFT JOIN SYS_OFFICE TT
+    		ON TT.ID = T_3.OFFICE_ID
+		ORDER BY T_3.OFFICE_ID, T_3.BOX_TYPE
+    	
+    </select>
+	
+	<!-- 各机构箱袋袋状态和 数量查询-->
+	<select id="findBoxStatusGraph" parameterType="com.coffer.businesses.modules.report.v01.entity.StoBoxInfoGraphEntity" resultType="com.coffer.businesses.modules.report.v01.entity.StoBoxInfoGraphEntity">
+		SELECT T_3.OFFICE_ID,
+       			TT.NAME OFFICE_NAME,
+       			T_3.BOX_STATUS,
+       			<!-- NVL(T_4.BOX_NUM, 0) BOX_NUM -->
+       			<if test="dbName == 'oracle'">
+					NVL(T_4.BOX_NUM, 0) BOX_NUM
+				</if>	
+				<if test="dbName == 'mysql'">
+					IFNULL(T_4.BOX_NUM, 0) BOX_NUM
+				</if>
+         FROM (SELECT T_1.OFFICE_ID, T_2.BOX_STATUS
+        
+         		FROM (SELECT DISTINCT OFFICE_ID 
+         					FROM STO_BOX_INFO
+         						<where>
+                  					DEL_FLAG = '0'
+               						<if test="office!=null">
+               							<if test="office.id!='' and office.id!=null">
+               								AND OFFICE_ID IN (SELECT ID FROM SYS_OFFICE WHERE PARENT_IDS like
+               								<if test="dbName == 'oracle'">'%,' || #{office.id} || ',%'</if>
+											<if test="dbName == 'mysql'">CONCAT('%,', #{office.id}, ',%')</if>	
+											)
+               							</if>
+               						</if>
+               	   				</where>) T_1,
+                  		
+               		 (SELECT DISTINCT BOX_STATUS 
+               		 		FROM STO_BOX_INFO
+               		 			<where>
+                  					DEL_FLAG = '0'
+               						<if test="office!=null">
+               							<if test="office.id!='' and office.id!=null">
+               								AND OFFICE_ID IN (SELECT ID FROM SYS_OFFICE WHERE PARENT_IDS like
+               								<if test="dbName == 'oracle'">'%,' || #{office.id} || ',%'</if>
+											<if test="dbName == 'mysql'">CONCAT('%,', #{office.id}, ',%')</if>	
+											)
+               							</if>
+               						</if>
+               	   				</where>) T_2
+               			) T_3
+  		LEFT JOIN
+
+ 		(SELECT BOX_STATUS, OFFICE_ID, COUNT(BOX_STATUS) AS BOX_NUM
+    		FROM STO_BOX_INFO
+   		<where>
+   			DEL_FLAG = '0'
+   			<if test="office!=null">
+        		<if test="office.id!='' and office.id!=null">
+            		and OFFICE_ID IN (SELECT ID FROM SYS_OFFICE WHERE PARENT_IDS like
+            		<if test="dbName == 'oracle'">'%,' || #{office.id} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%,', #{office.id}, ',%')</if>	
+					)
+            	</if>
+            </if>
+        </where>
+   		GROUP BY BOX_STATUS, OFFICE_ID
+  
+  		) T_4
+    	  ON T_3.OFFICE_ID = T_4.OFFICE_ID
+   		  AND T_3.BOX_STATUS = T_4.BOX_STATUS
+
+  		  LEFT JOIN SYS_OFFICE TT
+    		ON TT.ID = T_3.OFFICE_ID
+		  ORDER BY T_3.OFFICE_ID, T_3.BOX_STATUS
+		
+	</select>
+	
+</mapper>

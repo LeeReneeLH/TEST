@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.core.modules.sys.dao.LoginIdSerialNumberDao">
+    
+	<sql id="serialNumberColumns">
+		a.ID AS "id",
+		a.OFFICE_ID AS "officeId",
+		a.SEQUENCE AS "sequence",
+		a.UPDATE_DATE AS "updateDate"
+	</sql>
+	
+	<sql id="serialNumberJoins">
+	</sql>
+    
+	<select id="findByOfficeId" resultType="LoginIdSerialNumber">
+		SELECT 
+			<include refid="serialNumberColumns"/>
+		FROM SYS_LOGIN_ID_SERIAL_NUMBER a
+		<include refid="serialNumberJoins"/>
+		WHERE a.OFFICE_ID = #{officeId}
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO SYS_LOGIN_ID_SERIAL_NUMBER(
+			ID,
+			OFFICE_ID,
+			SEQUENCE,
+			UPDATE_DATE
+		) VALUES (
+			#{id},
+			#{officeId},
+			#{sequence},
+			#{updateDate}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE SYS_LOGIN_ID_SERIAL_NUMBER SET 	
+			SEQUENCE = #{sequence},
+			UPDATE_DATE = #{updateDate}
+		WHERE id = #{id}
+	</update>
+</mapper>

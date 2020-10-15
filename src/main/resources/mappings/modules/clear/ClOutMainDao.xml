@@ -1,0 +1,459 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.clear.v03.dao.ClOutMainDao">
+    
+    <!-- 商行取款主表 -->
+	<!-- 查询所有的信息字段 -->
+	<sql id="clOutMainColumns">
+		a.out_no AS "allInfo.outNo",
+		a.cust_no AS "allInfo.custNo",
+		a.cust_name AS "allInfo.custName",
+		a.status AS "allInfo.status",
+		<!-- (CASE WHEN a.status = '1' THEN '登记' ELSE '冲正' END)    	AS "allInfo.statusName", -->
+		a.bus_type AS "allInfo.busType",
+		a.out_amount AS "allInfo.outAmount",
+		a.bank_man_no_a AS "allInfo.bankManNoA",
+		a.bank_man_name_a AS "allInfo.bankManNameA",
+		a.bank_man_no_b AS "allInfo.bankManNoB",
+		a.bank_man_name_b AS "allInfo.bankManNameB",
+		a.trans_man_no AS "allInfo.transManNo",
+		a.trans_man_name AS "allInfo.transManName",
+		a.check_man_no AS "allInfo.checkManNo",
+		a.check_man_name AS "allInfo.checkManName",
+		a.makesure_man_no AS "allInfo.makesureManNo",
+		a.makesure_man_name AS "allInfo.makesureManName",
+		a.create_date AS "allInfo.createDate",
+		a.create_name AS "allInfo.createName",
+		a.create_by AS "allInfo.createBy.id",
+		a.update_by AS "allInfo.updateBy.id",
+		a.update_name AS "allInfo.updateName",
+		a.update_date AS "allInfo.updateDate",
+		a.del_flag AS "allInfo.delFlag",
+		a.remarks AS "allInfo.remarks",
+		a.authorize_by          AS "allInfo.authorizeBy",
+		a.authorize_name		AS "allInfo.authorizeName",
+		a.authorize_date		AS "allInfo.authorizeDate",
+		a.authorize_reason		AS "allInfo.authorizeReason",
+		a.office_id				AS "allInfo.officeId",
+		a.office_name			AS "allInfo.officeName"
+	</sql>
+	
+	<!-- 查询出的所有信息的字段，保存到关联的Entity里 -->
+	<resultMap id="ClOutMainResult" type="com.coffer.businesses.modules.clear.v03.entity.ClOutMain">
+	    <id column="allInfo.outNo"             	property="outNo" />
+	    <result column="allInfo.custNo"     	property="rOffice.id"/>
+	    <result column="allInfo.custName"  		property="rOffice.name"/>
+	    <result column="allInfo.status"        	property="status"/>
+	    <!-- <result column="allInfo.statusName"     property="statusName"/> -->
+	    <result column="allInfo.busType"        property="busType"/>
+	    <result column="allInfo.outAmount"      property="outAmount"/>
+	    <result column="allInfo.bankManNoA"   	property="bankManNoA"/>
+	    <result column="allInfo.bankManNameA" 	property="bankManNameA"/>
+ 	    <result column="allInfo.bankManNoB"   	property="bankManNoB"/>
+	    <result column="allInfo.bankManNameB" 	property="bankManNameB"/>
+	    <result column="allInfo.transManNo"   	property="transManNo"/>
+	    <result column="allInfo.transManName" 	property="transManName"/>
+	    <result column="allInfo.checkManNo" 	property="checkManNo"/>
+	    <result column="allInfo.checkManName" 	property="checkManName"/>
+	    <result column="allInfo.makesureManNo" 	property="makesureManNo"/>
+	    <result column="allInfo.makesureManName" 	property="makesureManName"/>
+	    <result column="allInfo.remarks"     	property="remarks"/>
+	    <result column="allInfo.createBy"     	property="createBy.id"/>
+	    <result column="allInfo.createName"    	property="createName"/>
+	    <result column="allInfo.createDate"    	property="createDate"/>
+	    <result column="allInfo.updateBy"     	property="updateBy.id"/>
+	    <result column="allInfo.updateName"  	property="updateName"/>
+	    <result column="allInfo.updateDate"    	property="updateDate"/>
+	    <result column="allInfo.authorizeBy"    	property="authorizeBy.id"/>
+		<result column="allInfo.authorizeName"    	property="authorizeName"/>
+		<result column="allInfo.authorizeDate"    	property="authorizeDate"/>
+		<result column="allInfo.authorizeReason"    	property="authorizeReason"/>
+		<result column="allInfo.officeId"    	property="office.id"/>
+		<result column="allInfo.officeName"    	property="office.name"/>
+
+	    <!-- 登记机构 -->
+		<association property="rOffice" column="roffice_id" javaType="Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy" />
+		
+		<!-- add-start by QPH 2017-11-14 -->
+		<!-- 登记机构 -->
+		<association property="Office" column="office_id" javaType="Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get"  fetchType="lazy"/>
+		<!-- end -->
+	    <!--  商行取款明细 -->
+ 	    <collection column="allInfo.outNo" property="clOutDetailList" javaType="ArrayList" select="com.coffer.businesses.modules.clear.v03.dao.ClOutDetailDao.findItemsList" fetchType="lazy"/>
+	</resultMap>
+    
+    <!-- 按流水号查询主表信息 -->
+	<select id="get" resultMap="ClOutMainResult">
+		SELECT 
+			<include refid="clOutMainColumns"/>
+		FROM cl_out_main a
+		WHERE 
+		a.del_flag = '0' 
+		and a.out_no = #{outNo}
+	</select>
+	
+	<!-- 获取多条主表信息 -->
+	<select id="findList" resultMap="ClOutMainResult">
+		SELECT 
+			<include refid="clOutMainColumns"/>
+		FROM cl_out_main a
+		left join sys_office o 
+			on a.office_id=o.id
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}			
+			<!-- 查询业务类型判断  修改人：Wxz 修改时间：2017-8-29 -->
+			<if test="busType != null and busType != ''">
+				AND a.bus_type =  #{busType}
+			</if>
+			<!-- 主表：登记时间(开始) -->
+	        <if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+		        <if test="dbName == 'oracle'"> TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+			 	<if test="dbName == 'mysql'">DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <!-- 主表：登记时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+		    	AND
+		        <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.CREATE_DATE,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName == 'mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.CREATE_DATE,'%Y-%m-%d %H:%i:%s')</if>
+	        </if>        
+	        <!-- 主表：登记机构 -->
+			<if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+				AND a.CUST_NO = '${rOffice.id}'
+			</if>
+			
+			<!-- add-start by QPH 2017-11-14 -->
+			<if test="office != null and office.id != null and office.id != ''">
+				AND A.OFFICE_ID = '${office.id}'
+			</if>
+			${sqlMap.dsf}
+			<!-- end -->
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.create_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 主表数据做成 -->
+	<insert id="insert">
+		INSERT INTO cl_out_main(
+			out_no,
+			cust_no,
+			cust_name,
+			status,
+			bus_type,
+			out_amount,
+			bank_man_no_a,
+			bank_man_name_a,
+			bank_man_no_b,
+			bank_man_name_b,
+			trans_man_no,
+			trans_man_name,
+			check_man_no,
+			check_man_name,
+			makesure_man_no,
+			makesure_man_name,
+			create_date,
+			create_name,
+			create_by,
+			update_by,
+			update_name,
+			update_date,
+			del_flag,
+			remarks,
+			<!-- add-start by QPH 2017-11-14 -->
+		  	office_id,
+		  	office_name
+		 	<!-- end -->
+		) VALUES (
+			#{outNo},
+			#{rOffice.id},
+			#{rOffice.name},
+			#{status},
+			#{busType},
+			#{outAmount},
+			#{bankManNoA},
+			#{bankManNameA},
+			#{bankManNoB},
+			#{bankManNameB},
+			#{transManNo},
+			#{transManName},
+			#{checkManNo},
+			#{checkManName},
+			#{makesureManNo},
+			#{makesureManName},
+			#{createDate},
+			#{createName},
+			#{createBy.id},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate},
+			#{delFlag},
+			#{remarks},
+			<!-- add-start by QPH 2017-11-14 -->
+			#{office.id},
+			#{office.name}
+		    <!-- end -->
+		)
+	</insert>
+	
+	<!-- 状态更新 -->
+	<update id="updateStatus">
+		UPDATE cl_out_main a 
+		SET 	
+			a.update_by = #{updateBy.id},
+			a.update_name = #{updateBy.name},
+			a.update_date = #{updateDate},
+			a.STATUS = #{status},
+			a.authorize_by = #{authorizeBy.id},
+			a.authorize_name = #{authorizeBy.name},
+			a.authorize_date = #{authorizeDate},
+			a.authorize_reason = #{authorizeReason}
+		WHERE out_no = #{outNo}
+			AND a.del_flag = '0'
+	</update>
+	
+	<update id="delete">
+		UPDATE cl_out_main SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE out_no= #{outNo}
+			AND a.del_flag = '0'
+	</update>
+	
+	<select id="findClearList" resultMap="ClOutMainResult">
+		select c.cl01,c.cl02,c.cl03,c.cl04,c.cl05,c.cl06,c.cl07,c.cl08,c.cl09,c.cl10,
+       		(c.cl01 * 100 + c.cl02 * 50 + c.cl03 * 20 + c.cl04 * 10 + c.cl05 * 5 + c.cl06 * 2 + c.cl07 + c.cl08 * 0.5 + c.cl09 * 0.2 + c.cl10 * 0.1) * 1000 as totalAmt,
+       		c.ccl01,c.ccl02,c.ccl03,c.ccl04,c.ccl05,c.ccl06,c.ccl07,c.ccl08,c.ccl09,c.ccl10,
+       		(c.ccl01 * 100 + c.ccl02 * 50 + c.ccl03 * 20 + c.ccl04 * 10 + c.ccl05 * 5 + c.ccl06 * 2 + c.ccl07 + c.ccl08 * 0.5 + c.ccl09 * 0.2 + c.ccl10 * 0.1) * 1000 as totalAmtc
+  		from (select 
+  					SUM(CASE WHEN b.denomination = '01' THEN b.count_wzq ELSE 0 END) as cl01,
+               		SUM(CASE WHEN b.denomination = '02' THEN b.count_wzq ELSE 0 END) as cl02,
+               		SUM(CASE WHEN b.denomination = '03' THEN b.count_wzq ELSE 0 END) as cl03,
+         	        SUM(CASE WHEN b.denomination = '04' THEN b.count_wzq ELSE 0 END) as cl04,
+               	  	SUM(CASE WHEN b.denomination = '05' THEN b.count_wzq ELSE 0 END) as cl05,
+               	  	SUM(CASE WHEN b.denomination = '06' THEN b.count_wzq ELSE 0 END) as cl06,
+               	  	SUM(CASE WHEN b.denomination = '07' THEN b.count_wzq ELSE 0 END) as cl07,
+               	  	SUM(CASE WHEN b.denomination = '08' THEN b.count_wzq ELSE 0 END) as cl08,
+               	  	SUM(CASE WHEN b.denomination = '09' THEN b.count_wzq ELSE 0 END) as cl09,
+               	  	SUM(CASE WHEN b.denomination = '10' THEN b.count_wzq ELSE 0 END) as cl10,
+               	  	SUM(CASE WHEN b.denomination = '01' THEN b.count_csq ELSE 0 END) as ccl01,
+               		SUM(CASE WHEN b.denomination = '02' THEN b.count_csq ELSE 0 END) as ccl02,
+               		SUM(CASE WHEN b.denomination = '03' THEN b.count_csq ELSE 0 END) as ccl03,
+         	        SUM(CASE WHEN b.denomination = '04' THEN b.count_csq ELSE 0 END) as ccl04,
+               	  	SUM(CASE WHEN b.denomination = '05' THEN b.count_csq ELSE 0 END) as ccl05,
+               	  	SUM(CASE WHEN b.denomination = '06' THEN b.count_csq ELSE 0 END) as ccl06,
+               	  	SUM(CASE WHEN b.denomination = '07' THEN b.count_csq ELSE 0 END) as ccl07,
+               	  	SUM(CASE WHEN b.denomination = '08' THEN b.count_csq ELSE 0 END) as ccl08,
+               	  	SUM(CASE WHEN b.denomination = '09' THEN b.count_csq ELSE 0 END) as ccl09,
+               	  	SUM(CASE WHEN b.denomination = '10' THEN b.count_csq ELSE 0 END) as ccl10
+          	from cl_out_main a left join cl_out_detail b on a.out_no = b.out_no	
+          	left join sys_office o 
+			on a.office_id=o.id
+         	where a.del_flag = #{DEL_FLAG_NORMAL}
+           	<if test="custNo != null and custNo != ''">
+				AND a.cust_no = '${custNo}'
+			</if>
+			<if test="busType != null and busType != ''">
+				AND a.bus_type =  #{busType}
+			</if>
+			<if test="status != null and status != ''">
+				AND a.status =  #{status}
+			</if>
+           and b.del_flag = #{DEL_FLAG_NORMAL}
+           <!-- 主表：登记时间(开始) -->
+	        <if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+		        <if test="dbName == 'oracle'"> TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+			 	<if test="dbName == 'mysql'">DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <!-- 主表：登记时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+		    	AND
+		        <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.CREATE_DATE,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName == 'mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.CREATE_DATE,'%Y-%m-%d %H:%i:%s')</if>
+	        </if> 
+	         ${sqlMap.dsf} ) c
+	</select>
+	<select id="findClearLists" resultMap="ClOutMainResult">
+		select c.cl01,c.cl02,c.cl03,c.cl04,c.cl05,c.cl06,c.cl07,c.cl08,c.cl09,c.cl10,
+       		(c.cl01 * 100 + c.cl02 * 50 + c.cl03 * 20 + c.cl04 * 10 + c.cl05 * 5 + c.cl06 * 2 + c.cl07 + c.cl08 * 0.5 + c.cl09 * 0.2 + c.cl10 * 0.1) * 1000 as totalAmt,
+       		c.ccl01,c.ccl02,c.ccl03,c.ccl04,c.ccl05,c.ccl06,c.ccl07,c.ccl08,c.ccl09,c.ccl10,
+       		(c.ccl01 * 100 + c.ccl02 * 50 + c.ccl03 * 20 + c.ccl04 * 10 + c.ccl05 * 5 + c.ccl06 * 2 + c.ccl07 + c.ccl08 * 0.5 + c.ccl09 * 0.2 + c.ccl10 * 0.1) * 1000 as totalAmtc
+  		from (select 
+  					SUM(CASE WHEN b.denomination = '01' THEN b.count_dqf ELSE 0 END) as cl01,
+               		SUM(CASE WHEN b.denomination = '02' THEN b.count_dqf ELSE 0 END) as cl02,
+               		SUM(CASE WHEN b.denomination = '03' THEN b.count_dqf ELSE 0 END) as cl03,
+         	        SUM(CASE WHEN b.denomination = '04' THEN b.count_dqf ELSE 0 END) as cl04,
+               	  	SUM(CASE WHEN b.denomination = '05' THEN b.count_dqf ELSE 0 END) as cl05,
+               	  	SUM(CASE WHEN b.denomination = '06' THEN b.count_dqf ELSE 0 END) as cl06,
+               	  	SUM(CASE WHEN b.denomination = '07' THEN b.count_dqf ELSE 0 END) as cl07,
+               	  	SUM(CASE WHEN b.denomination = '08' THEN b.count_dqf ELSE 0 END) as cl08,
+               	  	SUM(CASE WHEN b.denomination = '09' THEN b.count_dqf ELSE 0 END) as cl09,
+               	  	SUM(CASE WHEN b.denomination = '10' THEN b.count_dqf ELSE 0 END) as cl10,
+               	  	SUM(CASE WHEN b.denomination = '01' THEN b.count_yqf ELSE 0 END) as ccl01,
+               		SUM(CASE WHEN b.denomination = '02' THEN b.count_yqf ELSE 0 END) as ccl02,
+               		SUM(CASE WHEN b.denomination = '03' THEN b.count_yqf ELSE 0 END) as ccl03,
+         	        SUM(CASE WHEN b.denomination = '04' THEN b.count_yqf ELSE 0 END) as ccl04,
+               	  	SUM(CASE WHEN b.denomination = '05' THEN b.count_yqf ELSE 0 END) as ccl05,
+               	  	SUM(CASE WHEN b.denomination = '06' THEN b.count_yqf ELSE 0 END) as ccl06,
+               	  	SUM(CASE WHEN b.denomination = '07' THEN b.count_yqf ELSE 0 END) as ccl07,
+               	  	SUM(CASE WHEN b.denomination = '08' THEN b.count_yqf ELSE 0 END) as ccl08,
+               	  	SUM(CASE WHEN b.denomination = '09' THEN b.count_yqf ELSE 0 END) as ccl09,
+               	  	SUM(CASE WHEN b.denomination = '10' THEN b.count_yqf ELSE 0 END) as ccl10
+          	from cl_out_main a left join cl_out_detail b on a.out_no = b.out_no	
+          	left join sys_office o 
+			on a.office_id=o.id
+         	where a.del_flag = #{DEL_FLAG_NORMAL}
+           	<if test="custNo != null and custNo != ''">
+				AND a.cust_no = '${custNo}'
+			</if>
+			<if test="busType != null and busType != ''">
+				AND a.bus_type =  #{busType}
+			</if>
+			<if test="status != null and status != ''">
+				AND a.status =  #{status}
+			</if>
+           and b.del_flag = #{DEL_FLAG_NORMAL}
+           <!-- 主表：登记时间(开始) -->
+	        <if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+		        <if test="dbName == 'oracle'"> TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+			 	<if test="dbName == 'mysql'">DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <!-- 主表：登记时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+		    	AND
+		        <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.CREATE_DATE,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName == 'mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.CREATE_DATE,'%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	         ${sqlMap.dsf}  ) c
+	</select>
+	
+	<select id="findPeopleList" resultMap="ClOutMainResult">
+		select c.cl01,c.cl02,c.cl03,c.cl04,c.cl05,c.cl06,c.cl07,c.cl08,c.cl09,c.cl10,c.custNo,
+       		(c.cl01 * 100 + c.cl02 * 50 + c.cl03 * 20 + c.cl04 * 10 + c.cl05 * 5 + c.cl06 * 2 + c.cl07 + c.cl08 * 0.5 + c.cl09 * 0.2 + c.cl10 * 0.1) * 1000 as totalAmt,
+       		c.ccl01,c.ccl02,c.ccl03,c.ccl04,c.ccl05,c.ccl06,c.ccl07,c.ccl08,c.ccl09,c.ccl10,
+       		(c.ccl01 * 100 + c.ccl02 * 50 + c.ccl03 * 20 + c.ccl04 * 10 + c.ccl05 * 5 + c.ccl06 * 2 + c.ccl07 + c.ccl08 * 0.5 + c.ccl09 * 0.2 + c.ccl10 * 0.1) * 1000 as totalAmtc
+  		from (select 
+  					SUM(CASE WHEN b.denomination = '01' THEN b.count_wzq ELSE 0 END) as cl01,
+               		SUM(CASE WHEN b.denomination = '02' THEN b.count_wzq ELSE 0 END) as cl02,
+               		SUM(CASE WHEN b.denomination = '03' THEN b.count_wzq ELSE 0 END) as cl03,
+         	        SUM(CASE WHEN b.denomination = '04' THEN b.count_wzq ELSE 0 END) as cl04,
+               	  	SUM(CASE WHEN b.denomination = '05' THEN b.count_wzq ELSE 0 END) as cl05,
+               	  	SUM(CASE WHEN b.denomination = '06' THEN b.count_wzq ELSE 0 END) as cl06,
+               	  	SUM(CASE WHEN b.denomination = '07' THEN b.count_wzq ELSE 0 END) as cl07,
+               	  	SUM(CASE WHEN b.denomination = '08' THEN b.count_wzq ELSE 0 END) as cl08,
+               	  	SUM(CASE WHEN b.denomination = '09' THEN b.count_wzq ELSE 0 END) as cl09,
+               	  	SUM(CASE WHEN b.denomination = '10' THEN b.count_wzq ELSE 0 END) as cl10,
+               	  	SUM(CASE WHEN b.denomination = '01' THEN b.count_csq ELSE 0 END) as ccl01,
+               		SUM(CASE WHEN b.denomination = '02' THEN b.count_csq ELSE 0 END) as ccl02,
+               		SUM(CASE WHEN b.denomination = '03' THEN b.count_csq ELSE 0 END) as ccl03,
+         	        SUM(CASE WHEN b.denomination = '04' THEN b.count_csq ELSE 0 END) as ccl04,
+               	  	SUM(CASE WHEN b.denomination = '05' THEN b.count_csq ELSE 0 END) as ccl05,
+               	  	SUM(CASE WHEN b.denomination = '06' THEN b.count_csq ELSE 0 END) as ccl06,
+               	  	SUM(CASE WHEN b.denomination = '07' THEN b.count_csq ELSE 0 END) as ccl07,
+               	  	SUM(CASE WHEN b.denomination = '08' THEN b.count_csq ELSE 0 END) as ccl08,
+               	  	SUM(CASE WHEN b.denomination = '09' THEN b.count_csq ELSE 0 END) as ccl09,
+               	  	SUM(CASE WHEN b.denomination = '10' THEN b.count_csq ELSE 0 END) as ccl10,
+               	  	a.cust_no as custNo
+          	from cl_out_main a left join cl_out_detail b on a.out_no = b.out_no	
+          	left join sys_office o 
+			on a.office_id=o.id
+         	where a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="busType != null and busType != ''">
+				AND a.bus_type =  #{busType}
+			</if>
+			<if test="status != null and status != ''">
+				AND a.status =  #{status}
+			</if>
+           and b.del_flag = #{DEL_FLAG_NORMAL}
+           <!-- 主表：登记时间(开始) -->
+	        <if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+		        <if test="dbName == 'oracle'"> TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+			 	<if test="dbName == 'mysql'">DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <!-- 主表：登记时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+		    	AND
+		        <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.CREATE_DATE,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName == 'mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.CREATE_DATE,'%Y-%m-%d %H:%i:%s')</if>
+	        </if>  
+	        ${sqlMap.dsf}
+	        group by a.cust_no
+	        ) c
+	</select>
+	
+	<select id="findPeopleByDayList" resultMap="ClOutMainResult">
+		select c.cl01,c.cl02,c.cl03,c.cl04,c.cl05,c.cl06,c.cl07,c.cl08,c.cl09,c.cl10,c.custNo,handInDate,
+       		(c.cl01 * 100 + c.cl02 * 50 + c.cl03 * 20 + c.cl04 * 10 + c.cl05 * 5 + c.cl06 * 2 + c.cl07 + c.cl08 * 0.5 + c.cl09 * 0.2 + c.cl10 * 0.1) * 1000 as totalAmt,
+       		c.ccl01,c.ccl02,c.ccl03,c.ccl04,c.ccl05,c.ccl06,c.ccl07,c.ccl08,c.ccl09,c.ccl10,
+       		(c.ccl01 * 100 + c.ccl02 * 50 + c.ccl03 * 20 + c.ccl04 * 10 + c.ccl05 * 5 + c.ccl06 * 2 + c.ccl07 + c.ccl08 * 0.5 + c.ccl09 * 0.2 + c.ccl10 * 0.1) * 1000 as totalAmtc
+  		from (select 
+  					SUM(CASE WHEN b.denomination = '01' THEN b.count_wzq ELSE 0 END) as cl01,
+               		SUM(CASE WHEN b.denomination = '02' THEN b.count_wzq ELSE 0 END) as cl02,
+               		SUM(CASE WHEN b.denomination = '03' THEN b.count_wzq ELSE 0 END) as cl03,
+         	        SUM(CASE WHEN b.denomination = '04' THEN b.count_wzq ELSE 0 END) as cl04,
+               	  	SUM(CASE WHEN b.denomination = '05' THEN b.count_wzq ELSE 0 END) as cl05,
+               	  	SUM(CASE WHEN b.denomination = '06' THEN b.count_wzq ELSE 0 END) as cl06,
+               	  	SUM(CASE WHEN b.denomination = '07' THEN b.count_wzq ELSE 0 END) as cl07,
+               	  	SUM(CASE WHEN b.denomination = '08' THEN b.count_wzq ELSE 0 END) as cl08,
+               	  	SUM(CASE WHEN b.denomination = '09' THEN b.count_wzq ELSE 0 END) as cl09,
+               	  	SUM(CASE WHEN b.denomination = '10' THEN b.count_wzq ELSE 0 END) as cl10,
+               	  	SUM(CASE WHEN b.denomination = '01' THEN b.count_csq ELSE 0 END) as ccl01,
+               		SUM(CASE WHEN b.denomination = '02' THEN b.count_csq ELSE 0 END) as ccl02,
+               		SUM(CASE WHEN b.denomination = '03' THEN b.count_csq ELSE 0 END) as ccl03,
+         	        SUM(CASE WHEN b.denomination = '04' THEN b.count_csq ELSE 0 END) as ccl04,
+               	  	SUM(CASE WHEN b.denomination = '05' THEN b.count_csq ELSE 0 END) as ccl05,
+               	  	SUM(CASE WHEN b.denomination = '06' THEN b.count_csq ELSE 0 END) as ccl06,
+               	  	SUM(CASE WHEN b.denomination = '07' THEN b.count_csq ELSE 0 END) as ccl07,
+               	  	SUM(CASE WHEN b.denomination = '08' THEN b.count_csq ELSE 0 END) as ccl08,
+               	  	SUM(CASE WHEN b.denomination = '09' THEN b.count_csq ELSE 0 END) as ccl09,
+               	  	SUM(CASE WHEN b.denomination = '10' THEN b.count_csq ELSE 0 END) as ccl10,
+               	  	a.cust_no as custNo,
+               	  	<if test="dbName == 'oracle'">
+				TO_CHAR(b.create_date, 'dd') AS handInDate
+			</if>
+			<if test="dbName == 'mysql'">
+					DATE_FORMAT(b.create_date,'%d') AS handInDate
+			</if>
+          	from cl_out_main a left join cl_out_detail b on a.out_no = b.out_no	
+          	left join sys_office o 
+			on a.office_id=o.id
+         	where a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="busType != null and busType != ''">
+				AND a.bus_type =  #{busType}
+			</if>
+			<if test="status != null and status != ''">
+				AND a.status =  #{status}
+			</if>
+           and b.del_flag = #{DEL_FLAG_NORMAL}
+           <!-- 主表：登记时间(开始) -->
+	        <if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+		        <if test="dbName == 'oracle'"> TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+			 	<if test="dbName == 'mysql'">DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <!-- 主表：登记时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+		    	AND
+		        <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.CREATE_DATE,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName == 'mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.CREATE_DATE,'%Y-%m-%d %H:%i:%s')</if>
+	        </if>  
+	        ${sqlMap.dsf}
+	        group by a.cust_no,
+	        <if test="dbName == 'oracle'">
+		       TO_CHAR(b.create_date, 'dd')
+		 </if>
+		 <if test="dbName == 'mysql'">
+	           DATE_FORMAT(b.create_date,'%d')
+	    </if>
+	         ) c 
+	        order by c.handInDate
+	</select>
+</mapper>

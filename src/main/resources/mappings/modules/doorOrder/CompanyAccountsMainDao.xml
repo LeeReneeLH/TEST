@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.doorOrder.v01.dao.CompanyAccountsMainDao">
+    
+	<sql id="companyAccountsMainColumns">
+		a.id AS "id",
+		a.cust_no AS "custNo",
+		o7.name AS "custName",
+		<!-- a.cust_name AS "custName", -->
+		a.type AS "type",
+		a.business_id AS "businessId",
+		a.office_id AS "officeId",
+		o7.name AS "officeName",
+		<!-- a.office_name AS "officeName", -->
+		a.company_id AS "companyId",
+		o6.name AS "companyName",
+		<!-- a.company_name AS "companyName", -->
+		a.in_amount AS "inAmount",
+		a.out_amount AS "outAmount",
+		a.company_amount AS "companyAmount",
+		a.create_by AS "createBy",
+		a.create_name AS "createName",
+		a.create_date AS "createDate",
+		a.del_flag AS "delFlag",
+		a.business_status AS "businessStatus",
+		o6.bank_card AS "bankCard"
+	</sql>
+	
+	<sql id="companyAccountsMainJoins">
+		LEFT JOIN sys_office o6 ON o6.id = a.company_id and o6.del_flag = ${delFlag.valid}
+		LEFT JOIN sys_office o7 ON o7.id = a.office_id and o7.del_flag = ${delFlag.valid}
+	</sql>
+	
+	<!-- 查询出的所有信息的字段，保存到关联的Entity里 -->
+	<resultMap id="CompanyAccountsMainResult" type="com.coffer.businesses.modules.doorOrder.v01.entity.CompanyAccountsMain">
+	    <id column="id"             	property="id" />
+	    <result column="custNo"     	property="custNo"/>
+	    <result column="custName"  		property="custName"/>
+	    <result column="type"        	property="type"/>
+	    <result column="businessId"        property="businessId"/>
+	    <result column="officeId"      	property="officeId"/>
+	    <result column="officeName"      	property="officeName"/>
+	    <result column="companyId"   	property="companyId"/>
+	    <result column="companyName" 	property="companyName"/>
+ 	    <result column="inAmount"   	property="inAmount"/>
+	    <result column="outAmount" 	property="outAmount"/>
+	    <result column="companyAmount"   	property="companyAmount"/>
+	    <result column="createBy" 	property="createBy.id"/>
+	    <result column="createName" 	property="createName"/>
+	    <result column="createDate" 	property="createDate"/>
+	    <result column="delFlag"     	property="delFlag"/>
+	    <result column="businessStatus"     	property="businessStatus"/>
+	    <result column="bankCard"     	property="bankCard"/>
+	</resultMap>
+	
+	<select id="getAccountByCompanyId" resultType="CompanyAccountsMain">
+		SELECT
+		<include refid="companyAccountsMainColumns" />
+		FROM company_accounts_main a
+		<include refid="companyAccountsMainJoins" />
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		<!-- 机构ID -->
+		<if test="companyId != null and companyId != ''">
+			AND a.company_id = #{companyId}
+		</if>
+		order by a.create_date   desc
+		LIMIT 1
+	</select>
+    
+	<select id="get" resultType="CompanyAccountsMain">
+		SELECT 
+			<include refid="companyAccountsMainColumns"/>
+		FROM company_accounts_main a
+		<include refid="companyAccountsMainJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="CompanyAccountsMain">
+		SELECT 
+			<include refid="companyAccountsMainColumns"/>
+		FROM company_accounts_main a
+		<include refid="companyAccountsMainJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<!-- 业务类型 -->
+		<if test="type != null and type != ''">
+			AND a.type = #{type}
+		</if>
+		<!-- 机构ID -->
+		<if test="companyId != null and companyId != ''">
+			AND a.company_id = #{companyId}
+		</if>
+		<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>	
+		<!-- 清分中心机构ID -->
+		<if test=" officeId != null and officeId != ''">
+			AND a.office_id = #{officeId}
+		</if>
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="CompanyAccountsMain">
+		SELECT 
+			<include refid="companyAccountsMainColumns"/>
+		FROM company_accounts_main a
+		<include refid="companyAccountsMainJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO company_accounts_main(
+			id,
+			cust_no,
+			cust_name,
+			type,
+			business_id,
+			office_id,
+			office_name,
+			company_id,
+			company_name,
+			in_amount,
+			out_amount,
+			company_amount,
+			create_by,
+			create_name,
+			create_date,
+			del_flag,
+			update_by,
+			update_name,
+			update_date,
+			business_status
+		) VALUES (
+			#{id},
+			#{custNo},
+			#{custName},
+			#{type},
+			#{businessId},
+			#{officeId},
+			#{officeName},
+			#{companyId},
+			#{companyName},
+			#{inAmount},
+			#{outAmount},
+			#{companyAmount},
+			#{createBy.id},
+			#{createBy.name},
+			#{createDate},
+			#{delFlag},
+			#{updateBy.id},
+			#{updateBy.name},
+			#{updateDate},
+			#{businessStatus}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE company_accounts_main SET 	
+			cust_no = #{custNo},
+			cust_name = #{custName},
+			type = #{type},
+			business_id = #{businessId},
+			office_id = #{officeId},
+			office_name = #{officeName},
+			company_id = #{companyId},
+			company_name = #{companyName},
+			in_amount = #{inAmount},
+			out_amount = #{outAmount},
+			company_amount = #{companyAmount},
+			update_by = #{updateBy.id},
+			update_name = #{updateBy.name},
+			update_date = #{updateDate},
+			business_status=#{businessStatus}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE company_accounts_main SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 获取公司账务代付金额 wqj -->
+	<select id="getCompanyPaidAmount" resultType="CompanyAccountsMain">
+	SELECT SUM(A.OUT_AMOUNT) AS "outAmount"
+    FROM COMPANY_ACCOUNTS_MAIN A
+    <include refid="companyAccountsMainJoins"/>
+     WHERE A.TYPE='75' AND COMPANY_ID=#{companyId}
+     <!-- 清分中心机构ID -->
+	<if test=" officeId != null and officeId != ''">
+			AND (a.office_id = #{officeId}${sqlMap.dsf})
+	</if>
+	</select>
+	
+	<!--  获取公司账务回款金额 wqj -->
+	<select id="getCompanyBackAmount" resultType="CompanyAccountsMain">
+	SELECT SUM(A.IN_AMOUNT) AS "inAmount",
+	       SUM(A.OUT_AMOUNT) AS "outAmount"
+    FROM COMPANY_ACCOUNTS_MAIN A
+    <include refid="companyAccountsMainJoins"/>
+     WHERE A.TYPE='76' AND COMPANY_ID=#{companyId}
+     <!-- 清分中心机构ID -->
+	<if test=" officeId != null and officeId != ''">
+			AND (a.office_id = #{officeId}${sqlMap.dsf})
+	</if>
+	</select>
+	
+	<!--  获取公司账务存款金额 wqj -->
+	<select id="getHaveSaveAmount" resultType="CompanyAccountsMain">
+	SELECT SUM(A.IN_AMOUNT) AS "inAmount",
+	       SUM(A.OUT_AMOUNT) AS "outAmount"
+    FROM COMPANY_ACCOUNTS_MAIN A
+    <include refid="companyAccountsMainJoins"/>
+     WHERE A.TYPE='77' AND COMPANY_ID=#{companyId}
+	</select>
+	
+</mapper>

@@ -1,0 +1,568 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.core.modules.sys.dao.ProvinceDao">
+	<sql id="provinceColumns">
+		A.ID,
+    	A.PROVINCE_CODE,
+    	A.PRO_JSONCODE,
+    	A.PRO_NAME,
+    	A.LONGITUDE,
+    	A.LATITUDE,
+		A.create_by AS "createBy.id",
+		A.create_date,
+		A.update_by AS "updateBy.id",
+		A.update_date,
+		A.del_flag
+	</sql>
+	
+	<!-- 通过id查询有效记录 -->
+	<select id="get" resultType="com.coffer.core.modules.sys.entity.ProvinceEntity">
+		SELECT <include refid="provinceColumns"/>
+			FROM sys_province A
+			  WHERE A.ID=#{id}
+	</select>
+
+	<!-- 查询所有有效记录 -->
+	<select id="findList" resultType="com.coffer.core.modules.sys.entity.ProvinceEntity">
+		SELECT <include refid="provinceColumns"/>
+			FROM sys_province A
+			<where>
+				<if test="delFlag != null and delFlag != ''">
+					AND A.DEL_FLAG=#{delFlag}
+				</if>
+				<if test="provinceCode != null and provinceCode != ''">
+					AND A.PROVINCE_CODE LIKE
+					<if test="dbName == 'oracle'">'%'|| #{provinceCode} || '%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{provinceCode}, '%')</if>
+				</if>
+				<if test="proName != null and proName != ''">
+					AND A.PRO_NAME LIKE
+					<if test="dbName == 'oracle'">'%'|| #{proName} || '%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{proName}, '%')</if>
+				</if>
+			</where>
+			<if test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</if>
+			
+	</select>
+	
+	<!-- 插入记录 -->
+	<insert id="insert">
+		INSERT INTO sys_province(
+			ID,
+			PROVINCE_CODE,
+			PRO_JSONCODE, 
+			PRO_NAME, 
+			LONGITUDE, 
+			LATITUDE, 
+			CREATE_BY, 
+			CREATE_DATE, 
+			UPDATE_BY, 
+			UPDATE_DATE, 
+			DEL_FLAG
+		) VALUES (
+			#{id}, 
+			#{provinceCode},
+			#{proJsonCode}, 
+			#{proName}, 
+			#{longitude}, 
+			#{latitude}, 
+			#{createBy.id}, 
+			#{createDate}, 
+			#{updateBy.id}, 
+			#{updateDate}, 
+			#{delFlag}
+		)
+	</insert>
+	
+	<!-- 更新记录 -->
+	<update id="update">
+		UPDATE sys_province SET 
+			PROVINCE_CODE= #{provinceCode},
+			PRO_JSONCODE=#{proJsonCode}, 
+			PRO_NAME= #{proName}, 
+			LONGITUDE = #{longitude}, 
+			LATITUDE = #{latitude}, 
+			UPDATE_BY = #{updateBy.id}, 
+			UPDATE_DATE = #{updateDate}
+		WHERE ID = #{id}
+	</update>
+	
+	<!-- 逻辑删除记录 -->
+	<update id="delete">
+		UPDATE sys_province SET 
+			DEL_FLAG = #{DEL_FLAG_DELETE}
+		WHERE ID = #{id}
+	</update>
+	
+	<!-- 删除标识更改为有效 -->
+	<update id="revert">
+		UPDATE sys_province SET 
+			DEL_FLAG = #{DEL_FLAG_NORMAL}
+		WHERE ID = #{id}
+	</update>
+	
+	<sql id="officeProMapColumns">
+	  A.ID,
+	  A.PARENT_ID,
+ 	  A.NAME,
+	  A.PROVINCE_CODE,
+	  A.TYPE,
+	  A.LONGITUDE,
+	  A.LATITUDE,
+	  A.ADDRESS
+	</sql>
+	
+	<sql id="proMapColumns">
+	  T2.PRO_NAME,
+	  T1.ID AS OFFICE_ID,
+	  T1.PARENT_ID,
+	  T1.NAME AS OFFICE_NAME,
+	  T1.TYPE,
+	  T2.LONGITUDE,
+	  T2.LATITUDE
+	</sql>
+	
+	<sql id="proCondiColumns">
+		AND A.DEL_FLAG = '0'
+		AND A.PROVINCE_CODE IS NOT NULL
+		<if test="dbName == 'mysql'">
+			AND A.PROVINCE_CODE &lt;&gt; ''
+		</if>
+	</sql>
+	
+	<!-- 查询当前金库/网点的父/子机构省份信息 -->
+	<select id="findProvinceData" resultType="com.coffer.core.modules.sys.entity.ProvinceEntity">
+		SELECT
+		  <include refid="proMapColumns"></include>
+		  <!-- IF((T1.LONGITUDE &lt;&gt; '' AND T1.LONGITUDE IS NOT NULL),T1.LONGITUDE,T2.LONGITUDE) AS LONGITUDE,
+		  IF((T1.LATITUDE &lt;&gt; '' AND T1.LATITUDE IS NOT NULL),T1.LATITUDE,T2.LATITUDE) AS LATITUDE -->
+		FROM
+			(
+				SELECT
+				  <include refid="officeProMapColumns"></include>
+				FROM
+				  sys_office A
+				WHERE
+				  (
+					A.ID = #{id}
+					OR A.ID = (
+					  SELECT
+						PARENT_ID
+					  FROM
+						sys_office
+					  WHERE
+						ID = #{id}
+				)
+				   OR A.PARENT_ID = #{id}
+			  )
+			   AND A.TYPE NOT IN ('0','6')
+			   <include refid="proCondiColumns"></include>
+	 	) T1
+		LEFT JOIN SYS_PROVINCE T2 
+			ON T1.PROVINCE_CODE=T2.PROVINCE_CODE
+	</select>
+	
+	<!-- 查询当前人行的父/子机构以及同级人行的省份信息 -->
+	<select id="findProGenData" resultType="com.coffer.core.modules.sys.entity.ProvinceEntity">
+	SELECT
+		  <include refid="proMapColumns"></include>
+		FROM
+			(
+				SELECT
+				  <include refid="officeProMapColumns"></include>
+				FROM
+				  sys_office A
+				WHERE
+				  (
+					A.ID = #{id}
+					OR A.ID = (
+					  SELECT
+						PARENT_ID
+					  FROM
+						sys_office
+					  WHERE
+						ID = #{id}
+				)
+				   OR A.PARENT_ID = #{id}
+			  )
+			   AND A.TYPE NOT IN ('0','6')
+			   <include refid="proCondiColumns"></include>
+			   
+			   UNION
+			   
+			   SELECT
+				  <include refid="officeProMapColumns"></include>
+				FROM
+				  sys_office A
+				WHERE
+				 A.PARENT_ID = #{parentId}
+			   AND A.TYPE = '1'
+			  <include refid="proCondiColumns"></include>
+	 	) T1
+		LEFT JOIN SYS_PROVINCE T2 
+			ON T1.PROVINCE_CODE=T2.PROVINCE_CODE
+	</select>
+	
+	<!-- 查询与清分中心有关的地图数据 -->
+	<select id="findClearProData" resultType="com.coffer.core.modules.sys.entity.ProvinceEntity">
+		SELECT
+		 <include refid="proMapColumns"></include>
+		FROM
+			(
+				SELECT
+				 <include refid="officeProMapColumns"></include>
+				FROM
+				  sys_office A
+			<where>
+					A.PARENT_ID = #{parentId}
+				AND A.TYPE = '3'
+				<include refid="proCondiColumns"></include>
+			</where>
+			
+			UNION
+			
+			SELECT
+				 <include refid="officeProMapColumns"></include>
+				FROM
+				  sys_office A
+			<where>
+				(
+					ID = #{id}
+					OR ID = #{parentId}
+				)
+				AND A.TYPE IN ('1','6')
+				<include refid="proCondiColumns"></include>
+			</where>
+	 	) T1
+		LEFT JOIN SYS_PROVINCE T2 
+			ON T1.PROVINCE_CODE=T2.PROVINCE_CODE
+	</select>
+	
+	<!-- ADD by qph 2018-01-18 -->
+	<!-- 查询与清分中心有关的地图数据 -->
+	<select id="findClearProDataByPlat" resultType="com.coffer.core.modules.sys.entity.ProvinceEntity">
+		SELECT
+		 <include refid="proMapColumns"></include>
+		FROM
+			(
+				SELECT
+				 <include refid="officeProMapColumns"></include>
+				FROM
+				  sys_office A
+			<where>
+					 A.TYPE = '6'
+					<if test="dbName == 'mysql'">
+				AND A.PROVINCE_CODE &lt;&gt; #{provinceCode}
+				</if>
+				<if test="dbName == 'oracle'">
+				AND A.PROVINCE_CODE != #{provinceCode}
+				</if>
+				<include refid="proCondiColumns"></include>
+			</where>
+			
+			UNION
+			
+			SELECT
+				 <include refid="officeProMapColumns"></include>
+				FROM
+				  sys_office A
+			<where>
+				(
+					ID = #{id}
+				)
+				AND A.TYPE IN ('7')
+				<include refid="proCondiColumns"></include>
+			</where>
+	 	) T1
+		LEFT JOIN SYS_PROVINCE T2 
+			ON T1.PROVINCE_CODE=T2.PROVINCE_CODE
+	</select>
+	
+	<!-- 查询与清分中心有关的地图数据 -->
+	<select id="findClearProDataByClear" resultType="com.coffer.core.modules.sys.entity.ProvinceEntity">
+		SELECT
+		 <include refid="proMapColumns"></include>
+		FROM
+			(
+				SELECT
+				 <include refid="officeProMapColumns"></include>
+				FROM
+				  sys_office A
+			<where>
+					A.PARENT_ID = #{parentId}
+				AND A.TYPE  IN ('3','1')
+				<if test="dbName == 'mysql'">
+				AND A.PROVINCE_CODE &lt;&gt; #{provinceCode}
+				</if>
+				<if test="dbName == 'oracle'">
+				AND A.PROVINCE_CODE != #{provinceCode}
+				</if>
+				<include refid="proCondiColumns"></include>
+			</where>
+			
+			UNION
+			
+			SELECT
+				 <include refid="officeProMapColumns"></include>
+				FROM
+				  sys_office A
+			<where>
+				(
+					ID = #{id}
+					OR ID = #{parentId}
+				)
+				AND A.TYPE IN ('6')
+				<include refid="proCondiColumns"></include>
+			</where>
+	 	) T1
+		LEFT JOIN SYS_PROVINCE T2 
+			ON T1.PROVINCE_CODE=T2.PROVINCE_CODE
+	</select>
+	
+	
+	
+	<!-- ADD by qph 2018-01-23 -->
+	<!-- 查询与清分中心有关的地图数据(在线地图) -->
+	<select id="findOnlineClearProDataByClear" resultType="com.coffer.core.modules.sys.entity.ProvinceEntity">
+		SELECT
+		      T1.PROVINCE_CODE,
+       T1.LONGITUDE,
+       T1.LATITUDE,
+       T1.ID        AS OFFICE_ID,
+       T1.PARENT_ID,
+       T1.NAME      AS OFFICE_NAME,
+       T1.TYPE,
+       T1.ADDRESS  
+		FROM
+			(
+				SELECT
+				 <include refid="officeProMapColumns"></include>
+				FROM
+				  sys_office A
+			<where>
+					A.PARENT_ID = #{parentId}
+				AND A.TYPE  IN ('3','6')
+				AND A.DEL_FLAG = '0'
+				<if test="dbName == 'mysql'">
+				AND (( A.LONGITUDE &lt;&gt; '' and
+    				A.LATITUDE &lt;&gt; ''))
+				</if>
+				<if test="dbName == 'oracle'">
+				AND (( A.LONGITUDE != ' ' and
+    				A.LATITUDE != ' '))
+				</if>
+			</where>
+			
+			UNION
+			
+			SELECT
+				 <include refid="officeProMapColumns"></include>
+				FROM
+				  sys_office A
+			<where>
+				(
+					ID = #{id}
+					OR ID = #{parentId}
+				)
+				AND A.TYPE IN ('6')
+				AND A.DEL_FLAG = '0'
+				<if test="dbName == 'mysql'">
+				AND ((A.PROVINCE_CODE IS NOT NULL
+				AND A.PROVINCE_CODE &lt;&gt; '') or ( A.LONGITUDE &lt;&gt; '' and
+    				A.LATITUDE &lt;&gt; ''))
+				</if>
+				<if test="dbName == 'oracle'">
+				AND ((A.PROVINCE_CODE IS NOT NULL
+				AND A.PROVINCE_CODE !=' ') or ( A.LONGITUDE != ' ' and
+    				A.LATITUDE != ' '))
+				</if>
+			</where>
+	 	) T1
+
+	</select>
+	
+	<!-- 查询与清分中心有关的地图数据(在线地图) -->
+	<select id="findOnlineClearProDataByPlat" resultType="com.coffer.core.modules.sys.entity.ProvinceEntity">
+		SELECT
+		      T1.PROVINCE_CODE,
+       T1.LONGITUDE,
+       T1.LATITUDE,
+       T1.ID        AS OFFICE_ID,
+       T1.PARENT_ID,
+       T1.NAME      AS OFFICE_NAME,
+       T1.TYPE,
+       T1.ADDRESS  
+		FROM
+			(
+				SELECT
+				 <include refid="officeProMapColumns"></include>
+				FROM
+				  sys_office A
+			<where>
+				A.TYPE  IN ('6')
+				AND A.DEL_FLAG = '0'
+				<if test="dbName == 'mysql'">
+				AND ( A.LONGITUDE &lt;&gt; ' ' and
+    				A.LATITUDE &lt;&gt; ' ')
+				</if>
+				<if test="dbName == 'oracle'">
+				AND ( A.LONGITUDE != ' ' and
+    				A.LATITUDE != ' ')
+				</if>
+			</where>
+			
+			UNION
+			
+			SELECT
+				 <include refid="officeProMapColumns"></include>
+				FROM
+				  sys_office A
+			<where>
+				(
+					ID = #{id}
+				)
+				AND A.TYPE IN ('7')
+				AND A.DEL_FLAG = '0'
+				<if test="dbName == 'mysql'">
+				AND ((A.PROVINCE_CODE IS NOT NULL
+				AND A.PROVINCE_CODE &lt;&gt; '') or ( A.LONGITUDE &lt;&gt; '' and
+    				A.LATITUDE &lt;&gt; ''))
+				</if>
+				<if test="dbName == 'oracle'">
+				AND ((A.PROVINCE_CODE IS NOT NULL
+				AND A.PROVINCE_CODE !=' ') or ( A.LONGITUDE != ' ' and
+    				A.LATITUDE != ' '))
+				</if>
+			</where>
+	 	) T1
+
+	</select>
+	<!-- end -->
+	
+	<!-- 查询与当前人行有上缴业务往来的机构 -->
+	<select id="findGenChildProData" resultType="com.coffer.core.modules.sys.entity.ProvinceEntity">
+		SELECT
+		 <!--  T2.PRO_NAME,
+		  T1.ID AS OFFICE_ID,
+		  T1.NAME AS OFFICE_NAME,
+		  T1.type,
+		  T2.LONGITUDE,
+		  T2.LATITUDE -->
+		 <include refid="proMapColumns"></include>
+		FROM
+			(
+				SELECT
+				  <include refid="officeProMapColumns"></include>
+				FROM
+					(
+						SELECT
+							ROFFICE_ID
+						FROM
+							pboc_all_allocate_info
+						WHERE
+							BUSINESS_TYPE IN ('50','51','52','53','54')
+						AND AOFFICE_ID = #{gentralId}
+						AND STATUS = '99'
+		 				AND DEL_FLAG = '0'
+						GROUP BY
+							ROFFICE_ID
+						
+									) T_1
+				, sys_office A WHERE T_1.ROFFICE_ID = A.ID
+							   AND A.PROVINCE_CODE IS NOT NULL
+							   AND A.PROVINCE_CODE &lt;&gt; ''
+					 	) T1
+		LEFT JOIN SYS_PROVINCE T2 
+			ON T1.PROVINCE_CODE=T2.PROVINCE_CODE
+	</select>
+	
+	<!-- 查询与当前人行有下拨业务往来的机构 -->
+	<select id="findGenParProData" resultType="com.coffer.core.modules.sys.entity.ProvinceEntity">
+		SELECT
+		<include refid="proMapColumns"></include>
+		 <!--  T2.PRO_NAME,
+		  T1.ID AS OFFICE_ID,
+		  T1.NAME AS OFFICE_NAME,
+		  T1.type,
+		  T2.LONGITUDE,
+		  T2.LATITUDE -->
+		FROM
+			(
+				SELECT
+				  <include refid="officeProMapColumns"></include>
+				FROM
+					(
+						SELECT
+							AOFFICE_ID
+						FROM
+							pboc_all_allocate_info
+						WHERE
+							BUSINESS_TYPE IN ('50','51','52','53','54')
+						AND ROFFICE_ID = #{gentralId}
+						AND STATUS = '99'
+		 				AND DEL_FLAG = '0'
+						GROUP BY
+							AOFFICE_ID
+					) T_1
+				, sys_office A WHERE T_1.AOFFICE_ID = A.ID
+							   AND A.PROVINCE_CODE IS NOT NULL
+							   AND A.PROVINCE_CODE &lt;&gt; ''
+						
+					 	) T1
+		LEFT JOIN SYS_PROVINCE T2 
+			ON T1.PROVINCE_CODE=T2.PROVINCE_CODE
+	</select>
+	
+	<select id="findCurProOffice" resultType="com.coffer.core.modules.sys.entity.ProvinceEntity">
+		SELECT
+		  <include refid="proMapColumns"></include>
+		FROM
+			(
+				SELECT
+				 <include refid="officeProMapColumns"></include>
+				FROM
+				  sys_office A
+				WHERE
+					A.ID = #{gentralId}
+					AND	A.DEL_FLAG = '0'
+			   AND A.PROVINCE_CODE IS NOT NULL
+			   AND A.PROVINCE_CODE &lt;&gt; ''
+	 	) T1
+		LEFT JOIN SYS_PROVINCE T2 
+			ON T1.PROVINCE_CODE=T2.PROVINCE_CODE
+	</select>
+	
+	<!-- 查询省份表有效数据 -->
+	<select id="findSelect2ProData" resultType="com.coffer.core.modules.sys.entity.ProvinceEntity">
+		SELECT PROVINCE_CODE, PRO_NAME
+		 	FROM SYS_PROVINCE
+		 	  WHERE DEL_FLAG='0'
+		 	  ORDER BY 
+		 	  <if test="dbName == 'oracle'">NLSSORT(PRO_NAME,'NLS_SORT = SCHINESE_PINYIN_M')</if>
+			  <if test="dbName == 'mysql'">CONVERT(PRO_NAME USING gbk) COLLATE gbk_chinese_ci ASC</if>
+	</select>
+
+	<!-- 查询省份名称 -->
+	<select id="findProName" resultType="String">
+		SELECT PRO_NAME 
+		  FROM SYS_PROVINCE
+		    WHERE PROVINCE_CODE=#{provinceCode} AND DEL_FLAG='0'
+	</select>
+	
+	<!-- 查询有效省份数量 -->
+	<select id="findProNum" resultType="int">
+		SELECT count(*) 
+		  	FROM SYS_PROVINCE
+		    	WHERE PROVINCE_CODE=#{provinceCode} AND DEL_FLAG='0'
+	</select>
+	
+	<!-- 查询省份的地图json编码 -->
+	<select id="findProJsonCode" resultType="String">
+		SELECT PRO_JSONCODE 
+		  	FROM SYS_PROVINCE
+		    	WHERE PROVINCE_CODE=#{provinceCode} AND DEL_FLAG='0'
+	</select>
+	
+</mapper>

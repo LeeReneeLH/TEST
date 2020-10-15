@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.allocation.v01.dao.AllHandoverInfoDao">	
+	<resultMap id="handoverResult" type="com.coffer.businesses.modules.allocation.v01.entity.AllHandoverInfo">
+		<id column="handInfo.handoverId" property="handoverId"/>
+		<result column="handInfo.createDate" property="createDate"/>
+        <result column="handInfo.acceptDate" property="acceptDate"/>
+        <collection column="handInfo.handoverId" property="detailList" javaType="ArrayList" select="com.coffer.businesses.modules.allocation.v01.dao.AllHandoverDetailDao.findListByHandoverId" fetchType="lazy"></collection>
+	</resultMap>
+	
+	
+	
+	<!-- 查询指定流水号的交接信息 -->
+	<select id="get" resultMap="handoverResult">
+		SELECT
+			a.handover_id AS "handInfo.handoverId",
+			a.create_date AS "handInfo.createDate",
+			a.accept_date AS "handInfo.acceptDate"
+		FROM 
+			all_handover_info a
+		WHERE a.handover_id = #{handoverId}
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO all_handover_info(
+			handover_id,
+			create_date,
+			accept_date
+		) VALUES (
+			#{handoverId},
+			#{createDate},
+			#{acceptDate}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE all_handover_info 
+		SET
+		<if test="acceptDate != null and acceptDate != ''">
+			accept_date = #{acceptDate}
+		</if>
+		WHERE handover_id = #{handoverId}
+	</update>
+	
+	<update id="delete">
+		DELETE FROM all_allocate_info
+		WHERE HANDOVER_ID = #{handoverId}
+	</update>
+	
+	<!-- 查询待交接的任务信息 -->
+	<select id="getHandoverTaskList" resultType="Map">
+   select distinct T.HANDOVER_ID as "taskId",
+                   API.ADD_PLAN_NAME as "taskName",
+                   T.BOX_NUM as "boxNum",
+                   <if test="dbName == 'oracle'">TO_CHAR(T.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') as "createTime"</if>
+                   <if test="dbName == 'mysql'">DATE_FORMAT(T.CREATE_DATE, '%Y-%m-%d %H:%i:%S') as "createTime"</if>
+     from ALL_HANDOVER_INFO T
+     left join ALL_ALLOCATE_INFO AAI
+       on T.ALL_ID = AAI.ALL_ID
+     left join ATM_PLAN_INFO API
+       on AAI.ADD_PLAN_ID = API.ADD_PLAN_ID
+    where CONCAT(T.BUSINESS_TYPE, T.INOUT_TYPE) = #{taskType}
+      and T.OFFICE_ID = #{officeId}
+      and T.TASK_FLAG = '0'
+    order by "createTime" desc
+	</select>
+	
+	<select id="getSignInfoByHandoverId" resultMap="handoverResult">
+		SELECT 
+			a.INOUT_TYPE as "handInfo.inoutType", 
+			a.HANDOVER_ID as "handInfo.handoverId",
+			a.HANDOVER_USER_NAME as "handInfo.handoverUserName",
+			a.ACCEPT_USER_NAME  as "handInfo.acceptUserName",
+			a.HANDOVER_USER_SIGN_PIC_1 as "handInfo.handoverUserSignPic1",
+			a.HANDOVER_USER_SIGN_PIC_2 as "handInfo.handoverUserSignPic2",
+			a.ACCEPT_USER_SIGN_PIC_1 as "handInfo.acceptUserSignPic1",
+			a.ACCEPT_USER_SIGN_PIC_2 as "handInfo.acceptUserSignPic2"
+		FROM all_handover_info a
+		WHERE a.ALL_ID = #{allocationInfo.allId}
+	</select>
+</mapper>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v02.dao.StoDocTempUserDetailDao">
+	<sql id="stoDocTempUserDetailColumns">
+		ID,
+		DOC_INFO_ID,
+		ESCORT_ID,
+		RESPONSIBILITY_TYPE
+	</sql>
+	<resultMap  id="stoDocTempUserDetailResultMap" type="com.coffer.businesses.modules.store.v02.entity.StoDocTempUserDetail">
+		<id column="ID" property="id"/>
+		<result column="DOC_INFO_ID" property="docInfoId"/>
+		<result column="ESCORT_ID" property="escortId"/>
+		<result column="RESPONSIBILITY_TYPE" property="responsibilityType"/>
+		<association property="stoEscortInfo" column="ESCORT_ID" javaType="StoEscortInfo" select="com.coffer.businesses.modules.store.v01.dao.StoEscortInfoDao.get"/>
+	</resultMap>
+	<select id="findUserDetailByDocTempId" resultMap="stoDocTempUserDetailResultMap">
+		SELECT 
+			<include refid="stoDocTempUserDetailColumns"></include>
+		FROM STO_DOC_TEMP_USER_DETAIL
+		WHERE DOC_INFO_ID=#{ID}
+	</select>
+	<insert id="insert">
+		INSERT INTO STO_DOC_TEMP_USER_DETAIL(
+			ID,
+			DOC_INFO_ID,
+			ESCORT_ID,
+			RESPONSIBILITY_TYPE
+		) VALUES (
+			#{id},
+			#{docInfoId},
+			#{escortId},
+			#{responsibilityType}
+		)
+	</insert>
+	<update id="deleteByDocInfoId">
+		DELETE FROM STO_DOC_TEMP_USER_DETAIL 
+		WHERE DOC_INFO_ID = #{docInfoId}
+	</update>
+</mapper>

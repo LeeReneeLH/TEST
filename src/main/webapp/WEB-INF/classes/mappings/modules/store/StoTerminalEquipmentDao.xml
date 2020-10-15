@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoTerminalEquipmentDao">
+    
+	<sql id="stoTerminalEquipmentColumns">
+		a.te_id AS "teId",
+		a.te_name AS "teName",
+		a.te_type AS "teType",
+		<if test="displayDialFg == true">
+		a.dial_id AS "dialId",
+		a.dial_pwd AS "dialPwd",
+		</if>
+		a.te_status AS "teStatus",
+		a.office_id AS "office.id",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		o5.name AS "office.name"
+	</sql>
+	
+	<sql id="stoTerminalEquipmentJoins">
+		LEFT JOIN sys_office o5 ON o5.id = a.office_id
+	</sql>
+	
+	<sql id="whereCondition">
+		a.del_flag = '0'
+		<!-- 机构ID -->
+		<if test="office != null and office.id != null and office.id != ''">
+			and a.office_id = #{office.id}
+		</if>
+		<!-- 设备类型 -->
+		<if test="teType != null and teType != ''">
+			and a.te_type = #{teType}
+		</if>
+		<!-- 设备串号 -->
+		<if test="id != null and id != '' and displayDialFg != true">
+			and a.te_id like 
+			<!-- '%'||#{id}||'%' -->
+			<if test="dbName == 'oracle'">'%'||#{id}||'%'</if>
+			<if test="dbName == 'mysql'">CONCAT('%', #{id}, '%')</if>
+		</if>
+		<!-- 设备状态 -->
+		<if test="teStatus != null and teStatus != ''">
+			and a.te_status = #{teStatus}
+		</if>
+	</sql>
+    
+	<select id="getTe" resultType="StoTerminalEquipment">
+		SELECT 
+			<include refid="stoTerminalEquipmentColumns"/>
+		FROM sto_terminal_equipment a
+		<include refid="stoTerminalEquipmentJoins"/>
+		WHERE a.te_id = #{id}
+	</select>
+	
+	<select id="findList" resultType="StoTerminalEquipment">
+		SELECT 
+			<include refid="stoTerminalEquipmentColumns"/>
+		FROM sto_terminal_equipment a
+		<include refid="stoTerminalEquipmentJoins"/>
+		<where>
+			<include refid="whereCondition" />
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="StoTerminalEquipment">
+		SELECT 
+			<include refid="stoTerminalEquipmentColumns"/>
+		FROM sto_terminal_equipment a
+		<include refid="stoTerminalEquipmentJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO sto_terminal_equipment(
+			te_id,
+			te_name,
+			te_type,
+			dial_id,
+			dial_pwd,
+			te_status,
+			office_id,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{teName},
+			#{teType},
+			#{dialId},
+			#{dialPwd},
+			#{teStatus},
+			#{office.id},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE sto_terminal_equipment SET 	
+			te_name = #{teName},
+			te_type = #{teType},
+			<!-- 经李东确认，如果拨号id和拨号密码没录入，就保持原样，不清空 -->
+			<if test="dialId != null and dialId != ''">
+			dial_id = #{dialId},
+			</if>
+			<if test="dialPwd != null and dialPwd != ''">
+			dial_pwd = #{dialPwd},
+			</if>
+			te_status = #{teStatus},
+			office_id = #{office.id},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE te_id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE sto_terminal_equipment SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE te_id = #{id}
+	</update>
+	
+</mapper>

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.activiti.org/test">
+  <process id="pbocHorizontalOut" name="调拨出库" isExecutable="true">
+    <startEvent id="startevent1" name="Start" activiti:formKey="/allocation/v02/pbocHorizontalAllocatedOutStore/form?menuId=70"></startEvent>
+    <endEvent id="endevent1" name="End"></endEvent>
+    <userTask id="ext.doorScan" name="出库扫描" activiti:candidateGroups="pbocStoreMgr" activiti:extensionId="com.julong.palette.usertask.ext.DoorScanUserTask">
+      <extensionElements>
+        <activiti:taskListener event="complete" class="com.coffer.core.modules.act.listener.PbocActTaskListener"></activiti:taskListener>
+      </extensionElements>
+    </userTask>
+    <userTask id="ext.faceHandover" name="人脸交接" activiti:candidateGroups="pbocStoreMgr" activiti:extensionId="com.julong.palette.usertask.ext.FaceHandoverUserTask">
+      <extensionElements>
+        <activiti:taskListener event="complete" class="com.coffer.core.modules.act.listener.PbocActTaskListener"></activiti:taskListener>
+      </extensionElements>
+    </userTask>
+    <userTask id="ext.quotaMoney" name="配款" activiti:candidateGroups="pbocMgr" activiti:extensionId="com.julong.palette.usertask.ext.QuotaMoneyUserTask">
+      <extensionElements>
+        <activiti:taskListener event="complete" class="com.coffer.core.modules.act.listener.PbocActTaskListener"></activiti:taskListener>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="flow2" sourceRef="ext.quotaMoney" targetRef="ext.doorScan"></sequenceFlow>
+    <sequenceFlow id="flow4" sourceRef="ext.faceHandover" targetRef="endevent1"></sequenceFlow>
+    <exclusiveGateway id="exclusivegateway1" name="Exclusive Gateway"></exclusiveGateway>
+    <sequenceFlow id="flow5" sourceRef="ext.doorScan" targetRef="exclusivegateway1"></sequenceFlow>
+    <sequenceFlow id="flow6" name="交接" sourceRef="exclusivegateway1" targetRef="ext.faceHandover">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${handoverFlag=='true'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow7" name="未交接" sourceRef="exclusivegateway1" targetRef="endevent1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${handoverFlag=='false'}]]></conditionExpression>
+    </sequenceFlow>
+    <userTask id="ext.orderRegister" name="登记" activiti:candidateGroups="pbocMgr" activiti:extensionId="com.julong.palette.usertask.ext.OrderRegisterUserTask">
+      <extensionElements>
+        <activiti:taskListener event="complete" class="com.coffer.core.modules.act.listener.PbocActTaskListener"></activiti:taskListener>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="flow8" sourceRef="startevent1" targetRef="ext.orderRegister"></sequenceFlow>
+    <sequenceFlow id="flow9" sourceRef="ext.orderRegister" targetRef="ext.quotaMoney"></sequenceFlow>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_pbocHorizontalOut">
+    <bpmndi:BPMNPlane bpmnElement="pbocHorizontalOut" id="BPMNPlane_pbocHorizontalOut">
+      <bpmndi:BPMNShape bpmnElement="startevent1" id="BPMNShape_startevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="50.0" y="270.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endevent1" id="BPMNShape_endevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="1220.0" y="270.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="ext.doorScan" id="BPMNShape_ext.doorScan">
+        <omgdc:Bounds height="115.0" width="165.0" x="610.0" y="230.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="ext.faceHandover" id="BPMNShape_ext.faceHandover">
+        <omgdc:Bounds height="115.0" width="165.0" x="970.0" y="230.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="ext.quotaMoney" id="BPMNShape_ext.quotaMoney">
+        <omgdc:Bounds height="115.0" width="165.0" x="380.0" y="230.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway1" id="BPMNShape_exclusivegateway1">
+        <omgdc:Bounds height="40.0" width="40.0" x="851.0" y="267.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="ext.orderRegister" id="BPMNShape_ext.orderRegister">
+        <omgdc:Bounds height="115.0" width="165.0" x="150.0" y="230.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flow2" id="BPMNEdge_flow2">
+        <omgdi:waypoint x="545.0" y="287.0"></omgdi:waypoint>
+        <omgdi:waypoint x="610.0" y="287.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow4" id="BPMNEdge_flow4">
+        <omgdi:waypoint x="1135.0" y="287.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1220.0" y="287.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow5" id="BPMNEdge_flow5">
+        <omgdi:waypoint x="775.0" y="287.0"></omgdi:waypoint>
+        <omgdi:waypoint x="851.0" y="287.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow6" id="BPMNEdge_flow6">
+        <omgdi:waypoint x="891.0" y="287.0"></omgdi:waypoint>
+        <omgdi:waypoint x="970.0" y="287.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="24.0" x="909.0" y="270.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow7" id="BPMNEdge_flow7">
+        <omgdi:waypoint x="871.0" y="267.0"></omgdi:waypoint>
+        <omgdi:waypoint x="871.0" y="172.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1059.0" y="172.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1237.0" y="172.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1237.0" y="270.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="36.0" x="1035.0" y="151.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow8" id="BPMNEdge_flow8">
+        <omgdi:waypoint x="85.0" y="287.0"></omgdi:waypoint>
+        <omgdi:waypoint x="150.0" y="287.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow9" id="BPMNEdge_flow9">
+        <omgdi:waypoint x="315.0" y="287.0"></omgdi:waypoint>
+        <omgdi:waypoint x="380.0" y="287.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

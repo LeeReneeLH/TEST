@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.allocation.v02.dao.PbocAllAllocateInfoHistoryDao">
+
+	<resultMap id="PbocAllAllocateInfoResult" type="com.coffer.businesses.modules.allocation.v02.entity.PbocAllAllocateInfo">
+		<id column="all_id" property="allId" />
+		<result column="all_id" property="id" />
+		<result column="business_type" property="businessType" />
+		<result column="inout_type" property="inoutType" />
+		<result column="add_plan_id" property="addPlanId" />
+		<result column="add_amount" property="addAmount" />
+		<result column="route_id" property="routeId" />
+		<result column="route_name" property="routeName" />
+		<result column="roffice_name" property="rofficeName" />
+		<result column="agent_office_name" property="agentOfficeName" />
+		<result column="aoffice_name" property="aofficeName" />
+		<result column="register_number" property="registerNumber" />
+		<result column="accept_number" property="acceptNumber" />
+		<result column="register_amount" property="registerAmount" />
+		<result column="confirm_amount" property="confirmAmount" />
+		<result column="apply_date" property="applyDate" />
+		<result column="status" property="status" />
+		<result column="create_by" property="createBy.id" />
+		<result column="create_name" property="createName" />
+		<result column="create_date" property="createDate" />
+		<result column="accept_by" property="acceptBy.id" />
+		<result column="accept_name" property="acceptName" />
+		<result column="accept_date" property="acceptDate" />
+		<result column="update_by" property="updateBy.id" />
+		<result column="update_name" property="updateName" />
+		<result column="update_date" property="updateDate" />
+		<result column="del_flag" property="delFlag" />
+		<result column="check_result" property="checkResult" />
+		<result column="authorizer" property="authorizer" />
+		<result column="store_handover_id" property="storeHandoverId" />
+		<result column="quota_person_id" property="quotaPersonId" />
+		<result column="quota_person_name" property="quotaPersonName" />
+		<result column="quota_date" property="quotaDate" />
+		<result column="approval_by" property="approvalBy.id" />
+		<result column="approval_name" property="approvalName" />
+		<result column="approval_date" property="approvalDate" />
+		<result column="scan_gate_date" property="scanGateDate" />
+		<result column="in_store_scan_gate_date" property="inStoreScanGateDate" />
+		<result column="instore_amount" property="instoreAmount" />
+		<result column="outstore_amount" property="outstoreAmount" />
+		<result column="str_update_date" property="strUpdateDate" />
+		<result column="version" property="version" />
+		<result column="CANCELLING_STOCKS_FLAG" property="cancellingStocksFlag" />
+		<result column="ALLOCATE_IN_AFTER_OUT_FLAG" property="allocateInAfterOutFlag" />
+		<result column="ALLOCATE_OUT_ALLIDS" property="allocateOutAllIds" />
+		<result column="COMMOND_NUMBER" property="commondNumber" />
+		<result column="REMARKS" property="remarks" />
+		<!-- 登记机构 -->
+		<association property="roffice" column="roffice_id" javaType="Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy" />
+		<!-- 接收机构 -->
+		<association property="aoffice" column="aoffice_id" javaType="Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy" />
+		<!-- 代理登记机构 -->
+		<association property="agentOffice" column="agent_office_id" javaType="Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy"/>
+		<!-- 代理登记机构 -->
+		<association property="pbocAllHandoverInfo" column="all_id" javaType="PbocAllHandoverInfo" select="com.coffer.businesses.modules.allocation.v02.dao.PbocAllHandoverInfoDao.getByAllId" fetchType="lazy" />
+		<!-- 调拨物品明细 -->
+		<collection property="pbocAllAllocateItemList" column="all_id" javaType="ArrayList" ofType="PbocAllAllocateItem"
+		select="com.coffer.businesses.modules.allocation.v02.dao.PbocAllAllocateItemsDao.findListByAllId" fetchType="lazy" />
+		<!-- 出库箱包明细 -->
+		<collection property="pbocAllAllocateDetailList" column="all_id" javaType="ArrayList" ofType="PbocAllAllocateDetail"
+		select="com.coffer.businesses.modules.allocation.v02.dao.PbocAllAllocateDetailDao.getByAllId" fetchType="lazy" />
+	</resultMap>
+	
+	<sql id="pbocAllAllocateInfoColumns">
+		all_id,
+		business_type,
+		inout_type,
+		add_plan_id,
+		add_amount,
+		route_id,
+		route_name,
+		roffice_id,
+		roffice_name,
+		aoffice_id,
+		aoffice_name,
+		<!-- 王林    追加                         B-->
+		agent_office_id,
+		agent_office_name,
+		<!-- 王林    追加                         E-->
+		register_number,
+		accept_number,
+		register_amount,
+		confirm_amount,
+		apply_date,
+		status,
+		create_by,
+		create_name,
+		create_date,
+		accept_by,
+		accept_name,
+		accept_date,
+		update_by,
+		update_name,
+		update_date,
+		del_flag,
+		check_result,
+		authorizer,
+		store_handover_id,
+		quota_person_by,
+		quota_person_name,
+		quota_date,
+		approval_by,
+		approval_name,
+		approval_date,
+		scan_gate_date,
+		in_store_scan_gate_date,
+		instore_amount,
+		outstore_amount,
+		CANCELLING_STOCKS_FLAG,
+		version,
+		COMMOND_NUMBER,
+		ALLOCATE_IN_AFTER_OUT_FLAG,
+		ALLOCATE_OUT_ALLIDS,
+		REMARKS
+	</sql>
+	
+	<select id="showOperateHistory" resultMap="PbocAllAllocateInfoResult">
+		SELECT 
+            <include refid="pbocAllAllocateInfoColumns"/>
+		FROM PBOC_ALL_ALLOCATE_INFO_HISTORY a
+		<where>
+			<if test="allId != null and allId != ''">
+				a.ALL_ID =#{allId}
+			</if>
+			<if test="status != null and status != ''">
+				and a.STATUS =#{status}
+			</if>
+		</where>
+		ORDER BY a.UPDATE_DATE DESC
+	</select>	
+	
+	<!-- 查询流水信息 -->
+    <select id= "findStatus" resultType = "PbocAllAllocateInfo">
+    	SELECT 
+    		   DISTINCT STATUS,
+    		   ALL_ID,
+    		   BUSINESS_TYPE,
+    		   UPDATE_DATE,
+    		   UPDATE_NAME
+    	FROM PBOC_ALL_ALLOCATE_INFO_HISTORY
+    	<where>
+			<if test="allId != null and allId != ''">
+			    ALL_ID = #{allId}
+			</if>
+			<if test="businessType != null and businessType != ''">
+    		    AND BUSINESS_TYPE = #{businessType}
+    		</if>
+    	</where>
+    	ORDER BY UPDATE_DATE
+    </select>
+    
+    <!-- 查询流水明细 -->
+    <select id= "findDetail" resultMap="PbocAllAllocateInfoResult">
+    	SELECT 
+    		<include refid="pbocAllAllocateInfoColumns"/>
+    	FROM(
+    		SELECT 
+    		<if test="dbName == 'oracle'">
+    			ROWNUM AS RNUM,
+    		</if>
+    		<include refid="pbocAllAllocateInfoColumns"/>
+	    	FROM PBOC_ALL_ALLOCATE_INFO_HISTORY 
+	    	<where>
+				<if test="allId != null and allId != ''">
+				    ALL_ID = #{allId}
+				</if>
+				<if test="businessType != null and businessType != ''">
+	    		    AND BUSINESS_TYPE = #{businessType}
+	    		</if>
+	    		<if test="status != null and status != ''">
+				    AND STATUS =#{status}
+				</if>
+			</where>
+				ORDER BY UPDATE_DATE DESC
+    		) B
+		<if test="dbName == 'oracle'">
+		WHERE B.RNUM = 1
+		</if>
+		<if test="dbName == 'mysql'">
+		LIMIT 1
+		</if>
+    </select>
+    
+</mapper>

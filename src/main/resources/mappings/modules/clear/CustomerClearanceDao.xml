@@ -1,0 +1,625 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.clear.v03.dao.CustomerClearanceDao">
+
+	<sql id="customerClearanceColumns">
+		
+	</sql>
+	
+	<sql id="customerClearanceJoins">
+	</sql>
+    	
+		<!-- 查询商行取款、代理上缴、从人行复点入库、每日数据以及计算每日总金额 -->
+	<select id="findListCustomerClearance" resultType="CustomerClearance">
+		
+		SELECT custNo,custName,filterCondition,officeId,officeName,
+			cl1,cl2,cl3,cl4,cl5,cl6,cl7,cl8,cl9,cl10,
+			re1,re2,re3,re4,re5,re6,re7,re8,re9,re10,
+			atm1,atm2,atm3,
+			<if test="dbName == 'oracle'">(NVL(cl1,0)*100*1000+ NVL(cl2,0)*50*1000+ NVL(cl3,0)*20*1000 + NVL(cl4,0)*10*1000+ NVL(cl5,0)*5*1000+ 
+			NVL(cl6,0)*2*1000+ NVL(cl7,0)*1*1000+ NVL(cl8,0)*5*100+ NVL(cl9,0)*2*100+ NVL(cl10,0)*1*100 +
+			NVL(re1,0)*100*1000+ NVL(re2,0)*50*1000+ NVL(re3,0)*20*1000 + NVL(re4,0)*10*1000+ NVL(re5,0)*5*1000+ 
+			NVL(re6,0)*2*1000+ NVL(re7,0)*1*1000+ NVL(re8,0)*5*100+ NVL(re9,0)*2*100+ NVL(re10,0)*1*100 +
+			NVL(atm1,0)*100*1000+ NVL(atm2,0)*50*1000+ NVL(atm3,0)*20*1000 ) as count </if>
+			
+			<if test="dbName=='mysql'">(IFNULL(cl1,0)*100*1000+ IFNULL(cl2,0)*50*1000+ IFNULL(cl3,0)*20*1000 + IFNULL(cl4,0)*10*1000+ IFNULL(cl5,0)*5*1000+ 
+			IFNULL(cl6,0)*2*1000+ IFNULL(cl7,0)*1*1000+ IFNULL(cl8,0)*5*100+ IFNULL(cl9,0)*2*100+ IFNULL(cl10,0)*1*100 +
+			IFNULL(re1,0)*100*1000+ IFNULL(re2,0)*50*1000+ IFNULL(re3,0)*20*1000 + IFNULL(re4,0)*10*1000+ IFNULL(re5,0)*5*1000+ 
+			IFNULL(re6,0)*2*1000+ IFNULL(re7,0)*1*1000+ IFNULL(re8,0)*5*100+ IFNULL(re9,0)*2*100+ IFNULL(re10,0)*1*100 +
+			IFNULL(atm1,0)*100*1000+ IFNULL(atm2,0)*50*1000+ IFNULL(atm3,0)*20*1000) as count</if> 
+			
+		 FROM
+		   ( SELECT
+				t.CUST_NO   AS custNo,
+				t.CUST_NAME AS custName,
+				t.office_id AS officeId,
+				t.office_name AS officeName,
+			<if test="dbName == 'oracle'">TO_CHAR(t.CREATE_DATE, 'yyyy-mm-dd') AS filterCondition,</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(t.CREATE_DATE, '%Y-%m-%d') AS filterCondition,</if>
+				
+				<if test="dbName == 'oracle'">
+				SUM(CASE WHEN m.DENOMINATION = '01'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl1,
+				SUM(CASE WHEN m.DENOMINATION = '02'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl2,
+				SUM(CASE WHEN m.DENOMINATION = '03'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl3,
+				SUM(CASE WHEN m.DENOMINATION = '04'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl4,
+				SUM(CASE WHEN m.DENOMINATION = '05'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl5,
+				SUM(CASE WHEN m.DENOMINATION = '06'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl6,
+				SUM(CASE WHEN m.DENOMINATION = '07'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl7,
+				SUM(CASE WHEN m.DENOMINATION = '08'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl8,
+				SUM(CASE WHEN m.DENOMINATION = '09'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl9,
+				SUM(CASE WHEN m.DENOMINATION = '10'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl10,
+				</if>
+				<if test="dbName=='mysql'">
+				SUM(CASE WHEN m.DENOMINATION = '01'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl1,
+				SUM(CASE WHEN m.DENOMINATION = '02'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl2,
+				SUM(CASE WHEN m.DENOMINATION = '03'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl3,
+				SUM(CASE WHEN m.DENOMINATION = '04'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl4,
+				SUM(CASE WHEN m.DENOMINATION = '05'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl5,
+				SUM(CASE WHEN m.DENOMINATION = '06'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl6,
+				SUM(CASE WHEN m.DENOMINATION = '07'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl7,
+				SUM(CASE WHEN m.DENOMINATION = '08'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl8,
+				SUM(CASE WHEN m.DENOMINATION = '09'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl9,
+				SUM(CASE WHEN m.DENOMINATION = '10'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl10,
+				</if>
+				SUM(CASE WHEN m.DENOMINATION = '01'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re1,
+				SUM(CASE WHEN m.DENOMINATION = '02'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re2,
+				SUM(CASE WHEN m.DENOMINATION = '03'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re3,
+				SUM(CASE WHEN m.DENOMINATION = '04'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re4,
+				SUM(CASE WHEN m.DENOMINATION = '05'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re5,
+				SUM(CASE WHEN m.DENOMINATION = '06'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re6,
+				SUM(CASE WHEN m.DENOMINATION = '07'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re7,
+				SUM(CASE WHEN m.DENOMINATION = '08'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re8,
+				SUM(CASE WHEN m.DENOMINATION = '09'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re9,
+				SUM(CASE WHEN m.DENOMINATION = '10'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re10,
+				SUM(CASE WHEN m.DENOMINATION = '01'  THEN m.COUNT_ATM ELSE null END) as atm1,
+				SUM(CASE WHEN m.DENOMINATION = '02'  THEN m.COUNT_ATM ELSE null END) as atm2,
+				SUM(CASE WHEN m.DENOMINATION = '03'  THEN m.COUNT_ATM ELSE null END) as atm3
+		
+			FROM
+				cl_out_main t left join sys_office o 
+			on t.office_id=o.id,
+				cl_out_detail m
+			<where>
+				t.OUT_NO = m.OUT_NO
+				<!-- 业务类型 -->
+			<if test="businessTypes != null and businessTypes.size != 0">
+				AND t.bus_type IN 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+			 	#{businessTypes[${index}]}
+				</foreach>
+			</if>
+			 <!-- 状态 -->
+			<if test="status != null and status != ''">
+	            AND t.status = #{status}
+	        </if>
+			<!-- 主表：登记机构 -->
+			<if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+				AND t.CUST_NO = '${rOffice.id}'
+			</if>
+			<!-- 机构名称 -->
+			<if test="custName != null and custName != ''">
+				AND t.CUST_NAME = '${custName}'
+			</if>
+			<!-- 机构编号 -->
+			<if test="custNo != null and custNo != ''">
+				AND t.CUST_NO = '${custNo}'
+			</if>
+			<!-- 开始日期 -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				AND
+	   			  <if test="dbName == 'oracle'">TO_CHAR(t.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				  <if test="dbName=='mysql'">DATE_FORMAT(t.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	    	 <!--结束日期 -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	        	<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(t.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(t.create_date, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	        
+	        <!-- add-start by QPH 2017-11-14 -->
+			<if test="office != null and office.id != null and office.id != ''">
+				AND t.OFFICE_ID = '${office.id}'
+			</if>
+              ${sqlMap.dsf}
+	   		</where>
+	   		<if test="dbName == 'oracle'">GROUP BY t.CUST_NO,t.CUST_NAME, TO_CHAR(t.CREATE_DATE, 'yyyy-mm-dd'),t.office_id,t.office_name</if>
+			<if test="dbName=='mysql'">GROUP BY t.CUST_NO,t.CUST_NAME,DATE_FORMAT(t.CREATE_DATE, '%Y-%m-%d'),t.office_id,t.office_name</if>	 	
+			) datas
+		<where>
+			<!-- 去除显示为空数据 -->
+			<if test="dbName == 'oracle'">(NVL(cl1,0)+ NVL(cl2,0)+ NVL(cl3,0)+ NVL(cl4,0)+ NVL(cl5,0)+ 
+				NVL(cl6,0)+ NVL(cl7,0)+ NVL(cl8,0)+ NVL(cl9,0)+ NVL(cl10,0) +
+				NVL(re1,0)+ NVL(re2,0)+ NVL(re3,0) + NVL(re4,0)+ NVL(re5,0)+ 
+				NVL(re6,0)+ NVL(re7,0)+ NVL(re8,0)+ NVL(re9,0)+ NVL(re10,0) +
+				NVL(atm1,0)+ NVL(atm2,0)+ NVL(atm3,0)) != 0</if>
+				
+			<if test="dbName=='mysql'">(IFNULL(cl1,0)+ IFNULL(cl2,0)+ IFNULL(cl3,0)+ IFNULL(cl4,0)+ IFNULL(cl5,0)+ 
+				IFNULL(cl6,0)+ IFNULL(cl7,0)+ IFNULL(cl8,0)+ IFNULL(cl9,0)+ IFNULL(cl10,0) +
+				IFNULL(re1,0)+ IFNULL(re2,0)+ IFNULL(re3,0) + IFNULL(re4,0)+ IFNULL(re5,0)+ 
+				IFNULL(re6,0)+ IFNULL(re7,0)+ IFNULL(re8,0)+ IFNULL(re9,0)+ IFNULL(re10,0) +
+				IFNULL(atm1,0)+ IFNULL(atm2,0)+ IFNULL(atm3,0)) != 0</if>
+				
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY filterCondition desc,custNo
+			</otherwise>
+		</choose>
+	</select>
+		
+		<!-- 查询商行取款、代理上缴、从人行复点入库、对应金额总数量-->
+	<select id="findAllCount" resultType="CustomerClearance">
+		
+		SELECT 
+			cl1,cl2,cl3,cl4,cl5,cl6,cl7,cl8,cl9,cl10,
+			re1,re2,re3,re4,re5,re6,re7,re8,re9,re10,
+			atm1,atm2,atm3
+		 FROM
+		   ( SELECT	
+				<if test="dbName == 'oracle'">
+				SUM(CASE WHEN m.DENOMINATION = '01'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl1,
+				SUM(CASE WHEN m.DENOMINATION = '02'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl2,
+				SUM(CASE WHEN m.DENOMINATION = '03'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl3,
+				SUM(CASE WHEN m.DENOMINATION = '04'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl4,
+				SUM(CASE WHEN m.DENOMINATION = '05'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl5,
+				SUM(CASE WHEN m.DENOMINATION = '06'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl6,
+				SUM(CASE WHEN m.DENOMINATION = '07'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl7,
+				SUM(CASE WHEN m.DENOMINATION = '08'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl8,
+				SUM(CASE WHEN m.DENOMINATION = '09'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl9,
+				SUM(CASE WHEN m.DENOMINATION = '10'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl10,
+				</if>
+				<if test="dbName=='mysql'">
+				SUM(CASE WHEN m.DENOMINATION = '01'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl1,
+				SUM(CASE WHEN m.DENOMINATION = '02'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl2,
+				SUM(CASE WHEN m.DENOMINATION = '03'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl3,
+				SUM(CASE WHEN m.DENOMINATION = '04'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl4,
+				SUM(CASE WHEN m.DENOMINATION = '05'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl5,
+				SUM(CASE WHEN m.DENOMINATION = '06'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl6,
+				SUM(CASE WHEN m.DENOMINATION = '07'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl7,
+				SUM(CASE WHEN m.DENOMINATION = '08'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl8,
+				SUM(CASE WHEN m.DENOMINATION = '09'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl9,
+				SUM(CASE WHEN m.DENOMINATION = '10'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl10,
+				</if>
+				SUM(CASE WHEN m.DENOMINATION = '01'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re1,
+				SUM(CASE WHEN m.DENOMINATION = '02'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re2,
+				SUM(CASE WHEN m.DENOMINATION = '03'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re3,
+				SUM(CASE WHEN m.DENOMINATION = '04'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re4,
+				SUM(CASE WHEN m.DENOMINATION = '05'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re5,
+				SUM(CASE WHEN m.DENOMINATION = '06'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re6,
+				SUM(CASE WHEN m.DENOMINATION = '07'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re7,
+				SUM(CASE WHEN m.DENOMINATION = '08'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re8,
+				SUM(CASE WHEN m.DENOMINATION = '09'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re9,
+				SUM(CASE WHEN m.DENOMINATION = '10'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re10,
+				SUM(CASE WHEN m.DENOMINATION = '01'  THEN m.COUNT_ATM ELSE null END) as atm1,
+				SUM(CASE WHEN m.DENOMINATION = '02'  THEN m.COUNT_ATM ELSE null END) as atm2,
+				SUM(CASE WHEN m.DENOMINATION = '03'  THEN m.COUNT_ATM ELSE null END) as atm3
+		
+			FROM
+				cl_out_main t left join sys_office o 
+			on t.office_id=o.id,
+				cl_out_detail m
+			<where>
+				t.OUT_NO = m.OUT_NO
+				<!-- 业务类型 -->
+			<if test="businessTypes != null and businessTypes.size != 0">
+				AND t.bus_type IN 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+			 	#{businessTypes[${index}]}
+				</foreach>
+			</if>
+			 <!-- 状态 -->
+			<if test="status != null and status != ''">
+	            AND t.status = #{status}
+	        </if>
+			<!-- 主表：登记机构 -->
+			<if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+				AND t.CUST_NO = '${rOffice.id}'
+			</if>
+			<!-- 机构名称 -->
+			<if test="custName != null and custName != ''">
+				AND t.CUST_NAME = '${custName}'
+			</if>
+			<!-- 开始日期 -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				AND
+	   			  <if test="dbName == 'oracle'">TO_CHAR(t.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				  <if test="dbName=='mysql'">DATE_FORMAT(t.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	    	 <!--结束日期 -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	        	<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(t.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(t.create_date, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	        
+	        <!-- add-start by QPH 2017-11-14 -->
+			<if test="office != null and office.id != null and office.id != ''">
+				AND t.OFFICE_ID = '${office.id}'
+			</if>
+              ${sqlMap.dsf}
+	   		</where>	 	
+			) datas
+		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>	
+		<!-- 员工清点量统计图 -->
+	<select id="findListCustomerQuantity" resultType="CustomerClearance">
+		SELECT 	m.CUST_NO AS custNo,
+				m.CUST_NAME AS custName,
+				m.BUS_TYPE  AS busType,
+				d.DENOMINATION AS denomination,
+				<if test="dbName == 'oracle'">
+						TO_CHAR(m.CREATE_DATE, '${filterCondition}') AS dates,
+					</if>
+					<if test="dbName == 'mysql'">
+						<if test="filterCondition == 'yyyy'">
+							DATE_FORMAT(m.CREATE_DATE, '%Y')  AS dates,
+						</if>
+						<if test="filterCondition == 'yyyy-mm'">
+							DATE_FORMAT(m.CREATE_DATE, '%Y-%m')  AS dates,
+						</if>
+						<if test="filterCondition == 'yyyy-Q'">
+							CONCAT(YEAR(m.CREATE_DATE),'-',quarter(m.CREATE_DATE))  AS dates,
+						</if>
+						<if test="filterCondition == 'yyyy-IW'">
+							DATE_FORMAT(m.CREATE_DATE,'%Y-%u')  AS dates,
+						</if>
+						<if test="filterCondition == 'yyyy-mm-dd'">
+							DATE_FORMAT(m.CREATE_DATE,'%Y-%m-%d') AS dates,
+						</if>
+					</if>
+				SUM(d.COUNT_DQF) AS countDqf,
+				SUM(d.COUNT_YQF) AS countYqf,
+				SUM(d.COUNT_ATM) AS countAtm,
+				SUM(d.COUNT_WZQ) AS countWzq,
+				SUM(d.COUNT_CSQ) AS countCsq,
+				SUM(d.COUNT)     AS count
+		FROM cl_out_main m left join sys_office o on m.office_id=o.id,cl_out_detail d
+		<where>
+			 m.OUT_NO = d.OUT_NO
+			
+			<if test="businessTypes != null and businessTypes.size != 0">
+				AND m.BUS_TYPE IN 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+			 	#{businessTypes[${index}]}
+				</foreach>
+			</if>
+			 <!-- 状态 -->
+			<if test="status != null and status != ''">
+	            AND m.STATUS = #{status}
+	        </if>
+			<!-- 机构名称 -->
+			<if test="custName != null and custName != ''">
+				AND m.CUST_NAME = '${custName}'
+			</if>
+			<!-- 机构编号 -->
+			<if test="custNo != null and custNo != ''">
+				AND m.CUST_NO = '${custNo}'
+			</if>
+			<!-- 开始日期 -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				AND
+	   			  <if test="dbName == 'oracle'">TO_CHAR(m.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				  <if test="dbName=='mysql'">DATE_FORMAT(m.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	    	 <!--结束日期 -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	        	<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(m.CREATE_DATE,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(m.CREATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	        
+	         <!-- add-start by QPH 2017-11-14 -->
+			<!-- <if test="office != null and office.id != null and office.id != ''"> -->
+			<if test="officeId != null and officeId != ''">
+				AND m.OFFICE_ID = '${officeId}'
+			</if>
+				${sqlMap.dsf}
+			<!-- </if> -->
+	    
+		</where>
+			 <if test="dbName == 'oracle'">
+				 GROUP BY m.CUST_NO,m.CUST_NAME,TO_CHAR(m.CREATE_DATE, '${filterCondition}'),d.DENOMINATION,m.bus_type
+			</if>
+			<if test="dbName == 'mysql'">
+				<if test="filterCondition == 'yyyy'">
+					GROUP BY m.CUST_NO,m.CUST_NAME,DATE_FORMAT(m.CREATE_DATE, '%Y') ,d.DENOMINATION,m.bus_type
+				</if>
+				<if test="filterCondition == 'yyyy-mm'">
+					GROUP BY m.CUST_NO,m.CUST_NAME,DATE_FORMAT(m.CREATE_DATE, '%Y-%m') ,d.DENOMINATION,m.bus_type
+				</if>
+				<if test="filterCondition == 'yyyy-Q'">
+					GROUP BY m.CUST_NO,m.CUST_NAME,CONCAT(YEAR(m.CREATE_DATE),'-',quarter(m.CREATE_DATE)) ,d.DENOMINATION,m.bus_type
+				</if>
+				<if test="filterCondition == 'yyyy-IW'">
+					GROUP BY m.CUST_NO,m.CUST_NAME,DATE_FORMAT(m.CREATE_DATE,'%Y-%u') ,d.DENOMINATION,m.bus_type
+				</if>
+				<if test="filterCondition == 'yyyy-mm-dd'">
+					GROUP BY m.CUST_NO,m.CUST_NAME,DATE_FORMAT(m.CREATE_DATE,'%Y-%m-%d'),d.DENOMINATION,m.bus_type
+				</if>
+			</if>
+				<!-- GROUP BY m.CUST_NAME,DATE_FORMAT(m.CREATE_DATE,'%Y-%m-%d'),d.DENOMINATION -->
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+					<if test="dbName == 'oracle'">
+						ORDER BY  TO_CHAR(m.CREATE_DATE, '${filterCondition}') 
+					</if>
+					<if test="dbName == 'mysql'">
+						<if test="filterCondition == 'yyyy'">
+						ORDER BY DATE_FORMAT(m.CREATE_DATE, '%Y')  
+						</if>
+						<if test="filterCondition == 'yyyy-mm'">
+						ORDER BY DATE_FORMAT(m.CREATE_DATE, '%Y-%m') 
+						</if>
+						<if test="filterCondition == 'yyyy-Q'">
+						ORDER BY CONCAT(YEAR(m.CREATE_DATE),'-',quarter(m.CREATE_DATE)) 
+						</if>
+						<if test="filterCondition == 'yyyy-IW'">
+						ORDER BY DATE_FORMAT(m.CREATE_DATE,'%Y-%u') 
+						</if>
+						<if test="filterCondition == 'yyyy-mm-dd'">
+						ORDER BY DATE_FORMAT(m.CREATE_DATE,'%Y-%m-%d') 
+						</if>
+					</if>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 查询商行取款、代理上缴、从人行复点入库、按时间查询所有数据以及计算总金额 -->
+	<select id="findListCustomerClearanceAll" resultType="CustomerClearance">
+		
+		SELECT custNo,custName,
+			cl1,cl2,cl3,cl4,cl5,cl6,cl7,cl8,cl9,cl10,
+			re1,re2,re3,re4,re5,re6,re7,re8,re9,re10,
+			atm1,atm2,atm3,
+			<if test="dbName == 'oracle'">(NVL(cl1,0)*100*1000+ NVL(cl2,0)*50*1000+ NVL(cl3,0)*20*1000 + NVL(cl4,0)*10*1000+ NVL(cl5,0)*5*1000+ 
+			NVL(cl6,0)*2*1000+ NVL(cl7,0)*1*1000+ NVL(cl8,0)*5*100+ NVL(cl9,0)*2*100+ NVL(cl10,0)*1*100 +
+			NVL(re1,0)*100*1000+ NVL(re2,0)*50*1000+ NVL(re3,0)*20*1000 + NVL(re4,0)*10*1000+ NVL(re5,0)*5*1000+ 
+			NVL(re6,0)*2*1000+ NVL(re7,0)*1*1000+ NVL(re8,0)*5*100+ NVL(re9,0)*2*100+ NVL(re10,0)*1*100 +
+			NVL(atm1,0)*100*1000+ NVL(atm2,0)*50*1000+ NVL(atm3,0)*20*1000 ) as count </if>
+			
+			<if test="dbName=='mysql'">(IFNULL(cl1,0)*100*1000+ IFNULL(cl2,0)*50*1000+ IFNULL(cl3,0)*20*1000 + IFNULL(cl4,0)*10*1000+ IFNULL(cl5,0)*5*1000+ 
+			IFNULL(cl6,0)*2*1000+ IFNULL(cl7,0)*1*1000+ IFNULL(cl8,0)*5*100+ IFNULL(cl9,0)*2*100+ IFNULL(cl10,0)*1*100 +
+			IFNULL(re1,0)*100*1000+ IFNULL(re2,0)*50*1000+ IFNULL(re3,0)*20*1000 + IFNULL(re4,0)*10*1000+ IFNULL(re5,0)*5*1000+ 
+			IFNULL(re6,0)*2*1000+ IFNULL(re7,0)*1*1000+ IFNULL(re8,0)*5*100+ IFNULL(re9,0)*2*100+ IFNULL(re10,0)*1*100 +
+			IFNULL(atm1,0)*100*1000+ IFNULL(atm2,0)*50*1000+ IFNULL(atm3,0)*20*1000) as count</if> 
+			
+		 FROM
+		   ( SELECT
+				t.CUST_NO   AS custNo,
+				t.CUST_NAME AS custName,
+			
+				<if test="dbName == 'oracle'">
+				SUM(CASE WHEN m.DENOMINATION = '01'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl1,
+				SUM(CASE WHEN m.DENOMINATION = '02'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl2,
+				SUM(CASE WHEN m.DENOMINATION = '03'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl3,
+				SUM(CASE WHEN m.DENOMINATION = '04'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl4,
+				SUM(CASE WHEN m.DENOMINATION = '05'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl5,
+				SUM(CASE WHEN m.DENOMINATION = '06'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl6,
+				SUM(CASE WHEN m.DENOMINATION = '07'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl7,
+				SUM(CASE WHEN m.DENOMINATION = '08'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl8,
+				SUM(CASE WHEN m.DENOMINATION = '09'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl9,
+				SUM(CASE WHEN m.DENOMINATION = '10'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl10,
+				</if>
+				<if test="dbName=='mysql'">
+				SUM(CASE WHEN m.DENOMINATION = '01'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl1,
+				SUM(CASE WHEN m.DENOMINATION = '02'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl2,
+				SUM(CASE WHEN m.DENOMINATION = '03'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl3,
+				SUM(CASE WHEN m.DENOMINATION = '04'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl4,
+				SUM(CASE WHEN m.DENOMINATION = '05'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl5,
+				SUM(CASE WHEN m.DENOMINATION = '06'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl6,
+				SUM(CASE WHEN m.DENOMINATION = '07'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl7,
+				SUM(CASE WHEN m.DENOMINATION = '08'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl8,
+				SUM(CASE WHEN m.DENOMINATION = '09'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl9,
+				SUM(CASE WHEN m.DENOMINATION = '10'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl10,
+				</if>
+				SUM(CASE WHEN m.DENOMINATION = '01'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re1,
+				SUM(CASE WHEN m.DENOMINATION = '02'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re2,
+				SUM(CASE WHEN m.DENOMINATION = '03'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re3,
+				SUM(CASE WHEN m.DENOMINATION = '04'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re4,
+				SUM(CASE WHEN m.DENOMINATION = '05'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re5,
+				SUM(CASE WHEN m.DENOMINATION = '06'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re6,
+				SUM(CASE WHEN m.DENOMINATION = '07'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re7,
+				SUM(CASE WHEN m.DENOMINATION = '08'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re8,
+				SUM(CASE WHEN m.DENOMINATION = '09'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re9,
+				SUM(CASE WHEN m.DENOMINATION = '10'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re10,
+				SUM(CASE WHEN m.DENOMINATION = '01'  THEN m.COUNT_ATM ELSE null END) as atm1,
+				SUM(CASE WHEN m.DENOMINATION = '02'  THEN m.COUNT_ATM ELSE null END) as atm2,
+				SUM(CASE WHEN m.DENOMINATION = '03'  THEN m.COUNT_ATM ELSE null END) as atm3
+		
+			FROM
+				cl_out_main t left join sys_office o on t.office_id=o.id,
+				cl_out_detail m
+			<where>
+				t.OUT_NO = m.OUT_NO
+				<!-- 业务类型 -->
+			<if test="businessTypes != null and businessTypes.size != 0">
+				AND t.bus_type IN 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+			 	#{businessTypes[${index}]}
+				</foreach>
+			</if>
+			 <!-- 状态 -->
+			<if test="status != null and status != ''">
+	            AND t.status = #{status}
+	        </if>
+			<!-- 主表：登记机构 -->
+			<!-- <if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+				AND t.CUST_NO = '${rOffice.id}'
+			</if> -->
+			<!-- 机构名称 -->
+			<if test="custName != null and custName != ''">
+				AND t.CUST_NAME = '${custName}'
+			</if>
+			<if test="custNo != null and custNo != ''">
+				AND t.CUST_NO = '${custNo}'
+			</if>
+			<!-- 开始日期 -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				AND
+	   			  <if test="dbName == 'oracle'">TO_CHAR(t.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				  <if test="dbName=='mysql'">DATE_FORMAT(t.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	    	 <!--结束日期 -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	        	<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(t.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(t.create_date, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	        
+	        <!-- add-start by QPH 2017-11-14 -->
+			<if test="office != null and office.id != null and office.id != ''">
+				AND t.OFFICE_ID = '${office.id}'
+			</if>
+              ${sqlMap.dsf}
+	   		</where>
+	   		<!-- <if test="dbName == 'oracle'">GROUP BY t.CUST_NO,t.CUST_NAME</if> -->
+			GROUP BY t.CUST_NO,t.CUST_NAME	 	
+			) dates
+		<where>
+			<!-- 去除显示为空数据 -->
+			<if test="dbName == 'oracle'">(NVL(cl1,0)+ NVL(cl2,0)+ NVL(cl3,0)+ NVL(cl4,0)+ NVL(cl5,0)+ 
+				NVL(cl6,0)+ NVL(cl7,0)+ NVL(cl8,0)+ NVL(cl9,0)+ NVL(cl10,0) +
+				NVL(re1,0)+ NVL(re2,0)+ NVL(re3,0) + NVL(re4,0)+ NVL(re5,0)+ 
+				NVL(re6,0)+ NVL(re7,0)+ NVL(re8,0)+ NVL(re9,0)+ NVL(re10,0) +
+				NVL(atm1,0)+ NVL(atm2,0)+ NVL(atm3,0)) != 0</if>
+				
+			<if test="dbName=='mysql'">(IFNULL(cl1,0)+ IFNULL(cl2,0)+ IFNULL(cl3,0)+ IFNULL(cl4,0)+ IFNULL(cl5,0)+ 
+				IFNULL(cl6,0)+ IFNULL(cl7,0)+ IFNULL(cl8,0)+ IFNULL(cl9,0)+ IFNULL(cl10,0) +
+				IFNULL(re1,0)+ IFNULL(re2,0)+ IFNULL(re3,0) + IFNULL(re4,0)+ IFNULL(re5,0)+ 
+				IFNULL(re6,0)+ IFNULL(re7,0)+ IFNULL(re8,0)+ IFNULL(re9,0)+ IFNULL(re10,0) +
+				IFNULL(atm1,0)+ IFNULL(atm2,0)+ IFNULL(atm3,0)) != 0
+			</if>
+			
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY custNo
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 查询商行取款、代理上缴、从人行复点入库、按时间查询所有数据总数量 -->
+	<select id="findCountFirstSheet" resultType="CustomerClearance">
+		
+		SELECT 
+			cl1,cl2,cl3,cl4,cl5,cl6,cl7,cl8,cl9,cl10,
+			re1,re2,re3,re4,re5,re6,re7,re8,re9,re10,
+			atm1,atm2,atm3
+			 
+			
+		 FROM
+		   ( SELECT	
+				<if test="dbName == 'oracle'">
+				SUM(CASE WHEN m.DENOMINATION = '01'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl1,
+				SUM(CASE WHEN m.DENOMINATION = '02'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl2,
+				SUM(CASE WHEN m.DENOMINATION = '03'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl3,
+				SUM(CASE WHEN m.DENOMINATION = '04'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl4,
+				SUM(CASE WHEN m.DENOMINATION = '05'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl5,
+				SUM(CASE WHEN m.DENOMINATION = '06'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl6,
+				SUM(CASE WHEN m.DENOMINATION = '07'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl7,
+				SUM(CASE WHEN m.DENOMINATION = '08'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl8,
+				SUM(CASE WHEN m.DENOMINATION = '09'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl9,
+				SUM(CASE WHEN m.DENOMINATION = '10'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE NVL(m.COUNT_CSQ,0) + NVL(m.COUNT_WZQ,0) END END) as cl10,
+				</if>
+				<if test="dbName=='mysql'">
+				SUM(CASE WHEN m.DENOMINATION = '01'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl1,
+				SUM(CASE WHEN m.DENOMINATION = '02'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl2,
+				SUM(CASE WHEN m.DENOMINATION = '03'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl3,
+				SUM(CASE WHEN m.DENOMINATION = '04'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl4,
+				SUM(CASE WHEN m.DENOMINATION = '05'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl5,
+				SUM(CASE WHEN m.DENOMINATION = '06'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl6,
+				SUM(CASE WHEN m.DENOMINATION = '07'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl7,
+				SUM(CASE WHEN m.DENOMINATION = '08'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl8,
+				SUM(CASE WHEN m.DENOMINATION = '09'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl9,
+				SUM(CASE WHEN m.DENOMINATION = '10'  THEN  CASE  WHEN t.BUS_TYPE = '02' THEN m.COUNT_YQF ELSE IFNULL(m.COUNT_CSQ,0) + IFNULL(m.COUNT_WZQ,0) END END) as cl10,
+				</if>
+				SUM(CASE WHEN m.DENOMINATION = '01'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re1,
+				SUM(CASE WHEN m.DENOMINATION = '02'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re2,
+				SUM(CASE WHEN m.DENOMINATION = '03'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re3,
+				SUM(CASE WHEN m.DENOMINATION = '04'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re4,
+				SUM(CASE WHEN m.DENOMINATION = '05'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re5,
+				SUM(CASE WHEN m.DENOMINATION = '06'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re6,
+				SUM(CASE WHEN m.DENOMINATION = '07'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re7,
+				SUM(CASE WHEN m.DENOMINATION = '08'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re8,
+				SUM(CASE WHEN m.DENOMINATION = '09'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re9,
+				SUM(CASE WHEN m.DENOMINATION = '10'  THEN  CASE  WHEN t.BUS_TYPE = '04' THEN m.COUNT_YQF ELSE null END END) as re10,
+				SUM(CASE WHEN m.DENOMINATION = '01'  THEN m.COUNT_ATM ELSE null END) as atm1,
+				SUM(CASE WHEN m.DENOMINATION = '02'  THEN m.COUNT_ATM ELSE null END) as atm2,
+				SUM(CASE WHEN m.DENOMINATION = '03'  THEN m.COUNT_ATM ELSE null END) as atm3
+		
+			FROM
+				cl_out_main t left join sys_office o on t.office_id=o.id,
+				cl_out_detail m
+			<where>
+				t.OUT_NO = m.OUT_NO
+				<!-- 业务类型 -->
+			<if test="businessTypes != null and businessTypes.size != 0">
+				AND t.bus_type IN 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+			 	#{businessTypes[${index}]}
+				</foreach>
+			</if>
+			 <!-- 状态 -->
+			<if test="status != null and status != ''">
+	            AND t.status = #{status}
+	        </if>
+			<!-- 主表：登记机构 -->
+			<!-- <if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+				AND t.CUST_NO = '${rOffice.id}'
+			</if> -->
+			<!-- 机构名称 -->
+			<if test="custName != null and custName != ''">
+				AND t.CUST_NAME = '${custName}'
+			</if>
+			<if test="custNo != null and custNo != ''">
+				AND t.CUST_NO = '${custNo}'
+			</if>
+			<!-- 开始日期 -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				AND
+	   			  <if test="dbName == 'oracle'">TO_CHAR(t.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				  <if test="dbName=='mysql'">DATE_FORMAT(t.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	    	 <!--结束日期 -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	        	<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(t.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(t.create_date, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	        
+	        <!-- add-start by QPH 2017-11-14 -->
+			<if test="office != null and office.id != null and office.id != ''">
+				AND t.OFFICE_ID = '${office.id}'
+			</if>
+              ${sqlMap.dsf}
+	   		</where>	
+			) dates
+		<where>	
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			
+			</otherwise>
+		</choose>
+	</select>
+</mapper>

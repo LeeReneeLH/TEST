@@ -1,0 +1,1677 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.report.v01.dao.AllocateReportBusinessDao">
+	<resultMap type="com.coffer.businesses.modules.report.v01.entity.AllocateReportBusinessDegree" id="rOffice">
+		<result column= "A_TABLE.handInDate" property = "handInDate"/>
+		<result column= "C_TABLE.NAME" property = "rOffice.name"/>
+		<result column= "A_TABLE.rOfficeId" property = "rOffice.id"/>
+		<result column= "A_TABLE.count" property = "count"/>
+		<result column= "rOfficeName" property = "rOfficeName"/>
+		<result column= "aOfficeName" property = "aOfficeName"/>
+		<result column= "B_TABLE.goodsId" property = "goodsId"/>
+		<result column= "B_TABLE.moneyNumber" property = "moneyNumber"/>
+		<result column= "B_TABLE.goodsName" property = "goodsName"/>
+		<result column= "B_TABLE.moneyAmount" property = "moneyAmount"/>
+		<result column= "A_TABLE.degree" property = "degree"/>
+		<association  column= "rOffice" property="rOffice" javaType = "Office" select = "com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy" ></association>
+	</resultMap>
+	<!-- <resultMap type="com.coffer.businesses.modules.allocation.v01.entity.LatticePointHandin" id="rOffice">
+		<result column= "A_TABLE.handInDate" property = "handInDate"/>
+		<result column= "C_TABLE.NAME" property = "rOffice.name"/>
+		<result column= "A_TABLE.rOfficeId" property = "rOffice.id"/>
+		<result column= "A_TABLE.count" property = "count"/>
+		<result column= "rOfficeName" property = "rOfficeName"/>
+		<result column= "B_TABLE.goodsId" property = "goodsId"/>
+		<result column= "B_TABLE.moneyNumber" property = "moneyNumber"/>
+		<result column= "B_TABLE.goodsName" property = "goodsName"/>
+		<result column= "B_TABLE.moneyAmount" property = "moneyAmount"/>
+		<result column= "A_TABLE.degree" property = "degree"/>
+		<association  column= "rOffice" property="rOffice" javaType = "Office" select = "com.coffer.core.modules.sys.dao.OfficeDao.get"></association>
+	</resultMap> -->
+	<!-- 业务量-->
+ 	<resultMap type="com.coffer.businesses.modules.report.v01.entity.AllocateReportBusinessDegree" id="degree">
+		<result column= "handInDate" property = "handInDate"/>
+		<result column= "rOfficeName" property = "rOfficeName"/>
+		<result column= "degree" property = "degree"/>
+	</resultMap>
+	<!-- 总金额-->
+	<resultMap type="com.coffer.businesses.modules.report.v01.entity.AllocateReportBusinessCount" id="count">
+		<result column= "handInDate" property = "handInDate"/>
+		<result column= "count" property = "count"/>
+		<result column= "rOfficeName" property = "rOfficeName"/>
+	</resultMap>
+	<!-- 物品金额 -->
+	<resultMap type="com.coffer.businesses.modules.report.v01.entity.AllocateReportBusinessMoneyAmount" id="amount">
+		<result column= "handInDate" property = "handInDate"/>
+		<result column= "rOfficeName" property = "rOfficeName"/>
+		<result column= "goodsName" property = "goodsName"/>
+		<result column= "moneyAmount" property = "moneyAmount"/>
+	</resultMap>
+	
+	<!-- 查询上缴业务量 -->
+	<select id="findDegree" resultMap="degree">
+		SELECT T3.handInDate AS handInDate,
+			T3.rOfficeName AS rOfficeName,
+			<!-- NVL(T4.degree,0) AS degree -->
+			<if test="dbName == 'oracle'">
+				NVL(T4.degree,0) AS degree
+			</if>	
+			<if test="dbName == 'mysql'">
+				IFNULL(T4.degree,0) AS degree
+			</if>
+		FROM 
+			(SELECT T1.handInDate,
+				T2.rOfficeName
+			FROM
+			(
+			SELECT DISTINCT 
+				<if test="dbName == 'oracle'">
+					TO_CHAR(update_date, '${filterCondition}') AS handInDate
+				</if>
+				<if test="dbName == 'mysql'">
+					<if test=" filterCondition == 'yyyy'">
+						DATE_FORMAT(update_date, '%Y')  AS handInDate
+					</if>
+					<if test="filterCondition == 'yyyy-mm'">
+						DATE_FORMAT(update_date, '%Y-%m')  AS handInDate
+					</if>
+					<if test="filterCondition == 'yyyy-Q'">
+						CONCAT(YEAR(update_date),'-',quarter(update_date))  AS handInDate
+					</if>
+					<if test="filterCondition == 'yyyy-IW'">
+						DATE_FORMAT(update_date,'%Y-%u')  AS handInDate
+					</if>
+					<if test="filterCondition == 'yyyy-mm-dd'">
+						DATE_FORMAT(update_date,'%Y-%m-%d') AS handInDate
+					</if>
+				</if>
+			FROM ALL_ALLOCATE_INFO 
+			<where>
+			      business_type = '30' 
+         	      AND del_flag = '0'
+                  AND (status = '11' or status = '14')
+				<!--  主表：登记时间(开始) -->
+					<if test="searchDateStart != null and searchDateStart != ''">
+						<if test="dbName == 'oracle'">
+							AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+						</if>
+						<if test="dbName == 'mysql'">
+							AND DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+						</if>
+					</if>
+					<!-- 主表：登记时间(结束) -->
+					<if test="searchDateEnd != null and searchDateEnd != ''">
+						<if test="dbName == 'oracle'">
+							AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+						</if>
+						<if test="dbName == 'mysql'">
+							AND '${searchDateEnd}' >= DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s')
+						</if>
+					</if>
+					<!-- 主表：登记机构 -->
+					<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+						AND roffice_name = '${rOffice.name}'
+					</if>
+					<if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+						AND aoffice_name = '${aOffice.name}'
+					</if>
+			</where>
+			) T1,
+			(SELECT DISTINCT A.roffice_id   AS rOfficeId,
+                             S.name AS rOfficeName
+                  FROM ALL_ALLOCATE_INFO A 
+                    LEFT JOIN SYS_OFFICE S ON A.roffice_id = S.ID
+                 	WHERE A.business_type = '30'
+                    AND A.del_flag = '0'
+                    AND( A.status = '11' or  A.status = '14')
+          	<!--  主表：登记时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				<if test="dbName == 'oracle'">
+					AND TO_CHAR(A.update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+				</if>
+				<if test="dbName == 'mysql'">
+					AND DATE_FORMAT(A.update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+				</if>
+			</if>
+			<!-- 主表：登记时间(结束) -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				<if test="dbName == 'oracle'">
+					AND '${searchDateEnd}' >= TO_CHAR(A.update_date, 'yyyy-mm-dd hh24:mi:ss')
+				</if>
+				<if test="dbName == 'mysql'">
+					AND '${searchDateEnd}' >= DATE_FORMAT(A.update_date, '%Y-%m-%d %H:%i:%s')
+				</if>
+			</if>
+			<!-- 主表：登记机构 -->
+			<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+				AND A.roffice_name = '${rOffice.name}'
+			</if>
+			<if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+				AND A.aoffice_name = '${aOffice.name}'
+			</if>
+			ORDER BY rOfficeName
+            ) T2
+            ) T3
+           LEFT JOIN (
+                 SELECT COUNT(B.All_id) AS degree,
+                    SUM(B.confirm_amount) AS count,
+                    <if test="dbName == 'oracle'">
+						TO_CHAR(B.update_date, '${filterCondition}') AS handInDate,
+					</if>
+					<if test="dbName == 'mysql'">
+						<if test="filterCondition == 'yyyy'">
+							DATE_FORMAT(B.update_date, '%Y')  AS handInDate,
+						</if>
+						<if test="filterCondition == 'yyyy-mm'">
+							DATE_FORMAT(B.update_date, '%Y-%m')  AS handInDate,
+						</if>
+						<if test="filterCondition == 'yyyy-Q'">
+							CONCAT(YEAR(B.update_date),'-',quarter(B.update_date))  AS handInDate,
+						</if>
+						<if test="filterCondition == 'yyyy-IW'">
+							DATE_FORMAT(B.update_date,'%Y-%u')  AS handInDate,
+						</if>
+						<if test="filterCondition == 'yyyy-mm-dd'">
+							DATE_FORMAT(B.update_date,'%Y-%m-%d') AS handInDate,
+						</if>
+					</if>
+                    S.name AS rOfficeName,
+                    B.roffice_id   AS rOfficeId
+               FROM ALL_ALLOCATE_INFO B
+                LEFT JOIN SYS_OFFICE S ON B.roffice_id = S.ID
+			<where>
+				  B.business_type = '30' 
+         	      AND B.del_flag = '0'
+                  AND (B.status = '11' or B.status = '14')
+              	<!--  主表：登记时间(开始) -->
+				<if test="searchDateStart != null and searchDateStart != ''">
+					<if test="dbName == 'oracle'">
+						AND TO_CHAR(B.update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+					</if>
+					<if test="dbName == 'mysql'">
+						AND DATE_FORMAT(B.update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+					</if>
+				</if>
+				<!-- 主表：登记时间(结束) -->
+				<if test="searchDateEnd != null and searchDateEnd != ''">
+					<if test="dbName == 'oracle'">
+						AND '${searchDateEnd}' >= TO_CHAR(B.update_date, 'yyyy-mm-dd hh24:mi:ss')
+					</if>
+					<if test="dbName == 'mysql'">
+						AND '${searchDateEnd}' >= DATE_FORMAT(B.update_date, '%Y-%m-%d %H:%i:%s')
+					</if>
+				</if>
+				<!-- 主表：登记机构 -->
+				<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+					AND B.roffice_name = '${rOffice.name}'
+				</if>
+				<if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+					AND B.aoffice_name = '${aOffice.name}'
+				</if>
+			</where>
+          <!--   GROUP BY TO_CHAR(B.update_date, '${filterCondition}'), S.name, B.roffice_id -->
+            <if test="dbName == 'oracle'">
+				 GROUP BY TO_CHAR(B.update_date, '${filterCondition}'),S.name,B.roffice_id
+			</if>
+			<if test="dbName == 'mysql'">
+				<if test="filterCondition == 'yyyy'">
+					GROUP BY DATE_FORMAT(B.update_date, '%Y') ,S.name,B.roffice_id
+				</if>
+				<if test="filterCondition == 'yyyy-mm'">
+					GROUP BY DATE_FORMAT(B.update_date, '%Y-%m') ,S.name,B.roffice_id
+				</if>
+				<if test="filterCondition == 'yyyy-Q'">
+					GROUP BY CONCAT(YEAR(B.update_date),'-',quarter(B.update_date)) ,S.name,B.roffice_id
+				</if>
+				<if test="filterCondition == 'yyyy-IW'">
+					GROUP BY DATE_FORMAT(B.update_date,'%Y-%u') ,S.name,B.roffice_id
+				</if>
+				<if test="filterCondition == 'yyyy-mm-dd'">
+					GROUP BY DATE_FORMAT(B.update_date,'%Y-%m-%d'),S.name,B.roffice_id
+				</if>
+			</if>
+            ORDER BY rOfficeName
+           ) T4 
+           ON T3.handInDate = T4.handInDate AND T3.rOfficeName = T4.rOfficeName
+           ORDER BY T3.handInDate,T3.rOfficeName
+	</select>
+	
+	<!-- 查询上缴金额 -->
+	<select id="findCount" resultMap="count">
+		SELECT 
+		    T3.handInDate AS handInDate,
+			T3.rOfficeName AS rOfficeName,
+			<!-- NVL(T4.COUNT,0) AS count -->
+			<if test="dbName == 'oracle'">
+				NVL(T4.COUNT,0) AS count
+			</if>
+			<if test="dbName == 'mysql'">
+				IFNULL(T4.COUNT,0) AS count
+			</if>
+		FROM 
+			(SELECT 
+				T1.handInDate,
+				T2.rOfficeName
+			FROM
+			(
+			SELECT DISTINCT 
+				<if test="dbName == 'oracle'">
+					TO_CHAR(update_date, '${filterCondition}') AS handInDate
+				</if>
+				<if test="dbName == 'mysql'">
+					<if test="filterCondition == 'yyyy'">
+						DATE_FORMAT(update_date, '%Y')  AS handInDate
+					</if>
+					<if test="filterCondition == 'yyyy-mm'">
+						DATE_FORMAT(update_date, '%Y-%m')  AS handInDate
+					</if>
+					<if test="filterCondition == 'yyyy-Q'">
+						CONCAT(YEAR(update_date),'-',quarter(update_date))  AS handInDate
+					</if>
+					<if test="filterCondition == 'yyyy-IW'">
+						DATE_FORMAT(update_date,'%Y-%u')  AS handInDate
+					</if>
+					<if test="filterCondition == 'yyyy-mm-dd'">
+						DATE_FORMAT(update_date,'%Y-%m-%d')  AS handInDate
+					</if>
+				</if>
+			FROM ALL_ALLOCATE_INFO 
+			<where>
+				  business_type = '30' 
+         	      AND del_flag = '0'
+                  AND (status = '11' or status = '14')
+				<!--  主表：登记时间(开始) -->
+				<if test="searchDateStart != null and searchDateStart != ''">
+					<if test="dbName == 'oracle'">
+						AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+					</if>
+					<if test="dbName == 'mysql'">
+						AND DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+					</if>
+				</if>
+				<!-- 主表：登记时间(结束) -->
+				<if test="searchDateEnd != null and searchDateEnd != ''">
+					<if test="dbName == 'oracle'">
+						AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+					</if>
+					<if test="dbName == 'mysql'">
+						AND '${searchDateEnd}' >= DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s')
+					</if>
+				</if>
+				<!-- 主表：登记机构 -->
+				<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+					AND roffice_name = '${rOffice.name}'
+				</if>
+				<if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+					AND aoffice_name = '${aOffice.name}'
+				</if>
+			</where>
+			) T1,
+			(SELECT DISTINCT 
+						A.roffice_id AS rOfficeId,
+               			S.name AS rOfficeName
+            FROM ALL_ALLOCATE_INFO A LEFT JOIN SYS_OFFICE S ON A.roffice_id = S.ID
+         	WHERE A.business_type = '30' 
+         	      AND A.del_flag = '0'
+                  AND (A.status = '11' or A.status = '14')
+            <!--  主表：登记时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				<if test="dbName == 'oracle'">
+					AND TO_CHAR(A.update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+				</if>
+				<if test="dbName == 'mysql'">
+					AND DATE_FORMAT(A.update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+				</if>
+			</if>
+			<!-- 主表：登记时间(结束) -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				<if test="dbName == 'oracle'">
+					AND '${searchDateEnd}' >= TO_CHAR(A.update_date, 'yyyy-mm-dd hh24:mi:ss')
+				</if>
+				<if test="dbName == 'mysql'">
+					AND '${searchDateEnd}' >= DATE_FORMAT(A.update_date, '%Y-%m-%d %H:%i:%s')
+				</if>
+			</if>
+			<!-- 主表：登记机构 -->
+			<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+				AND A.roffice_name = '${rOffice.name}'
+			</if>
+			<if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+				AND A.aoffice_name = '${aOffice.name}'
+			</if>
+			ORDER BY rOfficeName
+            ) T2) T3
+            LEFT JOIN (
+                  SELECT 
+                  	COUNT(B.All_id) AS degree,
+           			SUM(B.confirm_amount) AS count,
+           			<!-- TO_CHAR(B.update_date, '${filterCondition}') AS handInDate,  -->
+           			<if test="dbName == 'oracle'">
+						TO_CHAR(B.update_date, '${filterCondition}') AS handInDate,
+					</if>
+					<if test="dbName == 'mysql'">
+						<if test="filterCondition == 'yyyy'">
+							DATE_FORMAT(B.update_date, '%Y')  AS handInDate,
+						</if>
+						<if test="filterCondition == 'yyyy-mm'">
+							DATE_FORMAT(B.update_date, '%Y-%m')  AS handInDate,
+						</if>
+						<if test="filterCondition == 'yyyy-Q'">
+							CONCAT(YEAR(B.update_date),'-',quarter(B.update_date))  AS handInDate,
+						</if>
+						<if test="filterCondition == 'yyyy-IW'">
+							DATE_FORMAT(B.update_date,'%Y-%u')  AS handInDate,
+						</if>
+						<if test="filterCondition == 'yyyy-mm-dd'">
+							DATE_FORMAT(B.update_date,'%Y-%m-%d') AS handInDate,
+						</if>
+					</if>
+           			S.name AS rOfficeName
+            FROM ALL_ALLOCATE_INFO B LEFT JOIN SYS_OFFICE S ON B.roffice_id = S.ID
+            <where>
+                  B.business_type = '30' 
+         	      AND B.del_flag = '0'
+                  AND (B.status = '11' or B.status = '14')
+             	<!--  主表：登记时间(开始) -->
+				<if test="searchDateStart != null and searchDateStart != ''">
+					<if test="dbName == 'oracle'">
+						AND TO_CHAR(B.update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+					</if>
+					<if test="dbName == 'mysql'">
+						AND DATE_FORMAT(B.update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+					</if>
+				</if>
+				<!-- 主表：登记时间(结束) -->
+				<if test="searchDateEnd != null and searchDateEnd != ''">
+					<if test="dbName == 'oracle'">
+						AND '${searchDateEnd}' >= TO_CHAR(B.update_date, 'yyyy-mm-dd hh24:mi:ss')
+					</if>
+					<if test="dbName == 'mysql'">
+						AND '${searchDateEnd}' >= DATE_FORMAT(B.update_date, '%Y-%m-%d %H:%i:%s')
+					</if>
+				</if>
+				<!-- 主表：登记机构 -->
+				<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+					AND B.roffice_name = '${rOffice.name}'
+				</if>
+				<if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+					AND B.aoffice_name = '${aOffice.name}'
+				</if>
+			</where>
+           <!--  GROUP BY TO_CHAR(B.update_date, '${filterCondition}'),S.name -->
+            <if test="dbName == 'oracle'">
+				 GROUP BY TO_CHAR(B.update_date, '${filterCondition}'),S.name
+			</if>
+			<if test="dbName == 'mysql'">
+				<if test="filterCondition == 'yyyy'">
+					GROUP BY DATE_FORMAT(B.update_date, '%Y') ,S.name
+				</if>
+				<if test="filterCondition == 'yyyy-mm'">
+					GROUP BY DATE_FORMAT(B.update_date, '%Y-%m') ,S.name
+				</if>
+				<if test="filterCondition == 'yyyy-Q'">
+					GROUP BY CONCAT(YEAR(B.update_date),'-',quarter(B.update_date)) ,S.name
+				</if>
+				<if test="filterCondition == 'yyyy-IW'">
+					GROUP BY DATE_FORMAT(B.update_date,'%Y-%u') ,S.name
+				</if>
+				<if test="filterCondition == 'yyyy-mm-dd'">
+					GROUP BY DATE_FORMAT(B.update_date,'%Y-%m-%d'),S.name
+				</if>
+			</if>
+           ) T4 ON T3.handInDate = T4.handInDate AND T3.rOfficeName = T4.rOfficeName
+           ORDER BY T3.handInDate,T3.rOfficeName
+	</select>
+	
+	<!-- 查询各物品金额 -->
+	<select id="findGoods" resultMap="amount">
+		SELECT T_3.handInDate AS handInDate,
+       	       T_5.goods_name AS goodsName,
+               T_3.goods_id,
+               <!-- NVL(T_4.money_amount, 0) AS moneyAmount -->
+               <if test="dbName == 'oracle'">
+               		NVL(T_4.money_amount, 0) AS moneyAmount
+               </if>
+               <if test="dbName == 'mysql'">
+               		IFNULL(T_4.money_amount, 0) AS moneyAmount
+               </if>
+        FROM (
+	         SELECT T_1.handInDate, 
+	                T_2.goods_id
+	         FROM (
+		         SELECT DISTINCT 
+		         	<!-- TO_CHAR(info.update_date, '${filterCondition}') AS handInDate -->
+		         	<if test="dbName == 'oracle'">
+			            TO_CHAR(info.update_date, '${filterCondition}') AS handInDate
+			        </if>
+			        <if test="dbName == 'mysql'">
+			        	<if test="filterCondition == 'yyyy'">
+			            	DATE_FORMAT(info.update_date, '%Y')  AS handInDate
+			            </if>
+			            <if test="filterCondition == 'yyyy-mm'">
+			              	DATE_FORMAT(info.update_date, '%Y-%m')  AS handInDate
+			            </if>
+			            <if test="filterCondition == 'yyyy-Q'">
+			              	CONCAT(YEAR(info.update_date),'-',quarter(info.update_date))  AS handInDate
+			            </if>
+			            <if test="filterCondition == 'yyyy-IW'">
+			              	DATE_FORMAT(info.update_date,'%Y-%u')  AS handInDate
+			            </if>
+			            <if test="filterCondition == 'yyyy-mm-dd'">
+			              	DATE_FORMAT(info.update_date,'%Y-%m-%d') AS handInDate
+			            </if>
+			         </if>
+		         FROM ALL_ALLOCATE_INFO info
+		                 WHERE
+		                 info.business_type = '30'
+		                 AND info.del_flag = '0'
+		                 AND (info.status = '11' or info.status = '14')
+		                 <!--  主表：登记时间(开始) -->
+							<!-- <if test="searchDateStart != null and searchDateStart != ''">
+								AND TO_CHAR(info.update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+							</if> -->
+							<!-- 主表：登记时间(结束) -->
+							<!-- <if test="searchDateEnd != null and searchDateEnd != ''">
+								AND '${searchDateEnd}' >= TO_CHAR(info.update_date, 'yyyy-mm-dd hh24:mi:ss')
+							</if> -->
+							<!--  主表：登记时间(开始) -->
+					        <if test="searchDateStart != null and searchDateStart != ''">
+					          <if test="dbName == 'oracle'">
+					            AND TO_CHAR(info.update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+					          </if>
+					          <if test="dbName == 'mysql'">
+					            AND DATE_FORMAT(info.update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+					          </if>
+					        </if>
+					        <!-- 主表：登记时间(结束) -->
+					        <if test="searchDateEnd != null and searchDateEnd != ''">
+					          <if test="dbName == 'oracle'">
+					            AND '${searchDateEnd}' >= TO_CHAR(info.update_date, 'yyyy-mm-dd hh24:mi:ss')
+					          </if>
+					          <if test="dbName == 'mysql'">
+					            AND '${searchDateEnd}' >= DATE_FORMAT(info.update_date, '%Y-%m-%d %H:%i:%s')
+					          </if>
+					        </if>
+							<!-- 主表：登记机构 -->
+							<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+								AND info.roffice_name = '${rOffice.name}'
+							</if>
+							<if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+								AND info.aoffice_name = '${aOffice.name}'
+							</if>
+                 		) T_1,
+         				(
+         SELECT DISTINCT items.goods_id
+                  FROM ALL_ALLOCATE_INFO info, ALL_ALLOCATE_ITEMS items
+                 WHERE 
+                 info.all_id = items.all_id 
+                 AND info.del_flag = '0'
+                 AND ITEMS.CONFIRM_FLAG = '1'
+                 AND info.business_type = '30'
+                 AND (info.status = '11' or info.status = '14')
+                    <!--  主表：登记时间(开始) -->
+					<!-- <if test="searchDateStart != null and searchDateStart != ''">
+						AND TO_CHAR(info.update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+					</if> -->
+					<!-- 主表：登记时间(结束) -->
+					<!-- <if test="searchDateEnd != null and searchDateEnd != ''">
+						AND '${searchDateEnd}' >= TO_CHAR(info.update_date, 'yyyy-mm-dd hh24:mi:ss')
+					</if> -->
+					<!--  主表：登记时间(开始) -->
+			        <if test="searchDateStart != null and searchDateStart != ''">
+			          	<if test="dbName == 'oracle'">
+			            	AND TO_CHAR(info.update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+			          	</if>
+			          	<if test="dbName == 'mysql'">
+			            	AND DATE_FORMAT(info.update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+			          	</if>
+			        </if>
+			        <!-- 主表：登记时间(结束) -->
+			        <if test="searchDateEnd != null and searchDateEnd != ''">
+			          	<if test="dbName == 'oracle'">
+			            	AND '${searchDateEnd}' >= TO_CHAR(info.update_date, 'yyyy-mm-dd hh24:mi:ss')
+			          	</if>
+			          	<if test="dbName == 'mysql'">
+			            	AND '${searchDateEnd}' >= DATE_FORMAT(info.update_date, '%Y-%m-%d %H:%i:%s')
+			          	</if>
+			        </if>
+					<!-- 主表：登记机构 -->
+					<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+						AND info.roffice_name = '${rOffice.name}'
+					</if>
+					<if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+						AND info.aoffice_name = '${aOffice.name}'
+					</if>
+                   ) T_2) T_3
+  		LEFT JOIN (
+  				SELECT 
+  				  <!--  TO_CHAR(info.update_date, '${filterCondition}') AS handInDate, -->
+  				   <if test="dbName == 'oracle'">
+			            TO_CHAR(info.update_date, '${filterCondition}') AS handInDate,
+			       </if>
+			       <if test="dbName == 'mysql'">
+			            <if test="filterCondition == 'yyyy'">
+			              	DATE_FORMAT(info.update_date, '%Y') AS handInDate,
+			            </if>
+			            <if test="filterCondition == 'yyyy-mm'">
+			              	DATE_FORMAT(info.update_date, '%Y-%m') AS handInDate,
+			            </if>
+			            <if test="filterCondition == 'yyyy-Q'">
+			              	CONCAT(YEAR(info.update_date),'-',quarter(info.update_date)) AS handInDate,
+			            </if>
+			            <if test="filterCondition == 'yyyy-IW'">
+			              	DATE_FORMAT(info.update_date,'%Y-%u') AS handInDate,
+			            </if>
+			            <if test="filterCondition == 'yyyy-mm-dd'">
+			              	DATE_FORMAT(info.update_date,'%Y-%m-%d') AS handInDate,
+			            </if>
+			       </if>
+                   items.goods_id,
+                   SUM(items.money_amount) AS money_amount
+               FROM ALL_ALLOCATE_INFO info, ALL_ALLOCATE_ITEMS items
+               WHERE  
+               		info.all_id = items.all_id 
+               		AND info.business_type = '30' 
+               		AND info.del_flag = '0' 
+               		AND items.confirm_flag = '1'
+                	AND (info.status = '11' or info.status = '14')
+                 <!--  主表：登记时间(开始) -->
+					<!-- <if test="searchDateStart != null and searchDateStart != ''">
+						AND TO_CHAR(info.update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+					</if> -->
+					<!-- 主表：登记时间(结束) -->
+					<!-- <if test="searchDateEnd != null and searchDateEnd != ''">
+						AND '${searchDateEnd}' >= TO_CHAR(info.update_date, 'yyyy-mm-dd hh24:mi:ss')
+					</if> -->
+					<!--  主表：登记时间(开始) -->
+			        <if test="searchDateStart != null and searchDateStart != ''">
+			          	<if test="dbName == 'oracle'">
+			            	AND TO_CHAR(info.update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+			          	</if>
+			          	<if test="dbName == 'mysql'">
+			            	AND DATE_FORMAT(info.update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+			          	</if>
+			        </if>
+			        <!-- 主表：登记时间(结束) -->
+			        <if test="searchDateEnd != null and searchDateEnd != ''">
+			          	<if test="dbName == 'oracle'">
+			            	AND '${searchDateEnd}' >= TO_CHAR(info.update_date, 'yyyy-mm-dd hh24:mi:ss')
+			          	</if>
+			          	<if test="dbName == 'mysql'">
+			           	 	AND '${searchDateEnd}' >= DATE_FORMAT(info.update_date, '%Y-%m-%d %H:%i:%s')
+			          	</if>
+			        </if>
+					<!-- 主表：登记机构 -->
+					<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+						AND info.roffice_name = '${rOffice.name}'
+					</if>
+					<if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+						AND info.aoffice_name = '${aOffice.name}'
+					</if>
+              <!-- GROUP BY items.goods_id, TO_CHAR(info.update_date, '${filterCondition}')  -->
+              		<if test="dbName == 'oracle'">
+				         GROUP BY items.goods_id, TO_CHAR(info.update_date, '${filterCondition}') 
+				    </if>
+				    <if test="dbName == 'mysql'">
+				        <if test="filterCondition == 'yyyy'">
+				          	GROUP BY items.goods_id, DATE_FORMAT(info.update_date, '%Y') 
+				        </if>
+				        <if test="filterCondition == 'yyyy-mm'">
+				          	GROUP BY items.goods_id, DATE_FORMAT(info.update_date, '%Y-%m') 
+				        </if>
+				        <if test="filterCondition == 'yyyy-Q'">
+				          	GROUP BY items.goods_id, CONCAT(YEAR(info.update_date),'-',quarter(info.update_date)) 
+				        </if>
+				        <if test="filterCondition == 'yyyy-IW'">
+				          	GROUP BY items.goods_id, DATE_FORMAT(info.update_date,'%Y-%u') 
+				        </if>
+				        <if test="filterCondition == 'yyyy-mm-dd'">
+				          	GROUP BY items.goods_id, DATE_FORMAT(info.update_date,'%Y-%m-%d') 
+				        </if>
+				     </if>
+              ) T_4
+	    ON (T_4.handInDate = T_3.handInDate AND T_4.goods_id = T_3.goods_id)
+	    LEFT JOIN sto_goods T_5
+	    ON t_5.goods_id = T_3.goods_id
+	    ORDER BY T_3.handInDate, T_3.goods_id
+	</select>
+	<!-- SONGYUANYANG -->
+	<!--查询常规表业务量  -->
+	<select id="findByAllBusiness" resultMap="rOffice">
+	      SELECT 
+	      	  <!-- to_char(t1.update_date, '${filterCondition}') AS handInDate, -->
+	      	  <if test="dbName == 'oracle'">
+            		TO_CHAR(t1.update_date, '${filterCondition}') AS handInDate,
+          	  </if>
+	          <if test="dbName == 'mysql'">
+	            	<if test="filterCondition == 'yyyy'">
+	             		DATE_FORMAT(t1.update_date, '%Y')  AS handInDate,
+	            	</if>
+		            <if test="filterCondition == 'yyyy-mm'">
+		              	DATE_FORMAT(t1.update_date, '%Y-%m')  AS handInDate,
+		            </if>
+		            <if test="filterCondition == 'yyyy-Q'">
+		              	CONCAT(YEAR(t1.update_date),'-',quarter(t1.update_date))  AS handInDate,
+		            </if>
+		            <if test="filterCondition == 'yyyy-IW'">
+		              	DATE_FORMAT(t1.update_date,'%Y-%u')  AS handInDate,
+		            </if>
+		            <if test="filterCondition == 'yyyy-mm-dd'">
+		              	DATE_FORMAT(t1.update_date,'%Y-%m-%d') AS handInDate,
+		            </if>
+	          </if>
+	          COUNT(t1.all_id) AS degree,
+	          SUM(t1.CONFIRM_AMOUNT) AS count
+          from ALL_ALLOCATE_INFO t1
+          <where>
+       	 	  t1.business_type = '31'
+       	 	  AND t1.del_flag = '0' 
+           	  AND (t1.status = '11' OR t1.status = '14' OR t1.status = '12')
+			  <!-- <if test="searchDateStart != null and searchDateStart != ''">
+				  AND TO_CHAR(t1.update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+			  </if>
+		      <if test="searchDateEnd != null and searchDateEnd != ''">
+			      AND '${searchDateEnd}' >= TO_CHAR(t1.update_date, 'yyyy-mm-dd hh24:mi:ss')
+			  </if> -->
+			  <!--  主表：登记时间(开始) -->
+	         <if test="searchDateStart != null and searchDateStart != ''">
+	          	<if test="dbName == 'oracle'">
+	            	AND TO_CHAR(t1.update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+	          	</if>
+	          	<if test="dbName == 'mysql'">
+	            	AND DATE_FORMAT(t1.update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+	          	</if>
+	         </if>
+	         <!-- 主表：登记时间(结束) -->
+	         <if test="searchDateEnd != null and searchDateEnd != ''">
+	          	<if test="dbName == 'oracle'">
+	            	AND '${searchDateEnd}' >= TO_CHAR(t1.update_date, 'yyyy-mm-dd hh24:mi:ss')
+	          	</if>
+	          	<if test="dbName == 'mysql'">
+	            	AND '${searchDateEnd}' >= DATE_FORMAT(t1.update_date, '%Y-%m-%d %H:%i:%s')
+	          	</if>
+	          </if>
+			  <if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+				  AND t1.roffice_name = '${rOffice.name}'
+			  </if>
+			  <if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+				  AND t1.aoffice_name = '${aOffice.name}'
+			  </if>
+          </where>
+          <!-- GROUP BY t1.aoffice_name,TO_CHAR(t1.update_date, '${filterCondition}') -->
+          <if test="dbName == 'oracle'">
+	         GROUP BY TO_CHAR(t1.update_date, '${filterCondition}')
+	      </if>
+	      <if test="dbName == 'mysql'">
+	      	<if test="filterCondition == 'yyyy'">
+	          GROUP BY DATE_FORMAT(t1.update_date, '%Y') 
+	        </if>
+	        <if test="filterCondition == 'yyyy-mm'">
+	          GROUP BY DATE_FORMAT(t1.update_date, '%Y-%m') 
+	        </if>
+	        <if test="filterCondition == 'yyyy-Q'">
+	          GROUP BY CONCAT(YEAR(t1.update_date),'-',quarter(update_date)) 
+	        </if>
+	        <if test="filterCondition == 'yyyy-IW'">
+	          GROUP BY DATE_FORMAT(t1.update_date,'%Y-%u') 
+	        </if>
+	        <if test="filterCondition == 'yyyy-mm-dd'">
+	          GROUP BY DATE_FORMAT(t1.update_date,'%Y-%m-%d')
+	        </if>
+	      </if>
+          <!-- ORDER BY TO_CHAR(t1.update_date, '${filterCondition}') -->
+          <if test="dbName == 'oracle'">
+	         ORDER BY TO_CHAR(t1.update_date, '${filterCondition}')
+	      </if>
+	      <if test="dbName == 'mysql'">
+	      	<if test="filterCondition == 'yyyy'">
+	          ORDER BY DATE_FORMAT(t1.update_date, '%Y') 
+	        </if>
+	        <if test="filterCondition == 'yyyy-mm'">
+	          ORDER BY DATE_FORMAT(t1.update_date, '%Y-%m') 
+	        </if>
+	        <if test="filterCondition == 'yyyy-Q'">
+	          ORDER BY CONCAT(YEAR(t1.update_date),'-',quarter(t1.update_date)) 
+	        </if>
+	        <if test="filterCondition == 'yyyy-IW'">
+	          ORDER BY DATE_FORMAT(t1.update_date,'%Y-%u') 
+	        </if>
+	        <if test="filterCondition == 'yyyy-mm-dd'">
+	          ORDER BY DATE_FORMAT(t1.update_date,'%Y-%m-%d')
+	        </if>
+	      </if>
+	</select>
+	
+	<!--查询临时表业务量  -->
+	<select id="findByAllBusinessFromTemp" resultMap="rOffice">
+	      SELECT 
+	      	  <!-- TO_CHAR(t1.update_date, '${filterCondition}') AS handInDate, -->
+	      	   <if test="dbName == 'oracle'">
+            		TO_CHAR(t1.update_date, '${filterCondition}') AS handInDate,
+          	  </if>
+	          <if test="dbName == 'mysql'">
+	            	<if test="filterCondition == 'yyyy'">
+	             		DATE_FORMAT(t1.update_date, '%Y')  AS handInDate,
+	            	</if>
+		            <if test="filterCondition == 'yyyy-mm'">
+		              	DATE_FORMAT(t1.update_date, '%Y-%m')  AS handInDate,
+		            </if>
+		            <if test="filterCondition == 'yyyy-Q'">
+		              	CONCAT(YEAR(t1.update_date),'-',quarter(update_date))  AS handInDate,
+		            </if>
+		            <if test="filterCondition == 'yyyy-IW'">
+		              	DATE_FORMAT(t1.update_date,'%Y-%u')  AS handInDate,
+		            </if>
+		            <if test="filterCondition == 'yyyy-mm-dd'">
+		              	DATE_FORMAT(t1.update_date,'%Y-%m-%d') AS handInDate,
+		            </if>
+	          </if>
+	          COUNT(t1.all_id) AS degree,
+	          SUM(t1.CONFIRM_AMOUNT) AS count
+          FROM TEMP_ALLOCATE_INFO t1
+          <where>
+       	 	  t1.business_type = '31'
+       	 	  AND t1.del_flag = '0' 
+           	  AND (t1.status = '12' or t1.status = '14')
+			 <!--  <if test="searchDateStart != null and searchDateStart != ''">
+				  AND TO_CHAR(t1.update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+			  </if>
+		      <if test="searchDateEnd != null and searchDateEnd != ''">
+			      AND '${searchDateEnd}' >= TO_CHAR(t1.update_date, 'yyyy-mm-dd hh24:mi:ss')
+			  </if> -->
+			  <!--  主表：登记时间(开始) -->
+	         <if test="searchDateStart != null and searchDateStart != ''">
+	          	<if test="dbName == 'oracle'">
+	            	AND TO_CHAR(t1.update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+	          	</if>
+	          	<if test="dbName == 'mysql'">
+	            	AND DATE_FORMAT(t1.update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+	          	</if>
+	         </if>
+	         <!-- 主表：登记时间(结束) -->
+	         <if test="searchDateEnd != null and searchDateEnd != ''">
+	          	<if test="dbName == 'oracle'">
+	            	AND '${searchDateEnd}' >= TO_CHAR(t1.update_date, 'yyyy-mm-dd hh24:mi:ss')
+	          	</if>
+	          	<if test="dbName == 'mysql'">
+	            	AND '${searchDateEnd}' >= DATE_FORMAT(t1.update_date, '%Y-%m-%d %H:%i:%s')
+	          	</if>
+	          </if>
+			  <if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+				  AND t1.roffice_name = '${rOffice.name}'
+			  </if>
+			  <if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+				  AND t1.aoffice_name = '${aOffice.name}'
+			  </if>
+			   
+          </where>
+         <!--  GROUP BY TO_CHAR(t1.update_date, '${filterCondition}')
+          ORDER BY TO_CHAR(t1.update_date, '${filterCondition}') -->
+          <if test="dbName == 'oracle'">
+	         GROUP BY TO_CHAR(t1.update_date, '${filterCondition}')
+	      </if>
+	      <if test="dbName == 'mysql'">
+	      	<if test="filterCondition == 'yyyy'">
+	          GROUP BY DATE_FORMAT(t1.update_date, '%Y') 
+	        </if>
+	        <if test="filterCondition == 'yyyy-mm'">
+	          GROUP BY DATE_FORMAT(t1.update_date, '%Y-%m') 
+	        </if>
+	        <if test="filterCondition == 'yyyy-Q'">
+	          GROUP BY CONCAT(YEAR(t1.update_date),'-',quarter(t1.update_date)) 
+	        </if>
+	        <if test="filterCondition == 'yyyy-IW'">
+	          GROUP BY DATE_FORMAT(t1.update_date,'%Y-%u') 
+	        </if>
+	        <if test="filterCondition == 'yyyy-mm-dd'">
+	          GROUP BY DATE_FORMAT(t1.update_date,'%Y-%m-%d') 
+	        </if>
+	      </if>
+          <if test="dbName == 'oracle'">
+	         ORDER BY TO_CHAR(t1.update_date, '${filterCondition}')
+	      </if>
+	      <if test="dbName == 'mysql'">
+	      	<if test="filterCondition == 'yyyy'">
+	          ORDER BY DATE_FORMAT(t1.update_date, '%Y') 
+	        </if>
+	        <if test="filterCondition == 'yyyy-mm'">
+	          ORDER BY DATE_FORMAT(t1.update_date, '%Y-%m') 
+	        </if>
+	        <if test="filterCondition == 'yyyy-Q'">
+	          ORDER BY CONCAT(YEAR(t1.update_date),'-',quarter(t1.update_date)) 
+	        </if>
+	        <if test="filterCondition == 'yyyy-IW'">
+	          ORDER BY DATE_FORMAT(t1.update_date,'%Y-%u') 
+	        </if>
+	        <if test="filterCondition == 'yyyy-mm-dd'">
+	          ORDER BY DATE_FORMAT(t1.update_date,'%Y-%m-%d') 
+	        </if>
+	      </if>
+	</select>
+	
+	<!--查询常规表业务量及金额数据  -->
+	<select id="findByAllocate" resultMap="rOffice">
+		SELECT t3.handInDate AS handInDate,
+			t5.name AS rOfficeName,
+			<!-- NVL(t4.degree,0) AS degree,-->
+			<if test="dbName == 'oracle'">
+				NVL(t4.degree,0) AS degree,
+				NVL(t4.count,0) AS count
+			</if>	
+			<if test="dbName == 'mysql'">
+				IFNULL(t4.degree,0) AS degree,
+				IFNULL(t4.count,0) AS count
+			</if>
+			<!-- NVL(t4.count,0) AS count  -->
+		FROM 
+			(
+			SELECT t1.handInDate,
+				t2.rOfficeId
+			FROM
+			(
+			SELECT DISTINCT 
+				<!-- TO_CHAR(update_date, '${filterCondition}') AS handInDate -->
+				<if test="dbName == 'oracle'">
+		            TO_CHAR(update_date, '${filterCondition}') AS handInDate
+		        </if>
+		        <if test="dbName == 'mysql'">
+		            <if test="filterCondition == 'yyyy'">
+		              DATE_FORMAT(update_date, '%Y')  AS handInDate
+		            </if>
+		            <if test="filterCondition == 'yyyy-mm'">
+		              DATE_FORMAT(update_date, '%Y-%m')  AS handInDate
+		            </if>
+		            <if test="filterCondition == 'yyyy-Q'">
+		              CONCAT(YEAR(update_date),'-',quarter(update_date))  AS handInDate
+		            </if>
+		            <if test="filterCondition == 'yyyy-IW'">
+		              DATE_FORMAT(update_date,'%Y-%u')  AS handInDate
+		            </if>
+		            <if test="filterCondition == 'yyyy-mm-dd'">
+		              DATE_FORMAT(update_date,'%Y-%m-%d') AS handInDate
+		            </if>
+		        </if>
+			FROM ALL_ALLOCATE_INFO 
+				<where>
+					business_type = '31' 
+					AND (status = '11' or status = '14' or status = '12')
+					AND del_flag = '0'
+					<!-- <if test="searchDateStart != null and searchDateStart != ''">
+						AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+					</if>
+					<if test="searchDateEnd != null and searchDateEnd != ''">
+						AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+					</if> -->
+					<!--  主表：登记时间(开始) -->
+			        <if test="searchDateStart != null and searchDateStart != ''">
+			          <if test="dbName == 'oracle'">
+			            	AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+			          </if>
+			          <if test="dbName == 'mysql'">
+			            	AND DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+			          </if>
+			        </if>
+			        <!-- 主表：登记时间(结束) -->
+			        <if test="searchDateEnd != null and searchDateEnd != ''">
+			          <if test="dbName == 'oracle'">
+			            	AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+			          </if>
+			          <if test="dbName == 'mysql'">
+			            	AND '${searchDateEnd}' >= DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s')
+			          </if>
+			        </if>
+					<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+						AND roffice_name = '${rOffice.name}'
+					</if>
+					<if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+						AND aoffice_name = '${aOffice.name}'
+					</if>
+				</where>
+			) t1,
+			(SELECT DISTINCT roffice_id AS rOfficeId
+            FROM ALL_ALLOCATE_INFO 
+         	      WHERE del_flag = '0'
+         	      AND business_type = '31'
+                  AND (status = '11' or status = '14' or status = '12')
+                  <!-- 主表：登记机构 -->
+				  <if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+					AND roffice_name = '${rOffice.name}'
+				  </if>
+				  <if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+					AND aoffice_name = '${aOffice.name}'
+				  </if>
+
+                  ) t2) t3
+            LEFT JOIN (
+                  SELECT COUNT(All_id) AS degree,
+           			SUM(confirm_amount) AS count,
+           			<!-- TO_CHAR(update_date, '${filterCondition}') AS handInDate,  -->
+           			<if test="dbName == 'oracle'">
+			            TO_CHAR(update_date, '${filterCondition}') AS handInDate,
+			        </if>
+			        <if test="dbName == 'mysql'">
+			            <if test="filterCondition == 'yyyy'">
+			              DATE_FORMAT(update_date, '%Y') AS handInDate,
+			            </if>
+			            <if test="filterCondition == 'yyyy-mm'">
+			              DATE_FORMAT(update_date, '%Y-%m') AS handInDate,
+			            </if>
+			            <if test="filterCondition == 'yyyy-Q'">
+			              CONCAT(YEAR(update_date),'-',quarter(update_date)) AS handInDate,
+			            </if>
+			            <if test="filterCondition == 'yyyy-IW'">
+			              DATE_FORMAT(update_date,'%Y-%u')  AS handInDate,
+			            </if>
+			            <if test="filterCondition == 'yyyy-mm-dd'">
+			              DATE_FORMAT(update_date,'%Y-%m-%d')  AS handInDate,
+			            </if>
+			        </if>
+           			roffice_id,
+           			roffice_name AS rOfficeName
+            FROM ALL_ALLOCATE_INFO 
+            <where>
+				<!-- <if test="searchDateStart != null and searchDateStart != ''">
+					AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+				</if>
+				<if test="searchDateEnd != null and searchDateEnd != ''">
+					AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+				</if> -->
+				<!--  主表：登记时间(开始) -->
+		        <if test="searchDateStart != null and searchDateStart != ''">
+		          <if test="dbName == 'oracle'">
+		            	AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+		          </if>
+		          <if test="dbName == 'mysql'">
+		            	AND DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+		          </if>
+		        </if>
+		        <!-- 主表：登记时间(结束) -->
+		        <if test="searchDateEnd != null and searchDateEnd != ''">
+		          <if test="dbName == 'oracle'">
+		            	AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+		          </if>
+		          <if test="dbName == 'mysql'">
+		            	AND '${searchDateEnd}' >= DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s')
+		          </if>
+		        </if>
+				<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+					AND roffice_name = '${rOffice.name}'
+				</if>
+				<if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+					AND aoffice_name = '${aOffice.name}'
+				</if>
+				    AND business_type = '31'
+				    AND (status = '11' or status = '14' or status = '12')
+				    AND del_flag = '0'
+			</where>
+            <!-- GROUP BY TO_CHAR(update_date, '${filterCondition}'),roffice_name, roffice_id -->
+            <if test="dbName == 'oracle'">
+		         GROUP BY TO_CHAR(update_date, '${filterCondition}'),roffice_name, roffice_id
+		    </if>
+		    <if test="dbName == 'mysql'">
+		        <if test="filterCondition == 'yyyy'">
+		          	GROUP BY DATE_FORMAT(update_date, '%Y') ,roffice_name, roffice_id
+		        </if>
+		        <if test="filterCondition == 'yyyy-mm'">
+		         	 GROUP BY DATE_FORMAT(update_date, '%Y-%m') ,roffice_name, roffice_id
+		        </if>
+		        <if test="filterCondition == 'yyyy-Q'">
+		         	 GROUP BY CONCAT(YEAR(update_date),'-',quarter(update_date)) ,roffice_name, roffice_id
+		        </if>
+		        <if test="filterCondition == 'yyyy-IW'">
+		          	GROUP BY DATE_FORMAT(update_date,'%Y-%u') ,roffice_name, roffice_id
+		        </if>
+		        <if test="filterCondition == 'yyyy-mm-dd'">
+		          	GROUP BY DATE_FORMAT(update_date,'%Y-%m-%d') ,roffice_name, roffice_id
+		        </if>
+		    </if>
+            ) t4 
+            ON (t3.handInDate = t4.handInDate AND t3.rOfficeId = t4.roffice_id)
+            LEFT JOIN SYS_OFFICE t5 ON t5.id = t3.rOfficeId
+            ORDER BY t3.rOfficeId,t3.handInDate
+	</select>
+	
+	<!--查询临时表金额数据  -->
+	<select id="findByAllocateFromTemp" resultMap="rOffice">
+		SELECT t3.handInDate AS handInDate,
+			t5.name AS rOfficeName,
+			<!-- NVL(t4.degree,0) AS degree,-->
+			<if test="dbName == 'oracle'">
+				NVL(t4.degree,0) AS degree,
+				NVL(t4.count,0) AS count
+			</if>	
+			<if test="dbName == 'mysql'">
+				IFNULL(t4.degree,0) AS degree,
+				IFNULL(t4.count,0) AS count
+			</if>
+			<!-- NVL(t4.count,0) AS count  -->
+		FROM 
+			(
+			SELECT t1.handInDate,
+				t2.rOfficeId
+			FROM
+			(
+			SELECT DISTINCT 
+				<!-- TO_CHAR(update_date, '${filterCondition}') AS handInDate -->
+				<if test="dbName == 'oracle'">
+		            TO_CHAR(update_date, '${filterCondition}') AS handInDate
+		        </if>
+		        <if test="dbName == 'mysql'">
+		            <if test="filterCondition == 'yyyy'">
+		              DATE_FORMAT(update_date, '%Y')  AS handInDate
+		            </if>
+		            <if test="filterCondition == 'yyyy-mm'">
+		              DATE_FORMAT(update_date, '%Y-%m')  AS handInDate
+		            </if>
+		            <if test="filterCondition == 'yyyy-Q'">
+		              CONCAT(YEAR(update_date),'-',quarter(update_date))  AS handInDate
+		            </if>
+		            <if test="filterCondition == 'yyyy-IW'">
+		              DATE_FORMAT(update_date,'%Y-%u')  AS handInDate
+		            </if>
+		            <if test="filterCondition == 'yyyy-mm-dd'">
+		              DATE_FORMAT(update_date,'%Y-%m-%d') AS handInDate
+		            </if>
+		        </if>
+			FROM TEMP_ALLOCATE_INFO 
+				<where>
+					business_type = '31' 
+					AND (status = '12' or status = '14')
+					AND del_flag = '0'
+					<!-- <if test="searchDateStart != null and searchDateStart != ''">
+						AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+					</if>
+					<if test="searchDateEnd != null and searchDateEnd != ''">
+						AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+					</if> -->
+					<!--  主表：登记时间(开始) -->
+			        <if test="searchDateStart != null and searchDateStart != ''">
+			          <if test="dbName == 'oracle'">
+			            	AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+			          </if>
+			          <if test="dbName == 'mysql'">
+			            	AND DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+			          </if>
+			        </if>
+			        <!-- 主表：登记时间(结束) -->
+			        <if test="searchDateEnd != null and searchDateEnd != ''">
+			          <if test="dbName == 'oracle'">
+			            	AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+			          </if>
+			          <if test="dbName == 'mysql'">
+			            	AND '${searchDateEnd}' >= DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s')
+			          </if>
+			        </if>
+					<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+						AND roffice_name = '${rOffice.name}'
+					</if>
+					<if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+						AND aoffice_name = '${aOffice.name}'
+					</if>
+				</where>
+			) t1,
+			(SELECT DISTINCT roffice_id AS rOfficeId
+            FROM TEMP_ALLOCATE_INFO 
+         	      WHERE del_flag = '0'
+         	      AND business_type = '31'
+                  AND (status = '12' or status = '14')
+                  	 <!-- 主表：登记机构 -->
+				  <if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+					AND roffice_name = '${rOffice.name}'
+				  </if>
+				  <if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+					AND aoffice_name = '${aOffice.name}'
+				  </if>
+                  ) t2) t3
+            LEFT JOIN (
+                  SELECT COUNT(All_id) AS degree,
+           			SUM(confirm_amount) AS count,
+           			<!-- TO_CHAR(update_date, '${filterCondition}') AS handInDate,  -->
+           			<if test="dbName == 'oracle'">
+			            TO_CHAR(update_date, '${filterCondition}') AS handInDate,
+			        </if>
+			        <if test="dbName == 'mysql'">
+			            <if test="filterCondition == 'yyyy'">
+			              DATE_FORMAT(update_date, '%Y') AS handInDate,
+			            </if>
+			            <if test="filterCondition == 'yyyy-mm'">
+			              DATE_FORMAT(update_date, '%Y-%m') AS handInDate,
+			            </if>
+			            <if test="filterCondition == 'yyyy-Q'">
+			              CONCAT(YEAR(update_date),'-',quarter(update_date)) AS handInDate,
+			            </if>
+			            <if test="filterCondition == 'yyyy-IW'">
+			              DATE_FORMAT(update_date,'%Y-%u')  AS handInDate,
+			            </if>
+			            <if test="filterCondition == 'yyyy-mm-dd'">
+			              DATE_FORMAT(update_date,'%Y-%m-%d')  AS handInDate,
+			            </if>
+			        </if>
+           			roffice_id,
+           			roffice_name AS rOfficeName
+            FROM TEMP_ALLOCATE_INFO 
+            <where>
+				<!-- <if test="searchDateStart != null and searchDateStart != ''">
+					AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+				</if>
+				<if test="searchDateEnd != null and searchDateEnd != ''">
+					AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+				</if> -->
+				<!--  主表：登记时间(开始) -->
+		        <if test="searchDateStart != null and searchDateStart != ''">
+		          <if test="dbName == 'oracle'">
+		            	AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+		          </if>
+		          <if test="dbName == 'mysql'">
+		            	AND DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+		          </if>
+		        </if>
+		        <!-- 主表：登记时间(结束) -->
+		        <if test="searchDateEnd != null and searchDateEnd != ''">
+		          <if test="dbName == 'oracle'">
+		            	AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+		          </if>
+		          <if test="dbName == 'mysql'">
+		            	AND '${searchDateEnd}' >= DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s')
+		          </if>
+		        </if>
+				<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+					AND roffice_name = '${rOffice.name}'
+				</if>
+				<if test="aOffice != null and aOffice.name != null and aOffice.name != ''">
+					AND aoffice_name = '${aOffice.name}'
+				</if>
+				    AND business_type = '31'
+				    AND (status = '12' or status = '14')
+				    AND del_flag = '0'
+			</where>
+            <!-- GROUP BY TO_CHAR(update_date, '${filterCondition}'),roffice_name, roffice_id -->
+            <if test="dbName == 'oracle'">
+		         GROUP BY TO_CHAR(update_date, '${filterCondition}'),roffice_name, roffice_id
+		    </if>
+		    <if test="dbName == 'mysql'">
+		        <if test="filterCondition == 'yyyy'">
+		          	GROUP BY DATE_FORMAT(update_date, '%Y') ,roffice_name, roffice_id
+		        </if>
+		        <if test="filterCondition == 'yyyy-mm'">
+		         	 GROUP BY DATE_FORMAT(update_date, '%Y-%m') ,roffice_name, roffice_id
+		        </if>
+		        <if test="filterCondition == 'yyyy-Q'">
+		         	 GROUP BY CONCAT(YEAR(update_date),'-',quarter(update_date)) ,roffice_name, roffice_id
+		        </if>
+		        <if test="filterCondition == 'yyyy-IW'">
+		          	GROUP BY DATE_FORMAT(update_date,'%Y-%u') ,roffice_name, roffice_id
+		        </if>
+		        <if test="filterCondition == 'yyyy-mm-dd'">
+		          	GROUP BY DATE_FORMAT(update_date,'%Y-%m-%d') ,roffice_name, roffice_id
+		        </if>
+		    </if>
+            ) t4 
+            ON (t3.handInDate = t4.handInDate AND t3.rOfficeId = t4.roffice_id)
+            LEFT JOIN SYS_OFFICE t5 ON t5.id = t3.rOfficeId
+            ORDER BY t3.rOfficeId,t3.handInDate
+	</select>
+	
+	<!-- 首页根据用户所属机构类型查询对应的现金业务金额 修改人：xp 修改时间：2017-10-23 begin -->
+	<select id="findBusinessCount" resultType = "com.coffer.businesses.modules.report.v01.entity.AllocateReportBusinessCount">
+		SELECT DISTINCT t9.handInDate AS handInDate,
+					    t9.businessType AS businessType,
+						t9.count AS count,
+						t9.type AS type
+		FROM
+		<!-- 查询常规现金业务金额 -->
+			(SELECT DISTINCT t3.handInDate AS handInDate,
+			 				 t3.businessType AS businessType,
+			 				 <if test="dbName == 'oracle'">
+			 				 	NVL(t4.count,0) AS count,
+			 				 </if>
+			 				 <if test="dbName == 'mysql'">
+       							IFNULL(t4.count,0) AS count,
+       						 </if>
+			 				 '1' AS type
+			 FROM
+				(SELECT t1.handInDate,
+			 			t2.businessType
+				 FROM
+					(SELECT 
+						<if test="dbName == 'oracle'">
+							TO_CHAR(UPDATE_DATE, '${filterCondition}') AS handInDate
+						</if>	
+						<if test="dbName == 'mysql'">
+							DATE_FORMAT(UPDATE_DATE, '${filterCondition}') AS handInDate
+						</if>
+					 FROM all_allocate_info a
+					 <where>
+					 	  DEL_FLAG = #{delFlag}
+					 	  <if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+								AND roffice_name = '${rOffice.name}'
+						  </if>
+					 	  <if test="aOffice != null and aOffice.name != null and aOffice.name != '' ">
+					  	  		AND AOFFICE_NAME = '${aOffice.name}'
+						  </if>
+						  <!--  主表：登记时间(开始) -->
+				          <if test="searchDateStart != null and searchDateStart != ''">
+				           	<if test="dbName == 'oracle'">
+				            	AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+				           	</if>
+				           	<if test="dbName == 'mysql'">
+				            	AND DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+				           	</if>
+				          </if>
+				          <!-- 主表：登记时间(结束) -->
+				          <if test="searchDateEnd != null and searchDateEnd != ''">
+				           	<if test="dbName == 'oracle'">
+				            	AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+				           	</if>
+				           	<if test="dbName == 'mysql'">
+				            	AND '${searchDateEnd}' >= DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s')
+				           	</if>
+			          </if>
+					 </where> 
+					 union
+					 SELECT 
+					 	<if test="dbName == 'oracle'">
+							TO_CHAR(UPDATE_DATE, '${filterCondition}') AS handInDate
+						</if>	
+						<if test="dbName == 'mysql'">
+							DATE_FORMAT(UPDATE_DATE, '${filterCondition}') AS handInDate
+						</if>
+					 FROM temp_allocate_info b
+	                 <where>
+	                 	  DEL_FLAG = #{delFlag}
+	                 	   <if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+								AND roffice_name = '${rOffice.name}'
+						  </if>
+	                 	  <if test="aOffice != null and aOffice.name != null and aOffice.name != '' ">
+					  	  		AND AOFFICE_NAME = '${aOffice.name}'
+						  </if>
+						  <!--  主表：登记时间(开始) -->
+				          <if test="searchDateStart != null and searchDateStart != ''">
+				           	<if test="dbName == 'oracle'">
+				            	AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+				           	</if>
+				           	<if test="dbName == 'mysql'">
+				            	AND DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+				           	</if>
+				          </if>
+				          <!-- 主表：登记时间(结束) -->
+				          <if test="searchDateEnd != null and searchDateEnd != ''">
+				           	<if test="dbName == 'oracle'">
+				            	AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+				           	</if>
+				           	<if test="dbName == 'mysql'">
+				            	AND '${searchDateEnd}' >= DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s')
+				           	</if>
+			          	  </if>
+	                 </where> 
+		             ) t1,
+                     (SELECT 
+               		 		DISTINCT business_type AS businessType
+					  FROM all_allocate_info
+					  <where>
+					  	<if test="businessTypes != null and businessTypes.size != 0">
+			          		AND BUSINESS_TYPE IN 
+			          			<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="">
+			 	          			'${businessTypeTag}'
+			          			</foreach>
+		          		</if>
+					  </where> 
+					  ) t2
+				) t3
+				LEFT JOIN
+					(SELECT 
+						 <if test="dbName == 'oracle'">
+						 	SUM(NVL(confirm_amount,0)) AS count,
+						 </if>
+						 <if test="dbName == 'mysql'">
+						 	SUM(IFNULL(confirm_amount,0)) AS count,
+						 </if>
+						 <if test="dbName == 'oracle'">
+						 	TO_CHAR(UPDATE_DATE, '${filterCondition}') AS handInDate,
+						 </if>	
+						 <if test="dbName == 'mysql'">
+						 	DATE_FORMAT(UPDATE_DATE, #{filterCondition}) AS handInDate,
+						 </if>
+						 BUSINESS_TYPE AS businessType
+       				 FROM all_allocate_info
+       				 <if test="office != null and office != ''">
+	 					 LEFT JOIN			 
+		  					(SELECT NAME
+			 				 FROM SYS_OFFICE
+			 				<where>
+			 					<if test="dbName == 'oracle'">
+			 						PARENT_IDS LIKE '%' || '${office.id}' || '%'
+			 					</if>
+			 					<if test="dbName == 'mysql'">
+			 						PARENT_IDS LIKE CONCAT('%','${office.id}','%')
+			 					</if>
+			 					AND DEL_FLAG = '${office.delFlag}'
+			 					AND TYPE = '3'
+			 				</where>
+						    ) OFFICE 
+					     ON OFFICE.NAME = AOFFICE_NAME
+				     </if>
+				     <where>
+				     	<if test="businessTypes != null and businessTypes.size != 0">
+			          		AND BUSINESS_TYPE IN 
+			          			<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="">
+			 	          			'${businessTypeTag}'
+			          			</foreach>
+		          		</if>
+		          		<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+							AND roffice_name = '${rOffice.name}'
+						</if>
+		          		<if test="aOffice != null and aOffice.name != null and aOffice.name != '' ">
+					  	  	AND AOFFICE_NAME = '${aOffice.name}'
+						</if>
+						<!--  主表：登记时间(开始) -->
+				        <if test="searchDateStart != null and searchDateStart != ''">
+				           	<if test="dbName == 'oracle'">
+				            	AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+				           	</if>
+				           	<if test="dbName == 'mysql'">
+				            	AND DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+				           	</if>
+				          </if>
+				          <!-- 主表：登记时间(结束) -->
+				          <if test="searchDateEnd != null and searchDateEnd != ''">
+				           	 <if test="dbName == 'oracle'">
+				            	AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+				           	 </if>
+				           	 <if test="dbName == 'mysql'">
+				            	AND '${searchDateEnd}' >= DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s')
+				           	 </if>
+			          	  </if>
+		          		  AND DEL_FLAG = '${delFlag}'
+				     </where>
+				   <if test="dbName == 'mysql'">
+									GROUP BY handInDate,businessType
+								</if>
+								<if test="dbName == 'oracle'">
+									GROUP BY TO_CHAR(UPDATE_DATE, '${filterCondition}'),BUSINESS_TYPE
+								</if>
+				   ) t4 
+				   ON t4.handInDate = t3.handInDate 
+				   and t4.businessType = t3.businessType
+				   UNION
+				   SELECT DISTINCT t7.handInDate,
+			              t7.businessType,
+			               <if test="dbName == 'oracle'">
+			 				 	NVL(t8.count,0) AS count,
+			 			   </if>
+			 			   <if test="dbName == 'mysql'">
+       							IFNULL(t8.count,0) AS count,
+       					   </if>
+			 			  '2' AS type
+     			   FROM
+						(SELECT t5.handInDate,
+			 					t6.businessType
+						 FROM
+							(SELECT 	
+								<if test="dbName == 'oracle'">
+						 			TO_CHAR(UPDATE_DATE, '${filterCondition}') AS handInDate
+						 		</if>	
+						 		<if test="dbName == 'mysql'">
+						 			DATE_FORMAT(UPDATE_DATE, '${filterCondition}') AS handInDate
+						 		</if>
+							 FROM all_allocate_info a
+							 <where>
+							 	DEL_FLAG = #{delFlag}
+							 	<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+									AND roffice_name = '${rOffice.name}'
+						  		</if>
+							 	<if test="aOffice != null and aOffice.name != null and aOffice.name != '' ">
+					  	  			AND AOFFICE_NAME = '${aOffice.name}'
+						  		</if>
+						  		<!--  主表：登记时间(开始) -->
+				          		<if test="searchDateStart != null and searchDateStart != ''">
+				           			<if test="dbName == 'oracle'">
+				            			AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+				           			</if>
+				           			<if test="dbName == 'mysql'">
+				            			AND DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+				           			</if>
+				          		</if>
+				          		<!-- 主表：登记时间(结束) -->
+				          		<if test="searchDateEnd != null and searchDateEnd != ''">
+				           			<if test="dbName == 'oracle'">
+				            			AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+				           			</if>
+				           			<if test="dbName == 'mysql'">
+				            			AND '${searchDateEnd}' >= DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s')
+				           			</if>
+			          			</if>
+							 </where>
+							 union
+							 SELECT 
+					 			<if test="dbName == 'oracle'">
+									TO_CHAR(UPDATE_DATE, '${filterCondition}') AS handInDate
+								</if>	
+								<if test="dbName == 'mysql'">
+									DATE_FORMAT(UPDATE_DATE, '${filterCondition}') AS handInDate
+								</if>
+					 		 FROM temp_allocate_info b
+	                 		 <where>
+	                 	  		DEL_FLAG = '${delFlag}'
+	                 	  		<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+									AND roffice_name = '${rOffice.name}'
+						  		</if>
+	                 	  		<if test="aOffice != null and aOffice.name != null and aOffice.name != '' ">
+					  	  			AND AOFFICE_NAME = '${aOffice.name}'
+						  		</if>
+						  		<!--  主表：登记时间(开始) -->
+				          		<if test="searchDateStart != null and searchDateStart != ''">
+				           			<if test="dbName == 'oracle'">
+				            			AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+				           			</if>
+				           			<if test="dbName == 'mysql'">
+				            			AND DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+				           			</if>
+				          		</if>
+				          		<!-- 主表：登记时间(结束) -->
+				          		<if test="searchDateEnd != null and searchDateEnd != ''">
+				           			<if test="dbName == 'oracle'">
+				            			AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+				           			</if>
+				           			<if test="dbName == 'mysql'">
+				            			AND '${searchDateEnd}' >= DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s')
+				           			</if>
+			          	  		</if>
+	                 		  </where> 
+							 ) t5,
+  							 (SELECT 
+               		 			DISTINCT business_type AS businessType
+					  		  FROM temp_allocate_info
+					  		  <where>
+					  			<if test="businessTypes != null and businessTypes.size != 0">
+			          				AND BUSINESS_TYPE IN 
+			          					<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="">
+			 	          					'${businessTypeTag}'
+			          					</foreach>
+		          				</if>
+					  		  </where> 
+  							  ) t6
+  							) t7
+  							LEFT JOIN
+								(SELECT 
+						 			<if test="dbName == 'oracle'">
+						 				SUM(NVL(confirm_amount,0)) AS count,
+						 			</if>
+						 			<if test="dbName == 'mysql'">
+						 				SUM(IFNULL(confirm_amount,0)) AS count,
+						 			</if>
+						 			<if test="dbName == 'oracle'">
+						 				TO_CHAR(UPDATE_DATE, '${filterCondition}') AS handInDate,
+						 			</if>	
+						 			<if test="dbName == 'mysql'">
+						 				DATE_FORMAT(UPDATE_DATE, '${filterCondition}') AS handInDate,
+						 			</if>
+						 			BUSINESS_TYPE AS businessType
+       				 			FROM temp_allocate_info
+       				 			<if test="office != null and office != ''">
+	 					 			LEFT JOIN			 
+		  								(SELECT NAME
+			 				 			 FROM SYS_OFFICE
+			 							 <where>
+			 								<if test="dbName == 'oracle'">
+			 									PARENT_IDS LIKE '%' || '${office.id}' || '%'
+			 								</if>
+			 								<if test="dbName == 'mysql'">
+			 									PARENT_IDS LIKE CONCAT('%','${office.id}','%')
+			 								</if>
+			 								AND DEL_FLAG = '${office.delFlag}'
+			 								AND TYPE = '3'
+			 							 </where>
+						    			) OFFICE 
+					     				ON OFFICE.NAME = AOFFICE_NAME
+				     			</if>
+				     			<where>
+				     				<if test="businessTypes != null and businessTypes.size != 0">
+			          					AND BUSINESS_TYPE IN 
+			          						<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="">
+			 	          						'${businessTypeTag}'
+			          						</foreach>
+		          					</if>
+		          					<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+										AND roffice_name = '${rOffice.name}'
+						  			</if>
+		          					<if test="aOffice != null and aOffice.name != null and aOffice.name != '' ">
+					  	  				AND AOFFICE_NAME = '${aOffice.name}'
+									</if>
+									<!--  主表：登记时间(开始) -->
+				        			<if test="searchDateStart != null and searchDateStart != ''">
+				           				<if test="dbName == 'oracle'">
+				            				AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+				           				</if>
+				           				<if test="dbName == 'mysql'">
+				            				AND DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+				           				</if>
+				          			</if>
+				          			<!-- 主表：登记时间(结束) -->
+				          			<if test="searchDateEnd != null and searchDateEnd != ''">
+				           	 			<if test="dbName == 'oracle'">
+				            				AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+				           	 			</if>
+				           	 			<if test="dbName == 'mysql'">
+				            				AND '${searchDateEnd}' >= DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s')
+				           	 			</if>
+			          	  			</if>
+		          		  			AND DEL_FLAG = '${delFlag}'
+				     			</where>
+				     			<if test="dbName == 'mysql'">
+									GROUP BY handInDate,businessType
+								</if>
+								<if test="dbName == 'oracle'">
+									GROUP BY TO_CHAR(UPDATE_DATE, '${filterCondition}'),BUSINESS_TYPE
+								</if>
+							) t8 
+							ON t8.handInDate = t7.handInDate 
+							and t8.businessType = t7.businessType
+						) t9
+		ORDER BY t9.handInDate,t9.businessType,t9.type
+	</select>
+	
+	<!-- 首页显示各常规业务及临时业务状态 创建人：xp 创建时间：2017-11-6 begin-->
+	<select id="findBusinessStatus" resultType = "com.coffer.businesses.modules.report.v01.entity.AllocateReportBusinessDegree">
+		SELECT * 
+		FROM(
+			SELECT 
+			 	BUSINESS_TYPE AS businessType,
+			 	STATUS,
+			 	<if test="dbName == 'mysql'">
+			 		COUNT(IFNULL(STATUS,0)) AS degree,
+			 	</if>
+			 	<if test="dbName == 'oracle'">
+			 		COUNT(NVL(STATUS,0)) AS degree,
+			 	</if>
+			 	'1' AS type
+			FROM all_allocate_info
+			<where>
+				<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+					 AND roffice_name = '${rOffice.name}'
+				</if>
+		        <if test="aOffice != null and aOffice.name != null and aOffice.name != '' ">
+					 AND AOFFICE_NAME = '${aOffice.name}'
+				</if>
+				<if test="businessTypes != null and businessTypes.size != 0">
+			         AND BUSINESS_TYPE IN 
+			          	<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="">
+			 	          	'${businessTypeTag}'
+			          	</foreach>
+		        </if>
+		        	<!--  主表：登记时间(开始) -->
+				<if test="searchDateStart != null and searchDateStart != ''">
+				      <if test="dbName == 'oracle'">
+				           AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+				      </if>
+				      <if test="dbName == 'mysql'">
+				           AND DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+				      </if>
+				 </if>
+				     <!-- 主表：登记时间(结束) -->
+				 <if test="searchDateEnd != null and searchDateEnd != ''">
+				       <if test="dbName == 'oracle'">
+				           AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+				       </if>
+				       <if test="dbName == 'mysql'">
+				           AND '${searchDateEnd}' >= DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s')
+				       </if>
+			     </if>
+		         AND DEL_FLAG = '${delFlag}'
+			</where>
+			<if test="dbName == 'mysql'">
+				GROUP BY BUSINESS_TYPE,STATUS
+			</if>
+			<if test="dbName == 'oracle'">
+				GROUP BY BUSINESS_TYPE,STATUS
+			</if>
+			UNION
+			SELECT 
+			 	BUSINESS_TYPE AS businessType,
+			 	STATUS,
+			 	<if test="dbName == 'mysql'">
+			 		COUNT(IFNULL(STATUS,0)) AS degree,
+			 	</if>
+			 	<if test="dbName == 'oracle'">
+			 		COUNT(NVL(STATUS,0)) AS degree,
+			 	</if>
+			 	'2' as type
+			FROM temp_allocate_info
+			<where>
+				<if test="rOffice != null and rOffice.name != null and rOffice.name != ''">
+					 AND roffice_name = '${rOffice.name}'
+				</if>
+		        <if test="aOffice != null and aOffice.name != null and aOffice.name != '' ">
+					 AND AOFFICE_NAME = '${aOffice.name}'
+				</if>
+				<!--  主表：登记时间(开始) -->
+				<if test="searchDateStart != null and searchDateStart != ''">
+				      <if test="dbName == 'oracle'">
+				           AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+				      </if>
+				      <if test="dbName == 'mysql'">
+				           AND DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+				      </if>
+				 </if>
+				     <!-- 主表：登记时间(结束) -->
+				 <if test="searchDateEnd != null and searchDateEnd != ''">
+				       <if test="dbName == 'oracle'">
+				           AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+				       </if>
+				       <if test="dbName == 'mysql'">
+				           AND '${searchDateEnd}' >= DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s')
+				       </if>
+			     </if>
+				 AND DEL_FLAG = '${delFlag}'
+			</where>
+			<if test="dbName == 'mysql'">
+				 GROUP BY BUSINESS_TYPE,STATUS
+			</if>
+			<if test="dbName == 'oracle'">
+				 GROUP BY BUSINESS_TYPE,STATUS
+			</if>
+			) a
+	  	ORDER BY type,businessType,STATUS
+	</select>
+	<!-- end -->
+</mapper>

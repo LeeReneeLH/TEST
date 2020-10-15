@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.clear.v03.dao.ClInMainDao">
+    <!-- 商行交款主表 -->
+	<!-- 查询所有的信息字段 -->
+  	<sql id="bankPayInfoColumns">
+  		a.in_no            		AS "allInfo.inNo",
+		a.cust_no           	AS "allInfo.custNo",
+		a.cust_name          	AS "allInfo.custName",
+		a.status              	AS "allInfo.status",
+		a.bus_type         		AS "allInfo.busType",
+		a.in_amount          	AS "allInfo.inAmount",
+		a.bank_man_no_a         AS "allInfo.bankManNoA",
+		a.bank_man_name_a  		AS "allInfo.bankManNameA",
+		a.bank_man_no_b       	AS "allInfo.bankManNoB",
+		a.bank_man_name_b     	AS "allInfo.bankManNameB",
+		a.trans_man_no        	AS "allInfo.transManNo",
+		a.trans_man_name      	AS "allInfo.transManName",
+		a.check_man_no       	AS "allInfo.checkManNo",
+		a.check_man_name     	AS "allInfo.checkManName",
+		a.makesure_man_no  		AS "allInfo.makesureManNo",
+		a.makesure_man_name   	AS "allInfo.makesureManName",
+		a.remarks           	AS "allInfo.remarks",
+		a.create_by        		AS "allInfo.createBy",
+		a.create_name      		AS "allInfo.createName",
+		a.create_date        	AS "allInfo.createDate",
+		a.update_by          	AS "allInfo.updateBy",
+		a.update_name        	AS "allInfo.updateName",
+		a.update_date       	AS "allInfo.updateDate",
+		a.authorize_by          AS "allInfo.authorizeBy",
+		a.authorize_name		AS "allInfo.authorizeName",
+		a.authorize_date		AS "allInfo.authorizeDate",
+		a.authorize_reason		AS "allInfo.authorizeReason",
+		a.office_id				AS "allInfo.officeId",
+		a.office_name			AS "allInfo.officeName"
+		
+	</sql>
+
+	<!-- 查询出的所有信息的字段，保存到关联的Entity里 -->
+	<resultMap id="BankPayInfoResult" type="com.coffer.businesses.modules.clear.v03.entity.ClInMain">
+	    <id column="allInfo.inNo"             	property="inNo" />
+	    <result column="allInfo.custNo"     	property="rOffice.id"/>
+	    <result column="allInfo.custName"  		property="rOffice.name"/>
+	    <result column="allInfo.status"        	property="status"/>
+	    <result column="allInfo.busType"        property="busType"/>
+	    <result column="allInfo.inAmount"      	property="inAmount"/>
+	    <result column="allInfo.bankManNoA"   	property="bankManNoA"/>
+	    <result column="allInfo.bankManNameA" 	property="bankManNameA"/>
+ 	    <result column="allInfo.bankManNoB"   	property="bankManNoB"/>
+	    <result column="allInfo.bankManNameB" 	property="bankManNameB"/>
+	    <result column="allInfo.transManNo"   	property="transManNo"/>
+	    <result column="allInfo.transManName" 	property="transManName"/>
+	    <result column="allInfo.checkManNo" 	property="checkManNo"/>
+	    <result column="allInfo.checkManName" 	property="checkManName"/>
+	    <result column="allInfo.makesureManNo" 	property="makesureManNo"/>
+	    <result column="allInfo.makesureManName" 	property="makesureManName"/>
+	    <result column="allInfo.remarks"     	property="remarks"/>
+	    <result column="allInfo.createBy"     	property="createBy.id"/>
+	    <result column="allInfo.createName"    	property="createName"/>
+	    <result column="allInfo.createDate"    	property="createDate"/>
+	    <result column="allInfo.updateBy"     	property="updateBy.id"/>
+	    <result column="allInfo.updateName"  	property="updateName"/>
+	    <result column="allInfo.updateDate"    	property="updateDate"/>
+	    <result column="allInfo.authorizeBy"    	property="authorizeBy.id"/>
+		<result column="allInfo.authorizeName"    	property="authorizeName"/>
+		<result column="allInfo.authorizeDate"    	property="authorizeDate"/>
+		<result column="allInfo.authorizeReason"    	property="authorizeReason"/>
+		<result column="allInfo.officeId"    	property="office.id"/>
+		<result column="allInfo.officeName"    	property="office.name"/>
+	    <!-- 登记机构 -->
+		<association property="rOffice" column="roffice_id" javaType="Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy"/>
+		
+		<!-- add-start by QPH 2017-11-14 -->
+		<!-- 登记机构 -->
+		<association property="Office" column="office_id" javaType="Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy"/>
+		<!-- end -->
+	    <!--  商行交款明细 -->
+ 	    <collection column="allInfo.inNo" property="bankPayDetailList" javaType="ArrayList" select="com.coffer.businesses.modules.clear.v03.dao.ClInDetailDao.findItemsList" fetchType="lazy"/>
+	</resultMap>
+	
+
+	
+	<!-- 按流水号查询主表信息 -->
+	<select id="get" resultMap="BankPayInfoResult">
+		SELECT 
+			<include refid="bankPayInfoColumns"/>
+		FROM 
+			<!-- <include refid="fromAllTables"/> -->
+			CL_IN_MAIN a 
+		WHERE
+			a.del_flag = '0' 
+			and a.in_no = #{inNo}
+	</select>
+
+	<!-- 获取多条主表信息 -->
+	<select id="findList" resultMap="BankPayInfoResult">
+		SELECT 
+			<include refid="bankPayInfoColumns"/>
+		FROM CL_IN_MAIN A
+		left join sys_office o 
+			on a.office_id=o.id
+		<where>
+			A.DEL_FLAG = #{DEL_FLAG_NORMAL}
+
+	         <!-- 主表：登记时间(开始) -->
+	        <if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <!-- 主表：登记时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	        
+			<!-- 主表：登记机构 -->
+			<if test="rOffice != null and rOffice.id != null and rOffice.id != ''">
+				AND A.CUST_NO = '${rOffice.id}'
+			</if>
+			
+			<!-- add-start by QPH 2017-11-14 -->
+			<if test="office != null and office.id != null and office.id != ''">
+				AND A.OFFICE_ID = '${office.id}'
+			</if>
+			
+			<!-- end -->
+			
+			<!-- 追加业务类型查询条件  修改人：xl 修改时间：2017-8-26 begin  -->
+			<if test="busType != null and busType != ''">
+				AND a.bus_type =  #{busType}
+			</if>
+			${sqlMap.dsf}
+			<!-- end -->
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.create_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 主表数据做成 -->
+	<insert id="insert">
+		INSERT INTO CL_IN_MAIN(
+		   in_no,
+		   cust_no,
+		   cust_name,
+		   status,
+		   bus_type,
+		   in_amount,
+		   bank_man_no_a,
+		   bank_man_name_a,
+		   bank_man_no_b,
+		   bank_man_name_b,
+		   trans_man_no,
+		   trans_man_name,
+		   check_man_no,
+		   check_man_name,
+		   makesure_man_no,
+		   makesure_man_name,
+		   create_by,
+		   create_name,
+		   create_date,
+		   update_by,
+		   update_name,
+		   update_date,
+		   del_flag,
+		   remarks,
+		<!-- add-start by QPH 2017-11-14 -->
+		   office_id,
+		   office_name
+		 <!-- end -->
+		) VALUES (
+			#{inNo},
+			#{rOffice.id},
+			#{rOffice.name},
+			#{status},
+			#{busType},
+			#{inAmount},
+			#{bankManNoA},
+			#{bankManNameA},
+			#{bankManNoB},
+			#{bankManNameB},
+			#{transManNo},
+			#{transManName},
+			#{checkManNo},
+			#{checkManName},
+			#{makesureManNo},
+			#{makesureManName},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate},
+			#{delFlag},
+			#{remarks},
+			<!-- add-start by QPH 2017-11-14 -->
+			#{office.id},
+			#{office.name}
+		    <!-- end -->
+		)
+	</insert>
+
+	<!-- 状态更新 -->
+	<update id="updateStatus">
+		UPDATE CL_IN_MAIN a
+		SET 
+			a.update_by = #{updateBy.id},
+			a.update_name = #{updateBy.name},
+			a.update_date = #{updateDate},
+			a.STATUS = #{status},
+			a.authorize_by = #{authorizeBy.id},
+			a.authorize_name = #{authorizeBy.name},
+			a.authorize_date = #{authorizeDate},
+			a.authorize_reason = #{authorizeReason}
+		WHERE IN_NO = #{inNo}
+		    AND a.del_flag = '0'
+	</update>
+	
+	<!-- 获取当日入库清分量（业务类型，状态，时间）  -->
+	<select id="getDetailList" resultType="ClInMain">
+		SELECT
+			a.denomination as "denomination",
+			sum(a.count) as "countPeopleBank",
+			sum(a.count_dqf) as "countBank" 
+		FROM
+			cl_in_main t
+			left join 
+			cl_in_detail a 
+			on t.in_no = a.in_no
+		<where>
+			t.del_flag = '0' 
+			<if test="busType != null and busType != ''">
+				AND t.bus_type = '${busType}'
+			</if>
+			<if test="status != null and status != ''">
+				AND t.status = '${status}'
+			</if>
+	        <!-- 主表：登记时间(开始) -->
+	        <if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(t.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(t.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <!-- 主表：登记时间(结束) --> 
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(t.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(t.create_date, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	       
+	        <if test="office != null and office.id != null and office.id != ''">
+				AND t.office_id = '${office.id}'
+			</if>
+		</where>
+		GROUP BY a.denomination
+		ORDER BY a.denomination ASC
+	</select>
+</mapper>

@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoStockCountInfoDao">
+    
+	<sql id="stoStockCountInfoColumns">
+		a.stock_count_id AS "stockCountId",
+		a.stock_count_no AS "stockCountNo",
+		a.update_flag AS "updateFlag",
+		a.stock_count_type AS "stockCountType",
+		a.goods_id AS "goodsId",
+		go.goods_name AS "goodsName",
+		a.stock_count_num AS "stockCountNum",
+		a.office_id AS "office.id",
+		a.manager_userid AS "managerUserid",
+		a.manager_username AS "managerUsername",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createName",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_name AS "updateName",
+		a.update_date AS "updateDate",
+		a.del_flag AS "delFlag",
+		a.remarks AS "remarks",
+		a.goods_types AS "goodsTypes",
+		o8.name AS "office.name"
+	</sql>
+	
+	<sql id="stoStockCountInfoJoins">
+		LEFT JOIN sys_office o8 ON o8.id = a.office_id
+		LEFT JOIN sto_goods go ON go.goods_id = a.goods_id
+	</sql>
+    
+	<select id="get" resultType="StoStockCountInfo">
+		SELECT 
+			<include refid="stoStockCountInfoColumns"/>
+		FROM sto_stock_count_info a
+		<include refid="stoStockCountInfoJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="StoStockCountInfo">
+		SELECT 
+			<include refid="stoStockCountInfoColumns"/>
+		FROM sto_stock_count_info a
+		<include refid="stoStockCountInfoJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="goodsId != null and goodsId != ''">
+				AND a.goods_id = #{goodsId}
+			</if>
+			<if test="stockCountNo != null and stockCountNo != ''">
+				AND a.stock_count_no = #{stockCountNo}
+			</if>
+			<if test="stockCountType != null and stockCountType != ''">
+				AND a.stock_count_type = #{stockCountType}
+			</if>
+			<!-- 开始时间 -->
+			<if test="createTimeStart != null and createTimeStart != ''">
+				<if test="dbName == 'oracle'">and TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >= TO_CHAR(#{createTimeStart}, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName == 'mysql'">and DATE_FORMAT(a.create_date, '%Y-%m-%d H%:i%:S') >= DATE_FORMAT(#{createTimeStart}, '%Y-%m-%d H%:i%:S')</if>
+			</if>
+			<!-- 结束时间 -->
+			<if test="createTimeEnd != null and createTimeEnd != ''">
+				<if test="dbName == 'oracle'">and TO_CHAR(#{createTimeEnd}, 'yyyy-mm-dd hh24:mi:ss') >= TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName == 'mysql'">and DATE_FORMAT(#{createTimeEnd}, '%Y-%m-%d H%:i%:S') >= DATE_FORMAT(a.create_date, '%Y-%m-%d H%:i%:S')</if>
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.create_date DESC, a.goods_id
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="StoStockCountInfo">
+		SELECT 
+			<include refid="stoStockCountInfoColumns"/>
+		FROM sto_stock_count_info a
+		<include refid="stoStockCountInfoJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO sto_stock_count_info(
+			stock_count_id,
+			stock_count_no,
+			update_flag,
+			stock_count_type,
+			goods_id,
+			goods_name,
+			stock_count_num,
+			office_id,
+			manager_userid,
+			manager_username,
+			create_by,
+			create_name,
+			create_date,
+			update_by,
+			update_name,
+			update_date,
+			del_flag,
+			goods_types,
+			remarks
+		) VALUES (
+			#{stockCountId},
+			#{stockCountNo},
+			#{updateFlag},
+			#{stockCountType},
+			#{goodsId},
+			#{goodsName},
+			#{stockCountNum},
+			#{office.id},
+			#{managerUserid},
+			#{managerUsername},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate},
+			#{delFlag},
+			#{goodsTypes},
+			#{remarks}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE sto_stock_count_info SET 	
+			stock_count_id = #{stockCountId},
+			stock_count_no = #{stockCountNo},
+			update_flag = #{updateFlag},
+			stock_count_type = #{stockCountType},
+			goods_id = #{goodsId},
+			goods_name = #{goodsName},
+			stock_count_num = #{stockCountNum},
+			office_id = #{office.id},
+			manager_userid = #{managerUserid},
+			manager_username = #{managerUsername},
+			create_name = #{createName},
+			update_by = #{updateBy.id},
+			update_name = #{updateName},
+			update_date = #{updateDate},
+			goods_types = #{goodsTypes},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE sto_stock_count_info SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	<select id="getMaxStockNoToday" resultType="StoStockCountInfo">
+		SELECT 
+			<include refid="stoStockCountInfoColumns"/>
+  		FROM sto_stock_count_info a
+  		<include refid="stoStockCountInfoJoins"/>
+ 		WHERE a.stock_count_no =
+       (SELECT max(t.stock_count_no)
+          FROM sto_stock_count_info t
+         WHERE t.office_id = #{office.id}
+          <!--  AND to_char(t.create_date, 'yyyy-MM-dd') = to_char(#{createDate}, 'yyyy-MM-dd')) -->
+           <if test="dbName == 'oracle'">AND to_char(t.create_date, 'yyyy-MM-dd') = to_char(#{createDate}, 'yyyy-MM-dd'))</if>
+		   <if test="dbName == 'mysql'">AND date_format(t.create_date,'%Y-%m-%d') = date_format(#{createDate},'%Y-%m-%d'))</if>
+	</select>
+	
+	<update id="updateStockCountByStockNo">
+		UPDATE sto_stock_count_info SET
+			update_flag = #{updateFlag},
+			manager_userid = #{managerUserid},
+			manager_username = #{managerUsername},
+			update_by = #{updateBy.id},
+			update_name = #{updateName},
+			update_date = #{updateDate}
+		WHERE stock_count_no = #{stockCountNo}
+	</update>
+</mapper>

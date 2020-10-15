@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.collection.v03.dao.CheckCashDetailDao">
+
+	<sql id="checkCashDetailColumns">
+		a.id AS "id",
+		a.out_no AS "outNo",
+		a.out_row_no AS "outRowNo",
+		a.denomination AS "denomination",
+		a.unit_id AS "unitId",
+		a.count_zhang AS "countZhang",
+		a.detail_amount AS "detailAmount",
+		a.par_value AS "parValue",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.del_flag AS "delFlag",
+		a.tickertape AS "tickertape"
+	</sql>
+
+	
+	<sql id="checkCashDetailJoins">
+		<!-- LEFT JOIN sys_user b ON b.id = a.accept_by -->
+		LEFT JOIN sys_user c ON c.id = a.update_by AND c.del_flag = #{DEL_FLAG_NORMAL}
+		LEFT JOIN sys_user d ON d.id = a.create_by AND d.del_flag = #{DEL_FLAG_NORMAL}
+		LEFT JOIN STO_ESCORT_INFO f ON f.ESCORT_ID = a.clear_man_no AND f.del_flag = #{DEL_FLAG_NORMAL}
+	</sql>
+    
+	<select id="get" resultType="checkCashDetail">
+		SELECT 
+			<include refid="checkCashDetailColumns"/>
+		FROM CHECK_CASH_DETAIL a
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="checkCashDetail">
+		SELECT 
+			<include refid="checkCashDetailColumns"/>
+		FROM CHECK_CASH_DETAIL a
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="outNo != null and outNo != ''">
+				AND a.out_no = #{outNo }
+			</if>
+			<if test="outRowNo != null and outRowNo != ''">
+				AND a.out_row_no = #{outRowNo }
+			</if>
+			<if test="unitId != null and unitId != ''">
+				AND a.unit_id = #{unitId }
+			</if>
+		</where>
+		ORDER BY a.out_no,a.out_row_no,a.denomination
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO check_cash_detail(
+		   id,
+		   out_no,
+		   out_row_no,
+		   currency,
+		   denomination,
+		   unit_id,
+		   count_zhang,
+		   detail_amount,
+		   create_by,
+		   create_name,
+		   create_date,
+		   update_by,
+		   update_name,
+		   update_date,
+		   del_flag,
+		   par_value,
+		   tickertape
+		) VALUES (
+			#{id},
+			#{outNo},
+			#{outRowNo},
+			#{currency},
+			#{denomination},
+			#{unitId},
+			#{countZhang},
+			#{detailAmount},
+			#{createBy.id},
+			#{createBy.name},
+			#{createDate},
+			#{updateBy.id},
+			#{updateBy.name},
+			#{updateDate},
+			#{delFlag},
+			#{parValue},
+			#{tickertape}
+		)
+	</insert>
+	
+	
+	<!-- 删除每笔面值表数据 -->
+	<delete id="delete">
+		DELETE FROM check_cash_detail 
+		WHERE out_no = #{outNo}
+		<if test="outRowNo != null and outRowNo != ''">
+		    AND out_row_no = #{outRowNo}
+		</if>
+	</delete>
+	
+
+	<!-- 删除每笔面值表数据(逻辑删除) -->
+	<update id="logicDelete">
+		UPDATE check_cash_detail SET
+		del_flag = '1',
+		update_by = #{updateBy.id}, 
+		update_date = #{updateDate}, 
+		update_name = #{updateBy.name}
+		WHERE out_no = #{outNo}
+		  and del_flag = '0'
+		<if test="outRowNo != null and outRowNo != ''">
+		    AND out_row_no = #{outRowNo}
+		</if>
+	</update>
+	
+</mapper>

@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.screen.v03.dao.ClearScreenDao">
+    <!-- 账务主表 -->
+	<!-- 商行上缴查询 -->
+	<select id="findUpList" resultType="com.coffer.businesses.modules.screen.v03.entity.ClearScreenMain">
+	    SELECT 
+		  case when sum(A.IN_AMOUNT) is null then 0 else sum(A.IN_AMOUNT) end as  "inAmount"
+	    FROM cl_in_main A
+	    WHERE
+	      1=1
+	      and A.BUS_TYPE = #{businessType} 
+	      and A.STATUS='1'
+	      and A.DEL_FLAG='0'
+	      
+	    <!-- 机构 -->
+		<if test="officeList != null and officeList.size != 0">
+			<foreach close=")" collection="officeList" index="index" item="officeItem" open=" and (" separator=" or ">
+				A.CUST_NO = #{officeList[${index}]}
+			</foreach>
+		</if>
+		
+		
+		
+		<!-- 当日 -->
+		<if test="registerDate != null and registerDate != ''">
+			<if test="dbName == 'oracle'">AND TO_CHAR(A.CREATE_DATE, 'yyyy-mm-dd') = TO_CHAR(#{registerDate}, 'yyyy-mm-dd')</if>
+			<if test="dbName == 'mysql'">AND DATE_FORMAT(A.CREATE_DATE, '%Y-%m-%d') = DATE_FORMAT(#{registerDate}, '%Y-%m-%d')</if>
+		</if>
+	</select>
+	
+	<!-- 商行取款查询 -->
+	<select id="findBackList" resultType="com.coffer.businesses.modules.screen.v03.entity.ClearScreenMain">
+	    SELECT 
+		  case when sum(A.OUT_AMOUNT) is null then 0 else sum(A.OUT_AMOUNT) end as  "outAmount"
+	    FROM cl_out_main A
+	    WHERE
+	      1=1
+	      and A.BUS_TYPE = #{businessType} 
+	      and A.STATUS='1'
+	      and A.DEL_FLAG='0'
+	    <!-- 机构 -->
+		<if test="officeList != null and officeList.size != 0">
+			<foreach close=")" collection="officeList" index="index" item="officeItem" open=" and (" separator=" or ">
+				A.CUST_NO = #{officeList[${index}]}
+			</foreach>
+		</if>
+		<!-- 当日 -->
+		<if test="registerDate != null and registerDate != ''">
+			<if test="dbName == 'oracle'">AND TO_CHAR(A.CREATE_DATE, 'yyyy-mm-dd') = TO_CHAR(#{registerDate}, 'yyyy-mm-dd')</if>
+			<if test="dbName == 'mysql'">AND DATE_FORMAT(A.CREATE_DATE, '%Y-%m-%d') = DATE_FORMAT(#{registerDate}, '%Y-%m-%d')</if>
+		</if>
+	</select>
+	
+	<!-- 清分中心差错查询 -->
+	<select id="findErrorList" resultType="com.coffer.businesses.modules.screen.v03.entity.ClearScreenMain">
+	    SELECT 
+		  case when sum(A.ERROR_MONEY) is null then 0 else sum(A.ERROR_MONEY) end as  "errorMoney"
+	    FROM cl_error_info A
+	    WHERE
+	      1=1
+	      and A.STATUS='1'
+	      and A.DEL_FLAG='0'
+	    <!-- 机构 -->
+		<if test="officeList != null and officeList.size != 0">
+			<foreach close=")" collection="officeList" index="index" item="officeItem" open=" and (" separator=" or ">
+				A.OFFICE_ID = #{officeList[${index}]}
+			</foreach>
+		</if>
+		<!-- 当日 -->
+		<if test="registerDate != null and registerDate != ''">
+			<if test="dbName == 'oracle'">AND TO_CHAR(A.CREATE_DATE, 'yyyy-mm-dd') = TO_CHAR(#{registerDate}, 'yyyy-mm-dd')</if>
+			<if test="dbName == 'mysql'">AND DATE_FORMAT(A.CREATE_DATE, '%Y-%m-%d') = DATE_FORMAT(#{registerDate}, '%Y-%m-%d')</if>
+		</if>
+	</select>
+	
+	
+    <!-- 任务管理主表 -->
+	<!-- 清分中心清分复点额的查询 -->
+	<select id="findClearList" resultType="com.coffer.businesses.modules.screen.v03.entity.ClearScreenMain">
+	    SELECT 
+		  case when 
+			  sum(case when A.BUS_TYPE = '08' then A.TOTAL_AMT else 0 end) is null 
+			  then 0 
+			  else sum(case when A.BUS_TYPE = '08' then A.TOTAL_AMT else 0 end) 
+		  end as  "countAmount",
+		  case when 
+		      sum(case when A.BUS_TYPE = '09' then A.TOTAL_AMT else 0 end) is null 
+			  then 0 
+			  else sum(case when A.BUS_TYPE = '09' then A.TOTAL_AMT else 0 end)
+		  end as  "reCountAmount"
+	    FROM cl_task_main A
+	    WHERE
+	      1=1
+	      and A.TASK_TYPE != #{excludeTaskType} 
+	    <!-- 机构 -->
+		<if test="officeList != null and officeList.size != 0">
+			<foreach close=")" collection="officeList" index="index" item="officeItem" open=" and (" separator=" or ">
+				A.OFFICE_ID = #{officeList[${index}]}
+			</foreach>
+		</if>
+		<!-- 当日 -->
+		<if test="registerDate != null and registerDate != ''">
+			<if test="dbName == 'oracle'">AND TO_CHAR(A.CREATE_DATE, 'yyyy-mm-dd') = TO_CHAR(#{registerDate}, 'yyyy-mm-dd')</if>
+			<if test="dbName == 'mysql'">AND DATE_FORMAT(A.CREATE_DATE, '%Y-%m-%d') = DATE_FORMAT(#{registerDate}, '%Y-%m-%d')</if>
+		</if>
+	</select>
+	
+
+	<!-- 自助设备服务统计 -->
+	<select id="findAtmCountList" resultType="com.coffer.businesses.modules.screen.v03.entity.AtmInfo">
+	    SELECT 
+	    	  A.TOFFICE_ID as  "officeId",
+	    	  max(A.TOFFICE_NAME) as  "officeName",
+			  count(*) as  "atmAmount"
+	    FROM atm_info A
+	    WHERE
+	      1=1
+		  and A.DEL_FLAG = #{DEL_FLAG_NORMAL}
+		  
+	    <!-- 机构 -->
+		<if test="officeList != null and officeList.size != 0">
+			<foreach close=")" collection="officeList" index="index" item="officeItem" open=" and (" separator=" or ">
+				A.TOFFICE_ID = #{officeList[${index}]}
+			</foreach>
+		</if>
+		GROUP BY
+			A.TOFFICE_ID
+		ORDER BY
+			"atmAmount"
+			
+	</select>
+	
+	
+	<!-- 上门收款服务统计 -->
+	<select id="findDoorOrderList" resultType="com.coffer.businesses.modules.screen.v03.entity.DoorInfo">
+	    SELECT 
+	    	  A.CUST_NO as  "officeId",
+	    	  max(A.CUST_NAME) as  "officeName",
+			  sum(A.CHECK_AMOUNT) as  "businessAmount"
+	    FROM check_cash_main A
+	    WHERE
+	      1=1
+		  and A.DEL_FLAG = #{DEL_FLAG_NORMAL}
+	    <!-- 机构 -->
+		<if test="officeList != null and officeList.size != 0">
+			<foreach close=")" collection="officeList" index="index" item="officeItem" open=" and (" separator=" or ">
+				A.CUST_NO = #{officeList[${index}]}
+			</foreach>
+		</if>
+
+		GROUP BY
+			A.CUST_NO
+		ORDER BY
+			"businessAmount"
+			
+	</select>
+	
+	
+	<!-- 服务清分业务 -->
+	<select id="getClearCount" resultType="Integer">
+		SELECT
+			count(*) as  "countNum"
+		FROM sys_office a
+		WHERE a.type = '3'
+		  AND a.parent_id = #{id}
+	</select>
+	
+	
+	<!-- 服务金库业务 -->
+	<select id="getGoldBankCount"  resultType="Integer">
+		SELECT
+			count(*) as  "countNum"
+		FROM sys_office a
+		WHERE a.type = '3'
+		  AND a.parent_id = #{id}
+	</select>
+	
+	
+	<!-- 上门收款门店-->
+	<select id="getDoorCustCount"  resultType="Integer">
+		SELECT
+			count(*) as  "countNum"
+		FROM sys_office a
+		WHERE a.type in ('8')
+		<if test="dbName == 'oracle'">and a.parent_ids like '%' || #{id} || '%'</if>
+		<if test="dbName == 'mysql'">and a.parent_ids LIKE CONCAT('%', #{id}, '%') </if>
+	</select>
+	
+	<!-- 上门收款商户 -->
+	<select id="getDoorBusinessCount" resultType="Integer">
+		SELECT
+			count(*) as  "countNum"
+		FROM sys_office a
+		WHERE a.type in ('5')
+		<if test="dbName == 'oracle'">and a.parent_ids like '%' || #{id} || '%'</if>
+		<if test="dbName == 'mysql'">and a.parent_ids LIKE CONCAT('%', #{id}, '%') </if>
+	</select>
+
+	<!-- 服务上门收款-->
+	<select id="getDoorGoldBankCount"  resultType="Integer">
+		SELECT
+			count(*) as  "countNum"
+		FROM sys_office a
+		WHERE a.type = '3'
+		  <if test="dbName == 'oracle'">and a.parent_ids like '%' || #{id} || '%'</if>
+		  <if test="dbName == 'mysql'">and a.parent_ids LIKE CONCAT('%', #{id}, '%') </if>
+		  and exists (
+		  select 1
+		    from sys_office b
+		   where b.type in ('5','8')
+			<if test="dbName == 'oracle'">
+				and b.PARENT_IDS like '%' || a.id || '%'
+			</if>
+			<if test="dbName == 'mysql'">
+				and b.PARENT_IDS like CONCAT('%',a.id, '%')
+			</if>
+		  )
+	</select>
+	
+	<!-- 加钞自助设备(ATM)  -->
+	<select id="getAtmCount"  resultType="Integer">
+		SELECT
+			count(distinct ATM_ID) as  "countNum"
+		FROM atm_info a
+		WHERE 1 = 1 
+	    <!-- 机构 -->
+		<if test="officeList != null and officeList.size != 0">
+			<foreach close=")" collection="officeList" index="index" item="officeItem" open=" and (" separator=" or ">
+				A.TOFFICE_ID = #{officeList[${index}]}
+			</foreach>
+		</if>
+		
+	</select>
+	
+	<!-- 服务自助设备客户(ATM) -->
+	<select id="getAtmCustCount"  resultType="Integer">
+		SELECT
+			count(*) as  "countNum"
+		FROM sys_office a
+		WHERE a.type = '3'
+		  <if test="dbName == 'oracle'">and a.parent_ids like '%' || #{id} || '%'</if>
+		  <if test="dbName == 'mysql'">and a.parent_ids LIKE CONCAT('%', #{id}, '%') </if>
+		  and exists (
+		  select 1
+		    from atm_info b
+		   where b.TOFFICE_ID = a.ID
+		  )
+	</select>
+	
+	<!-- 查询省图编号 -->
+	<select id="getProvinceCode" parameterType="String" resultType="String">
+	SELECT max(a.PRO_JSONCODE)
+ 			 FROM sys_province a
+ 			where a.PRO_NAME = #{name}
+ 			  and a.DEL_FLAG = '0'
+	</select>
+	
+	<!-- 机构表查询省图编号 -->
+	<select id="getOfficeProvinceCode" parameterType="String" resultType="String">
+		SELECT max(a.PRO_JSONCODE)
+ 			 FROM sys_province a
+ 			where a.PROVINCE_CODE in (
+			SELECT max(a.PROVINCE_CODE)
+ 			 FROM sys_office a
+ 			where a.NAME = #{name}
+ 			  and a.DEL_FLAG = '0'
+ 			)
+ 			and a.DEL_FLAG = '0'
+	</select>
+
+	<!-- 查询市图编号 -->
+	<select id="getCityCode" parameterType="String" resultType="String">
+	SELECT max(a.CITY_JSONCODE)
+ 			 FROM sys_city a
+ 			where a.CITY_NAME = #{name}
+ 			  and a.DEL_FLAG = '0'
+	</select>
+	
+	<!-- 机构表查询市图编号 -->
+	<select id="getOfficeCityCode" parameterType="String" resultType="String">
+		SELECT max(a.CITY_JSONCODE)
+ 			 FROM sys_city a
+ 			where a.CITY_CODE in (
+				SELECT max(a.CITY_CODE)
+		 			 FROM sys_office a
+		 			where a.NAME = #{name}
+		 			  and a.DEL_FLAG = '0'
+ 			)
+ 			 and a.DEL_FLAG = '0'
+	</select>
+
+
+	
+	<!-- 查询清分服务金额（接口） -->
+	<select id="getClearServiceAmount" parameterType="String" resultType="com.coffer.businesses.modules.clear.v03.entity.ClOutMain">
+	SELECT sum(a.out_amount) as "outAmount"
+ 			 FROM cl_Out_Main a
+ 			where a.cust_no = #{id}
+  				 and a.bus_type = '02'
+  				 and a.DEL_FLAG = '0'
+	</select>
+	
+	<!-- 查询现金业务金额（接口） -->
+	<select id="getCashAmount" parameterType="String" resultType="com.coffer.businesses.modules.allocation.v01.entity.AllAllocateInfo">
+	SELECT
+		sum(a.CONFIRM_AMOUNT) as "confirmAmount"
+	FROM
+		ALL_ALLOCATE_INFO a
+	WHERE
+		a.BUSINESS_TYPE IN (30, 31)
+	AND a.AOFFICE_ID = #{id}
+	AND a.STATUS = '14'
+	and a.DEL_FLAG = '0'
+	</select>
+	
+		<!-- 查询上门收款金额（接口） -->
+	<select id="getDoorAmount" parameterType="String" resultType="com.coffer.businesses.modules.collection.v03.entity.CheckCashMain">
+	SELECT
+		sum(a.CHECK_AMOUNT) as "checkAmount"
+	FROM
+		check_cash_main a
+	LEFT JOIN sys_office o ON a.CUST_NO = o.id
+	where o.PARENT_ID = #{id}
+	and a.DEL_FLAG = '0'
+	</select>
+	
+	
+		<!-- 自助设备金额（接口） -->
+	<select id="getAtmAmount" parameterType="String" resultType="com.coffer.businesses.modules.atm.v01.entity.AtmBindingInfo">
+	SELECT
+		sum(a.ADD_AMOUNT) as addAmount
+	FROM
+		atm_binding_info a
+	LEFT JOIN atm_info b ON a.ATM_NO = b.ATM_ID
+	where b.TOFFICE_ID = #{id}
+	</select>
+	
+	
+	
+	
+	
+</mapper>

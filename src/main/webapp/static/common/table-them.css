@@ -1,0 +1,71 @@
+@charset "utf-8";
+/* CSS Document */
+/*login*/
+
+body{
+   padding-right:10px;overflow:hidden}
+ table,td,th{
+    border:1px #ececec solid;
+    border-collapse:collapse;
+    word-wrap:break-word;
+     word-break:break-all;
+} 
+
+.table-con{overflow: auto;border: 1px solid #ececec;}
+
+/* @media screen and (max-height:1080px) {
+   .table-con{height:567px}
+}
+@media screen and (max-height:1200px) and (max-width:1600px){
+   .table-con{height:540px}
+}
+@media screen and (max-height:900px) and (max-width:1440px){
+   .table-con{height:400px}
+} */
+
+/* @media only screen and (min-height: 1280px){
+ .table-con{height:700px;}
+}
+@media only screen and (min-height: 900px) and (max-height: 1080px){
+ .table-con{height:600px;}
+}
+@media only screen and (min-height: 768px) and (max-height: 900px){
+ .table-con{height:605px;}
+}
+@media only screen and (max-height: 768px){
+ .table-con{height:405px;}
+} */
+
+/* @media screen and (max-width: 768px) {
+  .table-con{height:520px;}
+}
+
+@media screen and (min-width: 769px) and (max-width: 1087px) {
+  .table-con{height:567px;}
+}
+
+@media screen and (min-width: 1088px) and (max-width: 1279px) {
+  .table-con{height:405px;}
+}
+
+@media screen and (min-width: 1280px) and (max-width: 1471px) {
+	@media screen and (min-height: 1280px) and (max-height: 1471px) {
+	}
+  .table-con{height:572px;}
+}
+
+@media screen and (min-width: 1472px) and (max-width: 1920px) {
+  .table-con{height:605px;}
+}
+
+@media screen and (min-width: 1921px){
+	@media screen and (min-height:1440px){
+		.table-con{height:1088px;}
+	}
+	@media screen and (min-height:1200px) and (max-width:1439px){
+		.table-con{height:850px;}
+	}
+	@media screen and (min-height:1080px) and (max-width:1199px){
+		.table-con{height:726px;}
+	}
+} */

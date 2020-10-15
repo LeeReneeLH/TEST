@@ -1,0 +1,680 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.allocation.v02.dao.PbocAllAllocateInfoDao">
+    
+	<sql id="pbocAllAllocateInfoColumns">
+		all_id,
+		business_type,
+		inout_type,
+		add_plan_id,
+		add_amount,
+		route_id,
+		route_name,
+		roffice_id,
+		roffice_name,
+		aoffice_id,
+		aoffice_name,
+		<!-- 王林    追加                         B-->
+		agent_office_id,
+		agent_office_name,
+		<!-- 王林    追加                         E-->
+		register_number,
+		accept_number,
+		register_amount,
+		confirm_amount,
+		apply_date,
+		status,
+		create_by,
+		create_name,
+		create_date,
+		accept_by,
+		accept_name,
+		accept_date,
+		update_by,
+		update_name,
+		update_date,
+		del_flag,
+		check_result,
+		authorizer,
+		store_handover_id,
+		quota_person_by,
+		quota_person_name,
+		quota_date,
+		approval_by,
+		approval_name,
+		approval_date,
+		scan_gate_date,
+		in_store_scan_gate_date,
+		instore_amount,
+		outstore_amount,
+		CANCELLING_STOCKS_FLAG,
+		version,
+		COMMOND_NUMBER,
+		ALLOCATE_IN_AFTER_OUT_FLAG,
+		ALLOCATE_OUT_ALLIDS,
+		REMARKS,
+		PROCESS_INSTANCE_ID
+	</sql>
+	
+	<resultMap id="PbocAllAllocateInfoResult" type="com.coffer.businesses.modules.allocation.v02.entity.PbocAllAllocateInfo">
+		<id column="all_id" property="allId" />
+		<result column="all_id" property="id" />
+		<result column="business_type" property="businessType" />
+		<result column="inout_type" property="inoutType" />
+		<result column="add_plan_id" property="addPlanId" />
+		<result column="add_amount" property="addAmount" />
+		<result column="route_id" property="routeId" />
+		<result column="route_name" property="routeName" />
+		<result column="roffice_name" property="rofficeName" />
+		<result column="agent_office_name" property="agentOfficeName" />
+		<result column="aoffice_name" property="aofficeName" />
+		<result column="register_number" property="registerNumber" />
+		<result column="accept_number" property="acceptNumber" />
+		<result column="register_amount" property="registerAmount" />
+		<result column="confirm_amount" property="confirmAmount" />
+		<result column="apply_date" property="applyDate" />
+		<result column="status" property="status" />
+		<result column="create_by" property="createBy.id" />
+		<result column="create_name" property="createName" />
+		<result column="create_date" property="createDate" />
+		<result column="accept_by" property="acceptBy.id" />
+		<result column="accept_name" property="acceptName" />
+		<result column="accept_date" property="acceptDate" />
+		<result column="update_by" property="updateBy.id" />
+		<result column="update_name" property="updateName" />
+		<result column="update_date" property="updateDate" />
+		<result column="del_flag" property="delFlag" />
+		<result column="check_result" property="checkResult" />
+		<result column="authorizer" property="authorizer" />
+		<result column="store_handover_id" property="storeHandoverId" />
+		<result column="quota_person_id" property="quotaPersonId" />
+		<result column="quota_person_name" property="quotaPersonName" />
+		<result column="quota_date" property="quotaDate" />
+		<result column="approval_by" property="approvalBy.id" />
+		<result column="approval_name" property="approvalName" />
+		<result column="approval_date" property="approvalDate" />
+		<result column="scan_gate_date" property="scanGateDate" />
+		<result column="in_store_scan_gate_date" property="inStoreScanGateDate" />
+		<result column="instore_amount" property="instoreAmount" />
+		<result column="outstore_amount" property="outstoreAmount" />
+		<result column="str_update_date" property="strUpdateDate" />
+		<result column="version" property="version" />
+		<result column="CANCELLING_STOCKS_FLAG" property="cancellingStocksFlag" />
+		<result column="ALLOCATE_IN_AFTER_OUT_FLAG" property="allocateInAfterOutFlag" />
+		<result column="ALLOCATE_OUT_ALLIDS" property="allocateOutAllIds" />
+		<result column="COMMOND_NUMBER" property="commondNumber" />
+		<result column="REMARKS" property="remarks" />
+		<result column="PROCESS_INSTANCE_ID" property="processInstanceId" />
+		<!-- 登记机构 -->
+		<association property="roffice" column="roffice_id" javaType="Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy"/>
+		<!-- 接收机构 -->
+		<association property="aoffice" column="aoffice_id" javaType="Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy"/>
+		<!-- 代理登记机构 -->
+		<association property="agentOffice" column="agent_office_id" javaType="Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy"/>
+		<!-- 代理登记机构 -->
+		<association property="pbocAllHandoverInfo" column="all_id" javaType="PbocAllHandoverInfo" select="com.coffer.businesses.modules.allocation.v02.dao.PbocAllHandoverInfoDao.getByAllId" fetchType="lazy"/>
+		<!-- 调拨物品明细 -->
+		<collection property="pbocAllAllocateItemList" column="all_id" javaType="ArrayList" ofType="PbocAllAllocateItem"
+		select="com.coffer.businesses.modules.allocation.v02.dao.PbocAllAllocateItemsDao.findListByAllId" fetchType="lazy" />
+		<!-- 出库箱包明细 -->
+		<collection property="pbocAllAllocateDetailList" column="all_id" javaType="ArrayList" ofType="PbocAllAllocateDetail"
+		select="com.coffer.businesses.modules.allocation.v02.dao.PbocAllAllocateDetailDao.getByAllId" fetchType="lazy" />
+	</resultMap>
+	
+	<sql id="pbocAllAllocateInfoJoins">
+	</sql>
+    
+	<select id="get" resultMap="PbocAllAllocateInfoResult">
+		SELECT 
+			<include refid="pbocAllAllocateInfoColumns"/>
+		FROM pboc_all_allocate_info a
+		<include refid="pbocAllAllocateInfoJoins"/>
+		WHERE a.all_id = #{allId}
+	</select>
+	
+	<!-- 用于排他验证 -->
+	<select id="getByIdVersion" resultMap="PbocAllAllocateInfoResult">
+		SELECT 
+			<include refid="pbocAllAllocateInfoColumns"/>
+		FROM pboc_all_allocate_info a
+		<include refid="pbocAllAllocateInfoJoins"/>
+		WHERE a.all_id = #{allId}
+		  and a.version = #{version}
+	</select>
+	
+	<select id="findList" resultMap="PbocAllAllocateInfoResult">
+		SELECT 
+			<include refid="pbocAllAllocateInfoColumns"/>
+		FROM pboc_all_allocate_info a
+		<include refid="pbocAllAllocateInfoJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+	        <!-- 主表：出入库类型 -->
+	        <if test="inoutType != null and inoutType != ''">
+	            and a.inout_type = '${inoutType}'
+	        </if>
+			<!-- 主表：业务状态 -->
+	        <if test="status != null and status != ''">
+	            and a.status = '${status}'
+	        </if>
+            <!-- 主表：大于指定状态 -->
+            <if test="statusRight != null and statusRight != ''">
+                and a.status &gt; '${statusRight}'
+            </if>
+            <!-- 主表：小于指定状态 -->
+            <if test="statusLeft != null and statusLeft != ''">
+                and a.status &lt; '${statusLeft}'
+            </if>
+	        <if test="statuses != null and statuses.size != 0">
+	        	and a.status in
+            	<foreach collection="statuses" item="item" separator="," open="(" close=")" index="index">
+		 			'${item}'
+				</foreach>
+			</if>
+	        <!-- 主表：接收时间(开始) -->
+	        <if test="acceptTimeStart != null and acceptTimeStart != ''">
+	            <if test="dbName == 'oracle'">and TO_CHAR(a.scan_gate_date, 'yyyy-mm-dd hh24:mi:ss') >= '${acceptTimeStart}'</if>
+	            <if test="dbName == 'mysql'">and DATE_FORMAT(a.scan_gate_date, '%Y-%m-%d %H:%i:%S') >= '${acceptTimeStart}'</if>
+	        </if>
+	        <!-- 主表：接收时间(结束) -->
+	        <if test="acceptTimeEnd != null and acceptTimeEnd != ''">
+	            <if test="dbName == 'oracle'">and '${acceptTimeEnd}' >= TO_CHAR(a.scan_gate_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+	            <if test="dbName == 'mysql'">and '${acceptTimeEnd}' >= DATE_FORMAT(a.scan_gate_date, '%Y-%m-%d %H:%i:%S')</if>
+	        </if>
+	        <!-- 主表：用款/上缴  时间(开始) -->
+	        <if test="searchDateStart != null and searchDateStart != ''">
+	            <if test="dbName == 'oracle'">and TO_CHAR(a.apply_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+	            <if test="dbName == 'mysql'">and DATE_FORMAT(a.apply_date, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+	        </if>
+	        <!-- 主表：用款/上缴 时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            <if test="dbName == 'oracle'">and '${searchDateEnd}' >= TO_CHAR(a.apply_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+	            <if test="dbName == 'mysql'">and '${searchDateEnd}' >= DATE_FORMAT(a.apply_date, '%Y-%m-%d %H:%i:%S')</if>
+	        </if>
+	        <!-- 主表：出入库时间(开始) -->
+	        <if test="scanGateDateStart != null and scanGateDateStart != ''">
+	            <if test="dbName == 'oracle'">and TO_CHAR(a.SCAN_GATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${scanGateDateStart}'</if>
+	            <if test="dbName == 'mysql'">and DATE_FORMAT(a.SCAN_GATE_DATE, '%Y-%m-%d %H:%i:%S') >= '${scanGateDateStart}'</if>
+	        </if>
+	        <!-- 主表：出入库时间(结束) -->
+	        <if test="scanGateDateEnd != null and scanGateDateEnd != ''">
+	            <if test="dbName == 'oracle'">and '${scanGateDateEnd}' >= TO_CHAR(a.SCAN_GATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+	            <if test="dbName == 'mysql'">and '${scanGateDateEnd}' >= DATE_FORMAT(a.SCAN_GATE_DATE, '%Y-%m-%d %H:%i:%S')</if>
+	        </if>
+	        <!-- 主表：复点入库时间(开始) -->
+	        <if test="inStoreScanGateDateStart != null and inStoreScanGateDateStart != ''">
+	            <if test="dbName == 'oracle'">and TO_CHAR(a.in_store_scan_gate_date, 'yyyy-mm-dd hh24:mi:ss') >= '${inStoreScanGateDateStart}'</if>
+	            <if test="dbName == 'mysql'">and DATE_FORMAT(a.in_store_scan_gate_date, '%Y-%m-%d %H:%i:%S') >= '${inStoreScanGateDateStart}'</if>
+	        </if>
+	        <!-- 主表：复点入库时间(结束) -->
+	        <if test="inStoreScanGateDateEnd != null and inStoreScanGateDateEnd != ''">
+	            <if test="dbName == 'oracle'">and '${inStoreScanGateDateEnd}' >= TO_CHAR(a.in_store_scan_gate_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+	            <if test="dbName == 'mysql'">and '${inStoreScanGateDateEnd}' >= DATE_FORMAT(a.in_store_scan_gate_date, '%Y-%m-%d %H:%i:%S')</if>
+	        </if>
+	        <!-- 主表：登记机构 -->
+			<if test="roffice != null and roffice.id != null and roffice.id != ''">
+				and a.roffice_id = '${roffice.id}'
+			</if>
+			<!-- 主表：接收机构 -->
+			<if test="aoffice != null and aoffice.id != null and aoffice.id != ''">
+				and a.aoffice_id = '${aoffice.id}'
+			</if>
+			<!-- 王林   追加                              B  -->
+			<!-- 主表：代理机构 -->
+			<if test="agentOffice != null and agentOffice.id != null and agentOffice.id != ''">
+				and a.agent_office_id = '${agentOffice.id}'
+			</if>
+			<!-- 王林   追加                             E  -->
+			
+			<!-- 主表：流水号 -->
+			<if test="allId != null and allId != ''">
+				and a.all_id like '%${allId}%'
+			</if>
+			<!-- 主表：业务类型 -->
+			<if test="businessType != null and businessType != ''">
+				and a.business_type = '${businessType}'
+			</if>
+			<if test="businessTypeList != null and businessTypeList.size != 0">
+	        	and a.business_type in
+            	<foreach collection="businessTypeList" item="item" separator="," open="(" close=")" index="index">
+		 			'${item}'
+				</foreach>
+			</if>
+			<!-- 主表：登记机构名称 -->
+			<if test="rofficeName != null and rofficeName != ''">
+				and a.roffice_name like '%${rofficeName}%'
+			</if>
+			<!-- 主表：接收机构名称 -->
+			<if test="aofficeName != null and aofficeName != ''">
+				and a.aoffice_name like '%${aofficeName}%'
+			</if>
+			<!-- 主表：不显示驳回数据 -->
+			<if test="showRejectData != null and showRejectData == 1">
+				and a.status <![CDATA[<>]]> '21'
+			</if>
+			<!-- 主表：流水号 -->
+			<if test="commondNumber != null and commondNumber != ''">
+				and a.COMMOND_NUMBER = '${commondNumber}'
+			</if>
+			<!-- 主表：流水号 -->
+			<if test="allocateInAfterOutFlag != null and allocateInAfterOutFlag != ''">
+				and a.ALLOCATE_IN_AFTER_OUT_FLAG = '${allocateInAfterOutFlag}'
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.accept_date
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 接口查询使用 -->
+	<select id="findListInterface" resultMap="PbocAllAllocateInfoResult">
+		SELECT 
+			<include refid="pbocAllAllocateInfoColumns"/>
+		FROM pboc_all_allocate_info a
+		<include refid="pbocAllAllocateInfoJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+	        <!-- 主表：业务类型 -->
+	        <if test="businessType != null and businessType != ''">
+	            and a.business_type = '${businessType}'
+	        </if>
+	        <if test="businessTypeList != null and businessTypeList.size != 0">
+	        	and a.business_type in
+            	<foreach collection="businessTypeList" item="item" separator="," open="(" close=")" index="index">
+		 			'${item}'
+				</foreach>
+			</if>
+			<!-- 主表：业务状态 -->
+	        <if test="status != null and status != ''">
+	            and a.status = '${status}'
+	        </if>
+			<!-- 待处理状态和当日完成业务状态 -->
+	        <if test="statuses != null and statuses != ''">
+            	and (a.status in
+            	<foreach collection="statuses" item="statusTag" separator="," open="(" close=")" index="">
+		 			#{statusTag}
+				</foreach>
+				<!--or (TO_CHAR(a.scan_gate_date, 'yyyy-mm-dd') = to_char(sysdate,'yyyy-MM-dd') and (a.status = '42'))-->
+				<!--
+					<if test="dbName == 'oracle'"> or TO_CHAR(a.scan_gate_date, 'yyyy-mm-dd') = to_char(#{acceptDate},'yyyy-MM-dd')</if>
+					<if test="dbName == 'mysql'">and DATE_FORMAT(a.scan_gate_date, '%Y-%m-%d') = DATE_FORMAT(#{acceptDate}, '%Y-%m-%d')</if>
+				-->
+				)
+	        </if>
+	        <!-- 主表：登记机构 -->
+			<if test="roffice != null and roffice != null and roffice != ''">
+				and a.roffice_id = '${roffice.id}'
+			</if>
+	        <!-- 主表：接收机构 -->
+			<if test="aoffice != null and aoffice != null and aoffice != ''">
+				and a.aoffice_id = '${aoffice.id}'
+			</if>
+			<if test="strUpdateDate != null and strUpdateDate != ''">
+	            <if test="dbName == 'oracle'">and TO_CHAR(a.update_date, 'yyyyMMddHHmmssff6') >= '${strUpdateDate}'</if>
+	            <if test="dbName == 'mysql'">and DATE_FORMAT(a.update_date, '%Y%m%d%H%i%S%f') >= '${strUpdateDate}'</if>
+	        </if>
+		</where>
+			ORDER BY a.scan_gate_date, a.update_date desc
+	</select>
+	
+	<select id="findAllList" resultMap="PbocAllAllocateInfoResult">
+		SELECT 
+			<include refid="pbocAllAllocateInfoColumns"/>
+		FROM pboc_all_allocate_info a
+		<include refid="pbocAllAllocateInfoJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO pboc_all_allocate_info(
+			all_id,
+			business_type,
+			inout_type,
+			add_plan_id,
+			add_amount,
+			route_id,
+			route_name,
+			roffice_id,
+			roffice_name,
+			aoffice_id,
+			aoffice_name,
+			<!-- 王林    追加                         B-->
+			agent_office_id,
+			agent_office_name,
+			<!-- 王林    追加                         E-->
+			register_number,
+			accept_number,
+			register_amount,
+			confirm_amount,
+			apply_date,
+			status,
+			create_by,
+			create_name,
+			create_date,
+			accept_by,
+			accept_name,
+			accept_date,
+			update_by,
+			update_name,
+			update_date,
+			del_flag,
+			check_result,
+			authorizer,
+			store_handover_id,
+			quota_person_by,
+			quota_person_name,
+			quota_date,
+			scan_gate_date,
+			approval_by,
+			approval_name,
+			approval_date,
+			cancelling_stocks_flag,
+			version,
+			COMMOND_NUMBER,
+			ALLOCATE_IN_AFTER_OUT_FLAG,
+			ALLOCATE_OUT_ALLIDS,
+			outstore_amount,
+			REMARKS
+		) VALUES (
+			#{allId},
+			#{businessType},
+			#{inoutType},
+			#{addPlanId},
+			#{addAmount},
+			#{routeId},
+			#{routeName},
+			#{roffice.id},
+			#{roffice.name},
+			#{aoffice.id},
+			#{aoffice.name},
+			<!-- 王林    追加                         B-->
+			#{agentOffice.id},
+			#{agentOffice.name},
+			<!-- 王林    追加                         E-->
+			#{registerNumber},
+			#{acceptNumber},
+			#{registerAmount},
+			#{confirmAmount},
+			#{applyDate},
+			#{status},
+			#{createBy.id},
+			#{createBy.name},
+			#{createDate},
+			#{acceptBy.id},
+			#{acceptBy.name},
+			#{acceptDate},
+			#{updateBy.id},
+			#{updateBy.name},
+			#{updateDate},
+			#{delFlag},
+			#{checkResult},
+			#{authorizer},
+			#{storeHandoverId},
+			#{quotaPersonBy.id},
+			#{quotaPersonBy.name},
+			#{quotaDate},
+			#{scanGateDate},
+			#{approvalBy.id},
+			#{approvalBy.name},
+			#{approvalDate},
+			#{cancellingStocksFlag},
+			#{version},
+			#{commondNumber},
+			#{allocateInAfterOutFlag},
+			#{allocateOutAllIds},
+			#{outstoreAmount},
+			#{remarks}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE pboc_all_allocate_info SET 
+			add_plan_id = #{addPlanId},
+			add_amount = #{addAmount},
+			route_id = #{routeId},
+			route_name = #{routeName},
+			roffice_id = #{roffice.id},
+			roffice_name = #{roffice.name},
+			aoffice_id = #{aoffice.id},
+			aoffice_name = #{aoffice.name},
+			<!-- 王林    追加                         B-->
+			agent_office_id = #{agentOffice.id},
+			agent_office_name = #{agentOffice.name},
+			<!-- 王林    追加                         E-->
+			register_number = #{registerNumber},
+			accept_number = #{acceptNumber},
+			register_amount = #{registerAmount},
+			confirm_amount = #{confirmAmount},
+			apply_date = #{applyDate},
+			status = #{status},
+			accept_by = #{acceptBy.id},
+			accept_name = #{acceptBy.name},
+			accept_date = #{acceptDate},
+			update_by = #{updateBy.id},
+			update_name = #{updateBy.name},
+			update_date = #{updateDate},
+			check_result = #{checkResult},
+			authorizer = #{authorizer},
+			store_handover_id = #{storeHandoverId},
+			quota_person_by = #{quotaPersonBy.id},
+			quota_person_name = #{quotaPersonBy.name},
+			quota_date = #{quotaDate},
+			approval_by =#{approvalBy.id},
+			approval_name=#{approvalBy.name},
+			approval_date=#{approvalDate},
+			scan_gate_date=#{scanGateDate},
+			instore_amount=#{instoreAmount},
+			cancelling_stocks_flag=#{cancellingStocksFlag},
+			outstore_amount = #{outstoreAmount},
+			REMARKS = #{remarks},
+			version = version + 1
+		WHERE all_id = #{allId}
+		<!-- <if test="version != null">
+		  and version = #{version}
+		</if> -->
+	</update>
+	
+	<update id="updateStatusByAllId">
+		UPDATE pboc_all_allocate_info SET 
+			<if test="status =='21' or status =='22'">
+				approval_by =#{approvalBy.id},
+				approval_name=#{approvalBy.name},
+				approval_date=#{approvalDate},
+			</if>
+			<if test="status =='22'">
+				confirm_amount = #{confirmAmount},
+			</if>
+			<!-- 下拨：待出库 -->
+			<if test="status =='40' and businessType == '51'">
+				quota_person_by = #{quotaPersonBy.id},
+				quota_person_name = #{quotaPersonBy.name},
+				quota_date = #{quotaDate},
+			</if>
+			<!-- 调拨出库：待出库 -->
+			<if test="status =='40' and businessType == '54'">
+				quota_person_by = #{quotaPersonBy.id},
+				quota_person_name = #{quotaPersonBy.name},
+				quota_date = #{quotaDate},
+			</if>
+			<!-- 销毁出库：待出库 -->
+			<if test="status =='40' and businessType == '55'">
+				quota_person_by = #{quotaPersonBy.id},
+				quota_person_name = #{quotaPersonBy.name},
+				quota_date = #{quotaDate},
+			</if>
+			<!-- 复点出库：待出库 -->
+			<if test="status =='40' and businessType == '56'">
+				quota_person_by = #{quotaPersonBy.id},
+				quota_person_name = #{quotaPersonBy.name},
+				quota_date = #{quotaDate},
+			</if>
+			<!-- 上缴：待出库 -->
+			<if test="status =='40' and (businessType == '50' or businessType == '52')">
+				approval_by =#{approvalBy.id},
+				approval_name=#{approvalBy.name},
+				approval_date=#{approvalDate},
+				confirm_amount = #{confirmAmount},
+			</if>
+			
+			<if test="status =='99'">
+				accept_by = #{acceptBy.id},
+				accept_name = #{acceptBy.name},
+				accept_date = #{acceptDate},
+			</if>
+			update_by = #{updateBy.id},
+			update_name = #{updateBy.name},
+			update_date = #{updateDate},
+			status = #{status},
+			version = version + 1
+		WHERE all_id = #{allId}
+		<!-- <if test="version != null">
+		  and version = #{version}
+		</if> -->
+	</update>
+	
+    <update id="updateSelective">
+        UPDATE pboc_all_allocate_info
+        <set>
+            <if test="addPlanId != null and addPlanId != ''">
+                add_plan_id = #{addPlanId},
+            </if>
+            <if test="addAmount != null and addAmount != ''">
+                add_amount = #{addAmount},
+            </if>
+            <if test="routeId != null and routeId != ''">
+                route_id = #{routeId},
+            </if>
+            <if test="routeName != null and routeName != ''">
+                route_name = #{routeName},
+            </if>
+            <if test="roffice != null and roffice.id != null and roffice.id != ''">
+                roffice_id = #{roffice.id},
+            </if>
+            <if test="roffice != null and roffice.name != null and roffice.name != ''">
+                roffice_name = #{roffice.name},
+            </if>
+            <if test="aoffice != null and aoffice.id != null and aoffice.id != ''">
+               aoffice_id = #{aoffice.id},
+            </if>
+            <if test="aoffice != null and aoffice.name != null and aoffice.name != ''">
+                aoffice_name = #{aoffice.name},
+            </if>
+            <if test="registerNumber != null">
+                register_number = #{registerNumber},
+            </if>
+            <if test="acceptNumber != null">
+                accept_number = #{acceptNumber},
+            </if>
+            <if test="registerAmount != null">
+                register_amount = #{registerAmount},
+            </if>
+            <if test="instoreAmount != null">
+                instore_amount = #{instoreAmount},
+            </if>
+            <if test="outstoreAmount != null">
+                outstore_amount = #{outstoreAmount},
+            </if>
+            <if test="confirmAmount != null">
+                confirm_amount = #{confirmAmount},
+            </if>
+            <if test="applyDate != null">
+                apply_date = #{applyDate},
+            </if>
+            <if test="status != null and status != ''">
+                status = #{status},
+            </if>
+            <if test="scanGateDate != null">
+                scan_gate_date = #{scanGateDate},
+            </if>
+            <if test="inStoreScanGateDate != null">
+                in_store_scan_gate_date = #{inStoreScanGateDate},
+            </if>
+            <if test="acceptBy != null and acceptBy.id != null and acceptBy.id != ''">
+                accept_by = #{acceptBy.id},
+            </if>
+            <if test="acceptBy != null and acceptBy.name != null and acceptBy.name != ''">
+                accept_name = #{acceptBy.name},
+            </if>
+            <if test="acceptDate != null">
+                accept_date = #{acceptDate},
+            </if>
+            <if test="updateBy != null and updateBy.id != null and updateBy.id != ''">
+                update_by = #{updateBy.id},
+            </if>
+            <if test="updateBy != null and updateBy.name != null and updateBy.name != ''">
+                update_name = #{updateBy.name},
+            </if>
+            <if test="updateDate != null">
+                update_date = #{updateDate},
+            </if>
+            <if test="checkResult != null and checkResult != ''">
+                check_result = #{checkResult},
+            </if>
+            <if test="authorizer != null and authorizer != ''">
+                authorizer = #{authorizer},
+            </if>
+            <if test="storeHandoverId != null and storeHandoverId != ''">
+                store_handover_id = #{storeHandoverId},
+            </if>
+            <if test="quotaPersonBy != null and quotaPersonBy.id != null and quotaPersonBy.id != ''">
+                quota_person_by = #{quotaPersonBy.id},
+            </if>
+            <if test="quotaPersonBy != null and quotaPersonBy.name != null and quotaPersonBy.name != ''">
+                quota_person_name = #{quotaPersonBy.name},
+            </if>
+            <if test="quotaDate != null">
+                quota_date = #{quotaDate},
+            </if>
+            <if test="cancellingStocksFlag != null and cancellingStocksFlag != ''">
+                cancelling_stocks_flag = #{cancellingStocksFlag},
+            </if>
+             <if test="remarks != null and remarks != ''">
+            	REMARKS = #{remarks},
+            </if>
+            version = version + 1
+        </set>
+        WHERE all_id = #{allId}
+		<!-- <if test="version != null">
+		  and version = #{version}
+		</if> -->
+    </update>
+	
+	<update id="delete">
+		UPDATE pboc_all_allocate_info SET 
+			del_flag = #{DEL_FLAG_DELETE},
+			version = version + 1
+		WHERE all_id = #{allId}
+		<!-- <if test="version != null">
+		  and version = #{version}
+		</if> -->
+	</update>
+	
+	<update id="updateAllocateInAfterOutFlag">
+		UPDATE pboc_all_allocate_info SET 
+			ALLOCATE_IN_AFTER_OUT_FLAG = #{allocateInAfterOutFlag},
+			version = version + 1
+		WHERE all_id IN (#{allId})
+	</update>
+	
+	<update id="updateProcessInstanceId">
+		UPDATE pboc_all_allocate_info SET 
+			process_instance_id = #{processInstanceId}
+		WHERE all_id = #{allId}
+	</update>
+	
+</mapper>

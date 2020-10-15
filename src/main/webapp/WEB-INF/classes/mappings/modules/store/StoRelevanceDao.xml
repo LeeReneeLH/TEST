@@ -1,0 +1,590 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoRelevanceDao">
+    
+	<sql id="stoRelevanceColumns">
+		a.relevance_id AS "relevanceId",
+		a.group_id AS "groupId",
+		a.currency AS "currency",
+		a.classification AS "classification",
+		a.sets AS "sets",
+		a.cash AS "cash",
+		a.denomination AS "denomination",
+		a.unit AS "unit",
+		a.bak AS "bak",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createName",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_name AS "updateName",
+		a.update_date AS "updateDate"
+	</sql>
+	
+	<sql id="stoRelevanceJoins">
+	</sql>
+    
+	<select id="get" resultType="StoRelevance">
+		SELECT 
+			<include refid="stoRelevanceColumns"/>
+		FROM sto_relevance a
+		<include refid="stoRelevanceJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="StoRelevance">
+		SELECT 
+			<include refid="stoRelevanceColumns"/>
+		FROM sto_relevance a
+		<include refid="stoRelevanceJoins"/>
+		<where>
+			
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="StoRelevance">
+		SELECT 
+			<include refid="stoRelevanceColumns"/>
+		FROM sto_relevance a
+		<include refid="stoRelevanceJoins"/>
+		<where>
+			
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO sto_relevance(
+			relevance_id,
+			group_id,
+			currency,
+			classification,
+			sets,
+			cash,
+			denomination,
+			unit,
+			bak,
+			create_by,
+			create_name,
+			create_date,
+			update_by,
+			update_name,
+			update_date
+		) VALUES (
+			#{relevanceId},
+			#{groupId},
+			#{currency},
+			#{classification},
+			#{sets},
+			#{cash},
+			#{denomination},
+			#{unit},
+			#{bak},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE sto_relevance SET 	
+			relevance_id = #{relevanceId},
+			group_id = #{groupId},
+			currency = #{currency},
+			classification = #{classification},
+			sets = #{sets},
+			cash = #{cash},
+			denomination = #{denomination},
+			unit = #{unit},
+			bak = #{bak},
+			create_name = #{createName},
+			update_by = #{updateBy.id},
+			update_name = #{updateName},
+			update_date = #{updateDate}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		DELETE FROM sto_relevance
+		WHERE id = #{id}
+	</update>
+	<!-- 保存物品关联 ======start-->
+	<insert id="saveRelevance">
+		begin
+		<!-- 1、根据“币种”、“类别”、“套别”、“材质”删除旧数据 -->
+		delete from STO_RELEVANCE
+		 where CURRENCY = #{currency}
+		   and CLASSIFICATION = #{classification}
+		   and (SETS = #{sets} or SETS is null)
+		   and CASH = #{cash};
+		<!-- 2、增添新数据 -->
+		insert into STO_RELEVANCE
+		  (RELEVANCE_ID,
+		  GROUP_ID,
+		  CURRENCY,
+		  CLASSIFICATION,
+		  SETS,
+		  CASH,
+		  DENOMINATION,
+		  UNIT,
+		  CREATE_BY,
+		  CREATE_NAME,
+		  CREATE_DATE,
+		  UPDATE_BY,
+		  UPDATE_NAME,
+		  UPDATE_DATE
+		  )
+		<foreach collection="denomiList" item="itemDenomi" separator="UNION ALL" close=";">
+			<foreach collection="unitList" item="itemUnit" separator="UNION ALL">
+			  select 
+			  <!-- #{groupId,jdbcType=VARCHAR}||#{itemDenomi,jdbcType=VARCHAR}||#{itemUnit,jdbcType=VARCHAR} RELEVANCE_ID, -->
+			  		<if test="dbName == 'oracle'"> #{groupId,jdbcType=VARCHAR}||#{itemDenomi,jdbcType=VARCHAR}||#{itemUnit,jdbcType=VARCHAR} RELEVANCE_ID,</if>
+					<if test="dbName == 'mysql'">CONCAT(#{groupId,jdbcType=VARCHAR},#{itemDenomi,jdbcType=VARCHAR},#{itemUnit,jdbcType=VARCHAR}) RELEVANCE_ID,</if>
+			         #{groupId,jdbcType=VARCHAR} GROUP_ID,
+			         #{currency,jdbcType=VARCHAR} CURRENCY,
+			         #{classification,jdbcType=VARCHAR} CLASSIFICATION,
+			         #{sets,jdbcType=VARCHAR} SETS,
+			         #{cash,jdbcType=VARCHAR} CASH,
+			         #{itemDenomi,jdbcType=VARCHAR} DENOMINATION,
+			         #{itemUnit,jdbcType=VARCHAR} UNIT,
+			         #{createBy.id,jdbcType=VARCHAR} CREATE_BY,
+			         #{createName,jdbcType=VARCHAR} CREATE_NAME,
+			         #{createDate,jdbcType=VARCHAR} CREATE_DATE,
+			         #{updateBy.id,jdbcType=VARCHAR} UPDATE_BY,
+			         #{updateName,jdbcType=VARCHAR} UPDATE_NAME,
+			         #{updateDate,jdbcType=VARCHAR} UPDATE_DATE
+			    from DUAL
+			</foreach>
+		</foreach>
+		end;
+	</insert>
+	
+	<!-- 保存物品关联 ======start-->
+	<delete id="delRelevanceMysql">
+		<!-- 1、根据“币种”、“类别”、“套别”、“材质”删除旧数据 -->
+		delete from STO_RELEVANCE
+		 where CURRENCY = #{currency}
+		   and CLASSIFICATION = #{classification}
+		   and (SETS = #{sets} or SETS is null)
+		   and CASH = #{cash}
+	</delete >
+	
+	<!-- 保存物品关联 ======start-->
+	<insert id="saveRelevanceMysql">
+		<!-- 2、增添新数据 -->
+		insert into STO_RELEVANCE
+		  (RELEVANCE_ID,
+		  GROUP_ID,
+		  CURRENCY,
+		  CLASSIFICATION,
+		  SETS,
+		  CASH,
+		  DENOMINATION,
+		  UNIT,
+		  CREATE_BY,
+		  CREATE_NAME,
+		  CREATE_DATE,
+		  UPDATE_BY,
+		  UPDATE_NAME,
+		  UPDATE_DATE
+		  )
+		<foreach collection="denomiList" item="itemDenomi" separator="UNION ALL">
+			<foreach collection="unitList" item="itemUnit" separator="UNION ALL">
+			  select 
+			  <!-- #{groupId,jdbcType=VARCHAR}||#{itemDenomi,jdbcType=VARCHAR}||#{itemUnit,jdbcType=VARCHAR} RELEVANCE_ID, -->
+			  		<if test="dbName == 'oracle'"> #{groupId,jdbcType=VARCHAR}||#{itemDenomi,jdbcType=VARCHAR}||#{itemUnit,jdbcType=VARCHAR} RELEVANCE_ID,</if>
+					<if test="dbName == 'mysql'">CONCAT(#{groupId,jdbcType=VARCHAR},#{itemDenomi,jdbcType=VARCHAR},#{itemUnit,jdbcType=VARCHAR}) RELEVANCE_ID,</if>
+			         #{groupId,jdbcType=VARCHAR} GROUP_ID,
+			         #{currency,jdbcType=VARCHAR} CURRENCY,
+			         #{classification,jdbcType=VARCHAR} CLASSIFICATION,
+			         #{sets,jdbcType=VARCHAR} SETS,
+			         #{cash,jdbcType=VARCHAR} CASH,
+			         #{itemDenomi,jdbcType=VARCHAR} DENOMINATION,
+			         #{itemUnit,jdbcType=VARCHAR} UNIT,
+			         #{createBy.id,jdbcType=VARCHAR} CREATE_BY,
+			         #{createName,jdbcType=VARCHAR} CREATE_NAME,
+			         #{createDate,jdbcType=VARCHAR} CREATE_DATE,
+			         #{updateBy.id,jdbcType=VARCHAR} UPDATE_BY,
+			         #{updateName,jdbcType=VARCHAR} UPDATE_NAME,
+			         #{updateDate,jdbcType=VARCHAR} UPDATE_DATE
+			    from DUAL
+			</foreach>
+		</foreach>
+	</insert>
+	
+	<!-- 保存物品关联 ======end-->
+	<!-- 查询物品关联列表 ======start-->
+	<select id="findListRelevance" resultType="StoRelevance">
+		select distinct RELEVANCE.GROUP_ID,
+		                CURRENCY.LABEL        CURRENCY_NAME,
+		                CLASSIFICATION.LABEL  CLASSIFICATION_NAME,
+		                EDITION.LABEL         SETS_NAME,
+		                CASH.LABEL            CASH_NAME,
+		                RELEVANCE.CREATE_NAME,
+		                RELEVANCE.CREATE_DATE,
+		                RELEVANCE.UPDATE_NAME,
+		                RELEVANCE.UPDATE_DATE
+		  from STO_RELEVANCE RELEVANCE
+		 inner join STO_DICT CURRENCY
+		    on RELEVANCE.CURRENCY = CURRENCY.VALUE
+		   and CURRENCY.TYPE = 'currency'
+		 inner join STO_DICT CLASSIFICATION
+		    on RELEVANCE.CLASSIFICATION = CLASSIFICATION.VALUE
+		   and CLASSIFICATION.TYPE = 'classification'
+		 left join STO_DICT EDITION
+		    on RELEVANCE.SETS = EDITION.VALUE
+		   and EDITION.TYPE = 'edition'
+		 inner join STO_DICT CASH
+		    on RELEVANCE.CASH = CASH.VALUE
+		   and CASH.TYPE = 'cash'
+		 where 1 = 1
+		<if test="currency != null and currency !=''">
+			and RELEVANCE.CURRENCY = #{currency}
+		</if>
+		<if test="classification != null and classification !=''">
+			and RELEVANCE.CLASSIFICATION = #{classification}
+		</if>
+		<if test="sets != null and sets !=''">
+			and RELEVANCE.SETS = #{sets}
+		</if>
+		<if test="cash != null and cash !=''">
+			and RELEVANCE.CASH = #{cash}
+		</if>
+		<if test="denomiList != null and denomiList.size != 0">
+			<foreach close=")" collection="denomiList" index="index" item="denomiItem" open=" and (" separator=" or ">
+				<!-- RELEVANCE.DENOMINATION = #{denomiItem} -->
+				RELEVANCE.DENOMINATION = #{denomiList[${index}]}
+			</foreach>
+		</if>
+		<if test="unitList != null and unitList.size != 0">
+			<foreach close=")" collection="unitList" index="index" item="unitItem" open=" and (" separator=" or ">
+				<!-- RELEVANCE.UNIT = #{unitItem} -->
+				RELEVANCE.UNIT = #{unitList[${index}]}
+			</foreach>
+		</if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY CURRENCY_NAME, CLASSIFICATION_NAME, SETS_NAME, CASH_NAME
+			</otherwise>
+		</choose>
+	</select>
+	<!-- 查询物品关联列表 ======end-->
+	<!-- 查询物品关联明细 ======start-->
+	<resultMap id="stoRelevanceResult" type="StoRelevance">
+		<result property="groupId" column="GROUP_ID" />
+        <result property="currency" column="CURRENCY" />
+		<result property="classification" column="CLASSIFICATION" />
+		<result property="sets" column="SETS" />
+		<result property="cash" column="CASH" />
+		<collection property="denomiList" column="GROUP_ID" ofType="java.lang.String" select="getDenomination"/>
+		<collection property="unitList" column="GROUP_ID" ofType="java.lang.String" select="getUnit"/>
+	</resultMap>
+	<select id="getRelevance" resultMap="stoRelevanceResult">
+		select distinct GROUP_ID, CURRENCY, CLASSIFICATION, SETS, CASH
+		  from STO_RELEVANCE
+		 where GROUP_ID = #{groupId}
+	</select>
+	<select id="getDenomination" resultType="java.lang.String">
+		select distinct DENOMINATION
+		  from STO_RELEVANCE
+		 where GROUP_ID = #{groupId}
+		 order by DENOMINATION
+	</select>
+	<select id="getUnit" resultType="java.lang.String">
+		select distinct UNIT
+		  from STO_RELEVANCE
+		 where GROUP_ID = #{groupId}
+		 order by UNIT
+	</select>
+	<!-- 查询物品关联明细 ======end-->
+	<!-- 删除物品关联 ======start-->
+	<delete id="deleteRelevance">
+		delete from STO_RELEVANCE where GROUP_ID = #{groupId}
+	</delete>
+	<!-- 删除物品关联 ======end-->
+	<!-- 获取物品关联币种 ======start-->
+	<select id="getReleCurrencyList" resultType="StoDict">
+		select distinct SD.VALUE ID, SD.VALUE, SD.LABEL, SD.REF_CODE, SD.SORT
+		  from STO_RELEVANCE SR
+		 inner join STO_DICT SD
+		    on SR.CURRENCY = SD.VALUE
+		<if test="currencyReserveList != null and currencyReserveList.size != 0">
+			<foreach close=")" collection="currencyReserveList" index="index" item="reserveItem" open=" and (" separator=" or ">
+				SD.VALUE = #{currencyReserveList[${index}]}
+			</foreach>
+		</if>
+		<if test="currencyRemoveList != null and currencyRemoveList.size != 0">
+			<foreach close=")" collection="currencyRemoveList" index="index" item="removeItem" open=" and (" separator=" and ">
+				SD.VALUE != #{currencyRemoveList[${index}]}
+			</foreach>
+		</if>
+		   and SD.TYPE = 'currency'
+		   <!-- and SD.DEL_FLAG = '0' -->
+		 order by SD.SORT
+	</select>
+	<!-- 获取物品关联币种 ======end-->
+	<!-- 获取物品关联类别 ======start-->
+	<select id="getReleClassificationList" resultType="StoDict">
+		select distinct SD.VALUE ID, SD.VALUE, SD.LABEL, SD.SORT
+		  from STO_RELEVANCE SR
+		 inner join STO_DICT SD
+		    on SR.CLASSIFICATION = SD.VALUE
+		<if test="classificationReserveList != null and classificationReserveList.size != 0">
+			<foreach close=")" collection="classificationReserveList" index="index" item="reserveItem" open=" and (" separator=" or ">
+				SD.VALUE = #{classificationReserveList[${index}]}
+			</foreach>
+		</if>
+		<if test="classificationRemoveList != null and classificationRemoveList.size != 0">
+			<foreach close=")" collection="classificationRemoveList" index="index" item="removeItem" open=" and (" separator=" and ">
+				SD.VALUE != #{classificationRemoveList[${index}]}
+			</foreach>
+		</if>
+		   and SR.CURRENCY = #{currency}
+		   and SD.TYPE = 'classification'
+		   <!-- and SD.DEL_FLAG = '0' -->
+		 order by SD.SORT
+	</select>
+	<!-- 获取物品关联类别 ======end-->
+	<!-- 获取物品关联套别 ======start-->
+	<select id="getReleSetsList" resultType="StoDict">
+		select distinct SD.VALUE ID, SD.VALUE, SD.LABEL, SD.SORT
+		  from STO_RELEVANCE SR
+		 inner join STO_DICT SD
+		    on SR.SETS = SD.VALUE
+		<if test="editionReserveList != null and editionReserveList.size != 0">
+			<foreach close=")" collection="editionReserveList" index="index" item="reserveItem" open=" and (" separator=" or ">
+				SD.VALUE = #{editionReserveList[${index}]}
+			</foreach>
+		</if>
+		<if test="editionRemoveList != null and editionRemoveList.size != 0">
+			<foreach close=")" collection="editionRemoveList" index="index" item="removeItem" open=" and (" separator=" and ">
+				SD.VALUE != #{editionRemoveList[${index}]}
+			</foreach>
+		</if>
+		   and SR.CURRENCY = #{currency}
+		   and SR.CLASSIFICATION = #{classification}
+		   and SD.TYPE = 'edition'
+		   <!-- and SD.DEL_FLAG = '0' -->
+		 order by SD.SORT
+	</select>
+	<!-- 获取物品关联套别 ======end-->
+	<!-- 获取物品关联材质 ======start-->
+	<select id="getReleCashList" resultType="StoDict">
+		select distinct SD.VALUE ID, SD.VALUE, SD.LABEL, SD.REF_CODE, SD.SORT
+		  from STO_RELEVANCE SR
+		 inner join STO_DICT SD
+		    on SR.CASH = SD.VALUE
+		<if test="cashReserveList != null and cashReserveList.size != 0">
+			<foreach close=")" collection="cashReserveList" index="index" item="reserveItem" open=" and (" separator=" or ">
+				SD.VALUE = #{cashReserveList[${index}]}
+			</foreach>
+		</if>
+		<if test="cashRemoveList != null and cashRemoveList.size != 0">
+			<foreach close=")" collection="cashRemoveList" index="index" item="removeItem" open=" and (" separator=" and ">
+				SD.VALUE != #{cashRemoveList[${index}]}
+			</foreach>
+		</if>
+		   and SR.CURRENCY = #{currency}
+		   and SR.CLASSIFICATION = #{classification}
+		   and SR.SETS = #{sets}
+		   and SD.TYPE = 'cash'
+		   <!-- and SD.DEL_FLAG = '0' -->
+		 order by SD.SORT
+	</select>
+	<!-- 获取物品关联材质 ======end-->
+	<!-- 获取物品关联面值 ======start-->
+	<select id="getReleDenominationList" resultType="StoDict">
+		select distinct SD.VALUE ID, SD.VALUE, SD.LABEL, SD.SORT
+		  from STO_RELEVANCE SR
+		 inner join STO_DICT SD
+		    on SR.DENOMINATION = SD.VALUE
+		<if test="denominationReserveList != null and denominationReserveList.size != 0">
+			<foreach close=")" collection="denominationReserveList" index="index" item="reserveItem" open=" and (" separator=" or ">
+				SD.VALUE = #{denominationReserveList[${index}]}
+			</foreach>
+		</if>
+		<if test="denominationRemoveList != null and denominationRemoveList.size != 0">
+			<foreach close=")" collection="denominationRemoveList" index="index" item="removeItem" open=" and (" separator=" and ">
+				SD.VALUE != #{denominationRemoveList[${index}]}
+			</foreach>
+		</if>
+		   and SR.CURRENCY = #{currency}
+		   and SR.CLASSIFICATION = #{classification}
+		   and SR.SETS = #{sets}
+		   and SR.CASH = #{cash}
+		   and 
+		   <!-- SD.TYPE = #{currencyRefCode} || #{cashRefCode} || 'den' -->
+		   <if test="dbName == 'oracle'">SD.TYPE = #{currencyRefCode} || #{cashRefCode} || 'den'</if>
+		   <if test="dbName == 'mysql'">SD.TYPE =CONCAT(#{currencyRefCode}, #{cashRefCode},'den')</if>
+		   <!-- and SD.DEL_FLAG = '0' -->
+		 order by SD.SORT
+	</select>
+	<!-- 获取物品关联面值 ======end-->
+	<!-- 获取物品关联单位 ======start-->
+	<select id="getReleUnitList" resultType="StoDict">
+		select distinct SD.VALUE ID, SD.VALUE, SD.LABEL, SD.SORT
+		  from STO_RELEVANCE SR
+		 inner join STO_DICT SD
+		    on SR.UNIT = SD.VALUE
+		<if test="unitReserveList != null and unitReserveList.size != 0">
+			<foreach close=")" collection="unitReserveList" index="index" item="reserveItem" open=" and (" separator=" or ">
+				SD.VALUE = #{unitReserveList[${index}]}
+			</foreach>
+		</if>
+		<if test="unitRemoveList != null and unitRemoveList.size != 0">
+			<foreach close=")" collection="unitRemoveList" index="index" item="removeItem" open=" and (" separator=" and ">
+				SD.VALUE != #{unitRemoveList[${index}]}
+			</foreach>
+		</if>
+		   and SR.CURRENCY = #{currency}
+		   and SR.CLASSIFICATION = #{classification}
+		   and SR.SETS = #{sets}
+		   and SR.CASH = #{cash}
+		   and SR.DENOMINATION = #{denomination}
+		   and SD.TYPE = 'c_unit'
+		   <!-- and SD.DEL_FLAG = '0' -->
+		 order by SD.SORT
+	</select>
+	<!-- 获取物品关联单位 ======end-->
+	<!-- 根据币种和材质，获取面值选项 ======start-->
+	<select id="getDenOptions" resultType="StoDict">
+	select distinct DEN_T.VALUE ID, DEN_T.VALUE, DEN_T.LABEL, DEN_T.SORT
+	  from STO_DICT DEN_T
+	 inner join STO_DICT CUR_T
+	    on SUBSTR(DEN_T.TYPE, 1, 3) = CUR_T.REF_CODE
+	   and DEN_T.TYPE like '%den'
+	   and DEN_T.DEL_FLAG = '0'
+	   and CUR_T.VALUE = #{currency}
+	   and CUR_T.TYPE = 'currency'
+	   and CUR_T.DEL_FLAG = '0'
+	 inner join STO_DICT CASH_T
+	    on SUBSTR(DEN_T.TYPE, 4, 1) = CASH_T.REF_CODE
+	   and DEN_T.TYPE like '%den'
+	   and DEN_T.DEL_FLAG = '0'
+	   and CASH_T.VALUE = #{cash}
+	   and CASH_T.TYPE = 'cash'
+	   and CASH_T.DEL_FLAG = '0'
+	 order by DEN_T.SORT
+	</select>
+	<!-- 根据币种和材质，获取面值选项 ======end-->
+	<!-- 根据材质，获取单位选项 ======start-->
+	<select id="getUnitOptions" resultType="StoDict">
+	select distinct UNIT_T.VALUE ID, UNIT_T.VALUE, UNIT_T.LABEL, UNIT_T.SORT
+	  from STO_DICT UNIT_T
+	 inner join STO_DICT CASH_T
+	    on UNIT_T.REF_CODE = CASH_T.REF_CODE
+	   and UNIT_T.TYPE = 'c_unit'
+	   and UNIT_T.DEL_FLAG = '0'
+	   and CASH_T.VALUE = #{cash}
+	   and CASH_T.TYPE = 'cash'
+	   and CASH_T.DEL_FLAG = '0'
+	 order by UNIT_T.SORT
+	</select>
+	<!-- 根据材质，获取单位选项 ======end-->
+	<!-- 获取字典表重空分类 ======start-->
+	<select id="getBlankBillKindList" resultType="StoDict">
+		select distinct SD.VALUE ID, SD.VALUE, SD.LABEL, SD.REF_CODE, SD.SORT
+		  from STO_DICT SD
+		 where SD.TYPE = 'blank_bill_kind'
+		   and SD.DEL_FLAG = '0'
+		<if test="blankBillKindReserveList != null and blankBillKindReserveList.size != 0">
+			<foreach close=")" collection="blankBillKindReserveList" index="index" item="reserveItem" open=" and (" separator=" or ">
+				SD.VALUE = #{blankBillKindReserveList[${index}]}
+			</foreach>
+		</if>
+		<if test="blankBillKindRemoveList != null and blankBillKindRemoveList.size != 0">
+			<foreach close=")" collection="blankBillKindRemoveList" index="index" item="removeItem" open=" and (" separator=" and ">
+				SD.VALUE != #{blankBillKindRemoveList[${index}]}
+			</foreach>
+		</if>
+		 order by SD.SORT
+	</select>
+	<!-- 获取字典表重空分类 ======end-->
+	<!-- 获取字典表重空类型 ======start-->
+	<select id="getBlankBillTypeList" resultType="StoDict">
+		select distinct SD.VALUE ID, SD.VALUE, SD.LABEL, SD.SORT
+		  from STO_DICT SD
+		 where SD.TYPE = 'blank_bill_type'
+		   and SD.DEL_FLAG = '0'
+		<if test="blankBillTypeReserveList != null and blankBillTypeReserveList.size != 0">
+			<foreach close=")" collection="blankBillTypeReserveList" index="index" item="reserveItem" open=" and (" separator=" or ">
+				SD.VALUE = #{blankBillTypeReserveList[${index}]}
+			</foreach>
+		</if>
+		<if test="blankBillTypeRemoveList != null and blankBillTypeRemoveList.size != 0">
+			<foreach close=")" collection="blankBillTypeRemoveList" index="index" item="removeItem" open=" and (" separator=" and ">
+				SD.VALUE != #{blankBillTypeRemoveList[${index}]}
+			</foreach>
+		</if>
+		   and SD.REF_CODE = #{kindRefCode}
+		 order by SD.SORT
+	</select>
+	<!-- 获取字典表重空类型 ======end-->
+	<!-- 获取物品表重空分类 ======start-->
+	<select id="getBlbiKindList" resultType="StoDict">
+		select distinct SUBSTR(GOODS_ID, 1, 3) ID, SD.VALUE, SD.LABEL, SD.SORT
+		  from STO_GOODS SG
+		 inner join STO_DICT SD
+		    on SUBSTR(SG.GOODS_ID, 1, 3) = SD.VALUE
+		   and SG.DEL_FLAG = '0'
+		   and SG.GOODS_TYPE = '03'
+		   <!-- and SD.DEL_FLAG = '0' -->
+		   and SD.TYPE = 'blank_bill_kind'
+		<if test="blankBillKindReserveList != null and blankBillKindReserveList.size != 0">
+			<foreach close=")" collection="blankBillKindReserveList" index="index" item="reserveItem" open=" and (" separator=" or ">
+				SD.VALUE = #{blankBillKindReserveList[${index}]}
+			</foreach>
+		</if>
+		<if test="blankBillKindRemoveList != null and blankBillKindRemoveList.size != 0">
+			<foreach close=")" collection="blankBillKindRemoveList" index="index" item="removeItem" open=" and (" separator=" and ">
+				SD.VALUE != #{blankBillKindRemoveList[${index}]}
+			</foreach>
+		</if>
+		 order by SD.SORT
+	</select>
+	<!-- 获取物品表重空分类 ======end-->
+	<!-- 获取物品表重空类型 ======start-->
+	<select id="getBlbiTypeList" resultType="StoDict">
+		select distinct SUBSTR(GOODS_ID, 4, 3) ID, SD.VALUE, SD.LABEL, SD.SORT
+		  from STO_GOODS SG
+		 inner join STO_DICT SD
+		    on SUBSTR(SG.GOODS_ID, 4, 3) = SD.VALUE
+		   and SG.DEL_FLAG = '0'
+		   and SG.GOODS_TYPE = '03'
+		   and SUBSTR(SG.GOODS_ID, 1, 3) = #{blankBillKind}
+		   <!-- and SD.DEL_FLAG = '0' -->
+		   and SD.TYPE = 'blank_bill_type'
+		<if test="blankBillTypeReserveList != null and blankBillTypeReserveList.size != 0">
+			<foreach close=")" collection="blankBillTypeReserveList" index="index" item="reserveItem" open=" and (" separator=" or ">
+				SD.VALUE = #{blankBillTypeReserveList[${index}]}
+			</foreach>
+		</if>
+		<if test="blankBillTypeRemoveList != null and blankBillTypeRemoveList.size != 0">
+			<foreach close=")" collection="blankBillTypeRemoveList" index="index" item="removeItem" open=" and (" separator=" and ">
+				SD.VALUE != #{blankBillTypeRemoveList[${index}]}
+			</foreach>
+		</if>
+		 order by SD.SORT
+	</select>
+	<!-- 获取物品表重空类型 ======end-->
+</mapper>

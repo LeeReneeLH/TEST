@@ -1,0 +1,609 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.atm.v01.dao.AtmPlanInfoDao">
+    
+	<sql id="atmPlanInfoColumns">
+		a.plan_id AS "planId",
+		a.add_plan_id AS "addPlanId",
+		a.add_cash_group_id AS "addCashGroupId",<!-- modify by wanglu 2017-11-16 -->
+		a.atm_no AS "atmNo",
+		a.atm_address AS "atmAddress",
+		a.atm_account AS "atmAccount",
+		a.atm_brands_name AS "atmBrandsName",
+		a.atm_type_name AS "atmTypeName",
+		a.office_id AS "office.id",
+		a.add_amount AS "addAmount",
+		a.get_box_num AS "getBoxNum",
+		a.back_box_num AS "backBoxNum",
+		a.deposit_box_num AS "depositBoxNum",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createName",
+		a.create_date AS "createDate",
+		a.del_flag AS "delFlag",
+		o8.name AS "office.name",
+		a.atm_type_no AS "atmTypeNo",
+		a.add_plan_name AS "addPlanName",
+		a.status AS "status",
+		a.get_box_num + a.get_box_num + a.deposit_box_num AS "boxNum",
+		a.sum_box_num AS "sumBoxNum"		
+	</sql>
+	
+	<sql id="atmPlanInfoJoins">
+		LEFT JOIN sys_office o8 ON o8.id = a.office_id
+	</sql>
+	
+	<!-- 关联加钞组 -->
+	<!-- add by wanglu 2017-11-16 -->
+	<sql id="leftJoinAddCashGroup1">
+		LEFT JOIN add_cash_group acg
+		ON a.add_cash_group_id = acg.group_id
+	</sql>
+	<!-- add by wanglu 2017-11-16 -->
+	<sql id="leftJoinAddCashGroup2">
+	<!--  修改左联条件 wzj 2017-12-8 begin -->
+		LEFT JOIN add_cash_group acg
+		ON m.add_cash_group_id = acg.group_id and acg.del_flag=#{DEL_FLAG_NORMAL}
+		<!-- end -->
+	</sql>
+	
+	<!-- 加钞组：加钞组名称列 -->
+	<!-- add by wanglu 2017-11-16 -->
+	<sql id="acg_groupName">
+		CASE WHEN acg.del_flag = '0' THEN acg.group_name ELSE "" END AS addCashGroupName,<!-- acg.group_name AS addCashGroupName, --><!-- IF(acg.del_flag=0, '' AS addCashGroupName, acg.group_name AS addCashGroupName), -->
+	</sql>
+    
+	<select id="get" resultType="AtmPlanInfo">
+		SELECT 
+			<include refid="atmPlanInfoColumns"/>
+		FROM atm_plan_info a
+		<include refid="atmPlanInfoJoins"/>
+		<!-- 修改id为plan_id(主键) by:wxz 2017-12-14 -->
+		WHERE a.plan_id = #{planId}
+		<!-- end -->
+	</select>
+	
+	<select id="findList" resultType="AtmPlanInfo">
+		SELECT 
+			<include refid="atmPlanInfoColumns"/>
+		FROM atm_plan_info a
+		<include refid="atmPlanInfoJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}	
+			<if test="planId != null and planId !=''">
+				<!-- 修改id为plan_id(主键) by:wxz 2017-12-14 -->
+				AND a.plan_id = #{planId}
+				<!-- end -->
+			</if>
+			<if test="addPlanId != null and addPlanId !=''">
+				AND a.add_plan_id = #{addPlanId}
+			</if>
+			<if test="atmNo != null and atmNo != ''">
+				AND a.atm_no = #{atmNo}
+			</if>
+			<if test="statuses != null">
+				AND a.status in 
+				<foreach collection="statuses" item="statusTag" separator="," open="(" close=")" index="">
+				 	#{statusTag}
+				</foreach>
+			</if>
+			${sqlMap.dsf}			
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findByAddPlanId" resultType="Map">
+		SELECT 
+			a.add_plan_id AS "addPlanId",
+			a.atm_no AS "atmNo",
+			<!-- 左连atm_info表，查出该ATM机对应的rfid 修改人：wxz 2017-11-14 begin  -->
+			b.rfid AS "rfid",
+			<!-- end -->
+			a.atm_account AS "atmAccount",
+			a.atm_address AS "atmAddress",
+			a.add_amount AS "addAmount",
+			a.get_box_num AS "getBoxNum",
+			a.back_box_num AS "backBoxNum",
+			a.deposit_box_num AS "depositBoxNum"
+			<!-- 左连atm_info表，查出该ATM机对应的rfid 修改人：wxz 2017-11-14 begin  -->
+			FROM atm_plan_info a LEFT JOIN atm_info b ON a.atm_no = b.atm_id
+			<!-- end -->
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			AND b.del_flag = #{DEL_FLAG_NORMAL}		
+			AND a.add_plan_id = #{addPlanId}
+			<!-- 添加查询状态条件(计划出库)	修改人：wxz 2017-11-22 begin -->
+			<if test="status != null and status != ''">
+				AND a.status = #{status}
+			</if>
+			<!-- end -->
+		</where>
+	</select>
+	
+	<select id="findByMap" resultType="Map">
+		SELECT 
+			add_plan_id AS "addPlanId",
+			add_plan_name AS "addPlanName",
+			COUNT(add_plan_id) AS "atmNum",
+			<!-- sum(get_box_num) AS "boxNum", -->
+			sum(get_box_num) + sum(back_box_num) + sum(deposit_box_num) AS "boxNum",
+			SUM(add_amount) AS "totalAmount"
+		FROM atm_plan_info a
+		<where>
+			a.del_flag = '0'
+			AND a.office_id = #{officeId}
+			<!-- 查询类型修改为状态以及 更新时间的数据库类型判断添加	修改人: wxz  2017-11-17 begin -->
+			AND a.status = #{status}
+			<if test="today != null and today != ''">
+				AND
+					<if test="dbName == 'oracle'">to_char(a.update_date,'yyyy-mm-dd') = #{today}</if>
+					<if test="dbName == 'mysql'">DATE_FORMAT(a.update_date, '%Y-%m-%d') = #{today}</if> 
+			</if>
+			<!-- end -->
+		</where>
+		GROUP BY a.add_plan_id,a.add_plan_name
+	</select>
+	
+	<select id="addPlanView" resultType="AtmPlanInfo">
+		SELECT 
+			<include refid="atmPlanInfoColumns"/>
+		FROM atm_plan_info a
+		<include refid="atmPlanInfoJoins"/>
+		<where>
+		a.add_plan_id = #{addPlanId}
+		<if test="atmNo != null and atmNo != ''">
+			AND a.atm_no = #{atmNo}
+		</if>
+		<if test="status != null and status != ''">
+			AND a.status = #{status}
+		</if>	
+		AND a.del_flag = #{DEL_FLAG_NORMAL}	
+		</where>	
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAddPlanList" resultType="AtmPlanInfo">
+		SELECT
+			m.add_plan_id AS addPlanId,
+       		m.add_plan_name AS addPlanName,
+       		<!-- 查询机构id 修改人：wxz 2017-11-23 begin -->
+       		m.office_id AS "office.id",
+       		<!-- end -->
+       		m.add_cash_group_id AS addCashGroupId,<!-- modify by wanglu 2017-11-16 -->
+       		<!-- 修改查询组名称 wzj 2017-12-8 begin -->
+       		acg.group_name AS "addCashGroupName",
+       		<!-- <include refid="acg_groupName"/>modify by wanglu 2017-11-16 -->
+       		<!-- end -->
+       		count(1) AS atmNum,
+       		sum(m.add_amount) AS addAmount,
+       		<!-- sum(m.get_box_num) AS boxNum, -->
+			sum(m.get_box_num) + sum(m.back_box_num) + sum(m.deposit_box_num) AS boxNum,
+       		max(m.status) AS status,
+       		max(m.create_date) AS createDate
+       	FROM atm_plan_info m
+       	<include refid="leftJoinAddCashGroup2"/><!-- modify by wanglu 2017-11-16 -->
+       	WHERE m.add_plan_id IN (
+       	SELECT distinct(a.add_plan_id) FROM atm_plan_info a
+       	<include refid="atmPlanInfoJoins"/>
+       	WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+       	<!-- 开始时间 -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			 AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 结束时间 -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND
+	    	<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'"> '${searchDateEnd}'>=DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>
+       	<if test="atmNo != null and atmNo != ''">
+       		AND a.atm_no = #{atmNo}
+       	</if>
+       	<if test="addPlanId != null and addPlanId != ''">
+       		AND a.add_plan_id = #{addPlanId}
+       	</if>
+       	<!-- 数据范围过滤 -->
+		${sqlMap.dsf}
+       	)
+       	AND m.del_flag = #{DEL_FLAG_NORMAL}
+       	<!-- 修改分组wzj 2017-12-8 begin --> 
+       	GROUP BY m.add_plan_id, m.add_plan_name,m.office_id,m.add_cash_group_id,acg.group_name
+       	<!-- end -->
+       	<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO atm_plan_info(
+			plan_id,
+			add_plan_id,
+			atm_no,
+			atm_address,
+			atm_account,
+			atm_brands_name,
+			atm_type_name,
+			office_id,
+			add_amount,
+			get_box_num,
+			back_box_num,
+			deposit_box_num,
+			create_by,
+			create_name,
+			create_date,
+			del_flag,
+			atm_type_no,
+			add_plan_name,
+			status,
+			update_by,
+			update_name,
+			update_date,
+			sum_box_num
+		) VALUES (
+			#{planId},
+			#{addPlanId},
+			#{atmNo},
+			#{atmAddress},
+			#{atmAccount},
+			#{atmBrandsName},
+			#{atmTypeName},
+			#{office.id},
+			#{addAmount},
+			#{getBoxNum},
+			#{backBoxNum},
+			#{depositBoxNum},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{delFlag},
+			#{atmTypeNo},
+			#{addPlanName},
+			#{status},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate},
+			#{sumBoxNum}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE atm_plan_info SET 	
+			plan_id = #{planId},
+			add_plan_id = #{addPlanId},
+			atm_no = #{atmNo},
+			atm_address = #{atmAddress},
+			atm_account = #{atmAccount},
+			atm_brands_name = #{atmBrandsName},
+			atm_type_name = #{atmTypeName},
+			office_id = #{office.id},
+			add_amount = #{addAmount},
+			get_box_num = #{getBoxNum},
+			back_box_num = #{backBoxNum},
+			deposit_box_num = #{depositBoxNum},
+			create_name = #{createName},
+			del_flag = #{delFlag},
+			atm_type_no = #{atmTypeNo},
+			add_plan_name = #{addPlanName},
+			status = #{status},
+			update_by = #{updateBy.id},
+			update_name = #{updateName},
+			update_date = #{updateDate},
+			sum_box_num = #{sumBoxNum}
+		WHERE plan_id = #{planId}
+	</update>
+	
+	<update id="delete">
+		UPDATE atm_plan_info SET
+		del_flag = #{DEL_FLAG_DELETE}
+		WHERE add_plan_id = #{addPlanId}
+	</update>
+	
+	<update id="updateStatus">
+		UPDATE atm_plan_info SET
+			status = #{status},
+			update_by = #{updateBy.id}, 
+			update_name = #{updateName},
+			update_date = #{updateDate}
+		WHERE add_plan_id = #{addPlanId}
+		<if test="atmNo != null and atmNo != ''">
+			AND atm_no = #{atmNo}
+		</if>
+	</update>
+	
+	<!-- LLF验证当日加钞计划是否存在 -->
+	<select id="validatePlanExist" resultType="AtmPlanInfo">
+		SELECT 
+		<include refid="atmPlanInfoColumns"/>
+		FROM atm_plan_info a
+		<include refid="atmPlanInfoJoins"/>
+		WHERE (a.atm_no = #{atmNo} OR a.atm_account = #{atmAccount})
+   		AND to_char(a.update_date, 'yyyy-MM-dd') =
+       		to_char(SYSDATE, 'yyyy-MM-dd')
+   		AND (a.status = '2' or a.status = '3')
+   		ORDER BY a.status ASC
+	</select>
+	
+	<!-- 统计当前计划下不同型号下各类型钞箱数量 -->
+	<select id="getATMtypenoBoxNum" resultType="Map">
+		SELECT t.atm_type_no as "atmTypeNo",
+       		   m.atm_type_name as "atmTypeName",
+       		   sum(t.get_box_num) as "getBoxNum",
+       		   sum(t.back_box_num) as "backBoxNum",
+               sum(t.deposit_box_num) as "depositBoxNum",
+               m.get_box_type as "getBoxType",
+       		   m.back_box_type as "backBoxType",
+               m.deposit_box_type as "depositBoxType"
+      FROM atm_plan_info t
+      JOIN atm_brands_info m
+      ON t.atm_type_no = m.atm_type_no
+     WHERE t.add_plan_id = #{addPlanId}
+     		AND t.del_flag='0'
+     GROUP BY t.atm_type_no,m.atm_type_name,m.get_box_type,m.back_box_type,m.deposit_box_type
+	</select>
+	
+	<!-- ADD QPH 2017-11-23 统计当前计划下不同型号下各类型钞箱数量 -->
+	<select id="getATMtypeByAddPlanId" resultType="Map">
+		SELECT t.atmPlanName AS "atmPlanName",
+			   t.boxNum AS "boxNum",
+			   t.boxType AS "boxType",
+			   t.type AS "type"
+		FROM
+		( SELECT
+			t.add_plan_name AS atmPlanName,
+			sum(t.get_box_num) AS boxNum,
+			m.get_box_type AS boxType,
+			'2' AS type
+		FROM
+			atm_plan_info t
+		JOIN atm_brands_info m ON t.atm_type_no = m.atm_type_no
+		WHERE 
+			t.add_plan_id = #{addPlanId}
+			AND t.del_flag='0'
+		GROUP BY
+			m.get_box_type,t.add_plan_name
+		UNION ALL
+			SELECT
+				t.add_plan_name AS atmTypeName,
+				sum(t.back_box_num) AS boxNum,
+				m.back_box_type AS boxType,
+				'1' AS type
+			FROM
+				atm_plan_info t
+			JOIN atm_brands_info m ON t.atm_type_no = m.atm_type_no
+			WHERE
+				t.add_plan_id = #{addPlanId}
+				AND t.del_flag='0'
+			GROUP BY
+				m.back_box_type,t.add_plan_name
+			UNION ALL
+				SELECT
+					t.add_plan_name AS atmTypeName,
+					sum(t.deposit_box_num) AS boxNum,
+					m.deposit_box_type AS boxType,
+					'3' AS type
+				FROM
+					atm_plan_info t
+				JOIN atm_brands_info m ON t.atm_type_no = m.atm_type_no
+				WHERE
+					t.add_plan_id = #{addPlanId}
+					AND t.del_flag='0'
+				GROUP BY
+					m.deposit_box_type,t.add_plan_name
+	) t
+	</select>
+	
+	
+	
+	
+	
+	<sql id="atmPlanInfoAndBindingColumns">
+		a.plan_id          AS "planId",
+		a.add_plan_id      AS "addPlanId",
+		a.atm_no           AS "atmNo",
+		a.atm_address      AS "atmAddress",
+		a.atm_account      AS "atmAccount",
+		a.atm_brands_name  AS "atmBrandsName",
+		a.atm_type_name    AS "atmTypeName",
+		a.office_id        AS "office.id",
+		a.add_amount       AS "addAmount",
+		a.get_box_num      AS "getBoxNum",
+		a.back_box_num     AS "backBoxNum",
+		a.deposit_box_num  AS "depositBoxNum",
+		a.create_by        AS "createBy.id",
+		a.create_name      AS "createName",
+		a.create_date      AS "createDate",
+		a.update_by        AS "updateBy.id",
+		a.update_name      AS "updateName",
+		a.update_date      AS "updateDate",
+		a.del_flag         AS "delFlag",
+		a.atm_type_no      AS "atmTypeNo",
+		a.add_plan_name    AS "addPlanName",
+		a.status           AS "status",
+		h.escort_user_name AS "escortUserName",
+		b.binding_id       AS "binding.bindingId",
+        b.atm_no           AS "binding.atmNo",
+        b.atm_account      AS "binding.atmAccount",
+        b.add_plan_id      AS "binding.addPlanId",
+        b.atm_clear_serial AS "binding.atmClearSerial",
+        b.amount           AS "binding.amount",
+        b.core_amount      AS "binding.coreAmount",
+        b.status           AS "binding.status",
+        b.recording_status AS "binding.recordingStatus",
+        b.escort1_by       AS "binding.escort1By",
+        b.escort1_name     AS "binding.escort1Name",
+        b.escort2_by       AS "binding.escort2By",
+        b.escort2_name     AS "binding.escort2Name",
+        b.create_date      AS "binding.createDate",
+		d.detail_id        AS "detail.detailId",
+		d.box_no           AS "detail.boxNo"
+	</sql>
+
+	<!-- 加钞计划与绑定信息 -->
+	<resultMap id="atmPlanInfo" type="com.coffer.businesses.modules.atm.v01.entity.AtmPlanInfo">
+	    <id column="planId" property="id" />
+	    <result column="addPlanId" property="addPlanId"/>
+	    <result column="atmNo" property="atmNo"/>
+	    <result column="atmAddress" property="atmAddress"/>
+	    <result column="atmAccount" property="atmAccount"/>
+	    <result column="atmBrandsName" property="atmBrandsName"/>
+	    <result column="atmTypeName" property="atmTypeName"/>
+	    <result column="office.id" property="office.id"/>
+	    <result column="addAmount" property="addAmount"/>
+	    <result column="getBoxNum" property="getBoxNum"/>
+	    <result column="backBoxNum" property="backBoxNum"/>
+	    <result column="depositBoxNum" property="depositBoxNum"/>
+	    <result column="createBy.id" property="createBy.id"/>
+	    <result column="createName" property="createName"/>
+	    <result column="createDate" property="createDate"/>
+	    <result column="updateBy.id" property="updateBy.id"/>
+	    <result column="updateName" property="updateName"/>
+	    <result column="updateDate" property="updateDate"/>
+	    <result column="delFlag" property="updateBy.id"/>
+	    <result column="atmTypeNo" property="atmTypeNo"/>
+	    <result column="addPlanName" property="addPlanName"/>
+	    <result column="status" property="status"/>
+	    <result column="escortUserName" property="escortUserName"/>
+	   	<!--  绑定详细信息 -->
+	    <collection property="atmBindingInfo" ofType="com.coffer.businesses.modules.atm.v01.entity.AtmBindingInfo">
+	        <id column="binding.bindingId" property="id"/>
+	        <result column="binding.atmNo" property="atmNo"/>
+	        <result column="binding.atmAccount" property="atmAccount"/>
+	        <result column="binding.addPlanId" property="addPlanId"/>
+	        <result column="binding.atmClearSerial" property="atmClearSerial"/>
+	        <result column="binding.amount" property="amount"/>
+	        <result column="binding.coreAmount" property="coreAmount"/>
+	        <result column="binding.status" property="status"/>
+	        <result column="binding.recordingStatus" property="recordingStatus"/>
+	        <result column="binding.escort1By" property="escort1By"/>
+	        <result column="binding.escort1Name" property="escort1Name"/>
+	        <result column="binding.escort2By" property="escort2By"/>
+	        <result column="binding.escort2Name" property="escort2Name"/>
+	        <result column="binding.createDate" property="createDate"/>
+		    <!--  绑定详细信息 -->
+		    <collection property="abdL" ofType="com.coffer.businesses.modules.atm.v01.entity.AtmBindingDetail">
+		        <id column="detail.detailId" property="id"/>
+		        <result column="detail.boxNo" property="boxNo"/>
+		    </collection>
+	    </collection>
+	</resultMap>
+
+	<select id="findAllList" resultMap="atmPlanInfo">
+		SELECT 
+			<include refid="atmPlanInfoAndBindingColumns"/>
+		FROM atm_plan_info a, atm_binding_info b, atm_binding_detail d, all_allocate_info e, all_handover_info h
+		<where>
+			a.add_plan_id = b.add_plan_id
+			and a.atm_no = b.atm_no
+			and b.binding_id = d.binding_id
+			and a.add_plan_id = e.add_plan_id
+			and e.all_id = h.all_id
+			and a.del_flag = '0'
+			<!-- 业务状态列表 -->
+			<if test="statuses != null">
+				and a.status in 
+				<foreach collection="statuses" item="statusTag" separator="," open="(" close=")" index="">
+				 	#{statusTag}
+				</foreach>
+			</if>
+			<!-- 登记时间(开始) -->
+			<if test="createTimeStart != null and createTimeStart != ''">
+				<if test="dbName == 'oracle'">and TO_CHAR(a.update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName == 'mysql'">and DATE_FORMAT(a.update_date, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+			</if>
+			<!-- 登记时间(结束) -->
+			<if test="createTimeEnd != null and createTimeEnd != ''">
+				<if test="dbName == 'oracle'">and '${searchDateEnd}' >= TO_CHAR(a.update_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName == 'mysql'">and '${searchDateEnd}' >= DATE_FORMAT(a.update_date, '%Y-%m-%d %H:%i:%S')</if>
+			</if>
+			<!-- 登记机构 -->
+			<if test="office != null and office.id != null and office.id != ''">
+				and a.office_id = '${office.id}'
+			</if>
+		</where>		
+		ORDER BY a.update_date DESC, a.add_plan_id, a.atm_no
+	</select>
+	
+	<select id="boxTypeCollect" resultType="Map">
+		SELECT t.atm_type_name as "atmTypeName",
+			t.atm_type_no as "atmTypeNo",
+			sum(t.get_box_num) as "getBoxNum",
+			sum(t.back_box_num) as "backBoxNum",
+			sum(t.deposit_box_num) as "depositBoxNum"
+		FROM ATM_PLAN_INFO t
+		WHERE t.add_plan_id = #{addPlanId}
+			AND t.del_flag = #{DEL_FLAG_NORMAL}	
+		GROUP BY t.atm_type_name, t.atm_type_no
+	</select>
+	
+	<!-- add by wanglu 2017-121-16 -->
+	<update id="bindPlanAddCashGroup" parameterType="AtmPlanInfo">
+		UPDATE atm_plan_info SET
+			add_cash_group_id = #{addCashGroupId},
+			update_by = #{updateBy.id}, 
+			update_name = #{updateBy.name},
+			update_date = #{updateDate}
+		WHERE add_plan_id = #{addPlanId}
+	</update>
+	
+	<!-- 根据状态查询计划列表 add by wanglu -->
+	<select id="getAtmPlanInfoByStatus" resultType="AtmPlanInfo">
+		SELECT
+			a.add_plan_id AS "addPlanId", 
+			a.add_plan_name AS addPlanName
+		FROM atm_plan_info a 
+		<include refid="atmPlanInfoJoins"/>
+		<trim prefix="where" prefixOverrides="AND|OR">
+			a.del_flag = #{delFlag}
+			<if test="statuses != null and statuses != ''">
+				AND a.status in
+				<foreach collection="statuses" item="status" separator="," open="(" close=")" index="">
+				 	#{status}
+				</foreach>
+			</if>
+			<!-- 生成数据权限过滤条件 xl 2018-01-04 begin -->
+			${sqlMap.dsf}
+			<!-- end -->
+			<!-- 修改分组条件 wzj 2017-12-8 begin -->
+			GROUP BY a.add_plan_id,	a.add_plan_name
+			<!-- end -->
+		</trim>
+	</select>
+	
+	<!-- 根据加钞计划ID查询ATM机编号  add by wanglu-->
+	<select id="getAtmInfoByPlanId" resultType="AtmPlanInfo">
+		SELECT 
+			api.atm_no AS "atmNo", 
+			api.atm_type_name AS "atmTypeName", 
+			api.atm_brands_name AS "atmBrandsName"
+		FROM atm_plan_info api
+		<trim prefix="where" prefixOverrides="AND|OR">
+			api.del_flag = #{delFlag}
+			<if test="addPlanId != null and addPlanId != ''">
+				AND api.add_plan_id = #{addPlanId}
+			</if>
+			<if test="statuses != null and statuses != ''">
+				AND api.status in
+				<foreach collection="statuses" item="status" separator="," open="(" close=")" index="">
+				 	#{status}
+				</foreach>
+			</if>
+		</trim>
+	</select>
+</mapper>

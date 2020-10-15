@@ -1,0 +1,671 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoRfidDenominationDao">
+
+	<resultMap id="BaseResultMap" type="com.coffer.businesses.modules.store.v01.entity.StoRfidDenomination">
+		<id     column="RFID"         property="rfid" jdbcType="VARCHAR" />
+		<result column="BOX_STATUS"   property="boxStatus" jdbcType="VARCHAR" />
+		<result column="BUSINESS_TYPE"   property="businessType" jdbcType="VARCHAR" />
+		<result column="OFFICE_ID"    property="officeId" jdbcType="VARCHAR" />
+		<result column="DENOMINATION" property="denomination" jdbcType="VARCHAR" />
+		<result column="GOODS_ID"     property="goodsId" jdbcType="VARCHAR" />
+		<result column="CREATE_BY"    property="createBy.id" jdbcType="VARCHAR" />
+		<result column="CREATE_NAME"  property="createBy.name" jdbcType="VARCHAR" />
+		<result column="CREATE_DATE"  property="createDate" jdbcType="OTHER" />
+		<result column="UPDATE_BY"    property="updateBy.id" jdbcType="VARCHAR" />
+		<result column="UPDATE_NAME"  property="updateBy.name" jdbcType="VARCHAR" />
+		<result column="UPDATE_DATE"  property="updateDate" jdbcType="OTHER" />
+		<result column="DEL_FLAG"     property="delFlag" jdbcType="VARCHAR" />
+		<result column="USE_FLAG"     property="useFlag" jdbcType="VARCHAR" />
+		<result column="OFFICE_NAME"     property="officeName" jdbcType="VARCHAR" />
+		<result column="AT_OFFICE_ID"     property="atOfficeId" jdbcType="VARCHAR" />
+		<result column="AT_OFFICE_NAME"     property="atOfficeName" jdbcType="VARCHAR" />
+		<result column="DEST_RFID"     property="destRfid" jdbcType="VARCHAR" />
+		<result column="ALL_ID"     property="allId" jdbcType="VARCHAR" />
+	</resultMap>
+
+	<sql id="Base_Column_List">
+		RFID, 
+		BOX_STATUS, 
+		BUSINESS_TYPE,
+		OFFICE_ID, 
+		DENOMINATION, 
+		GOODS_ID, 
+		CREATE_BY, 
+		CREATE_NAME,
+		CREATE_DATE, 
+		UPDATE_BY,
+		UPDATE_NAME, 
+		UPDATE_DATE, 
+		DEL_FLAG,
+		USE_FLAG,
+		OFFICE_NAME,
+		AT_OFFICE_ID,
+		AT_OFFICE_NAME,
+		DEST_RFID,
+		ALL_ID
+	</sql>
+
+	<select id="get" resultMap="BaseResultMap" parameterType="com.coffer.businesses.modules.store.v01.entity.StoRfidDenomination">
+		select
+		      <include refid="Base_Column_List" />
+		from STO_RFID_DENOMINATION
+		where 1=1
+        <if test="rfid != null and rfid != ''">
+			AND RFID = #{rfid,jdbcType=VARCHAR}
+		</if>
+	</select>
+	<select id="findRFIDList" resultMap="BaseResultMap" parameterType="com.coffer.businesses.modules.store.v01.entity.StoRfidDenomination">
+		select
+		      <include refid="Base_Column_List" />
+		from STO_RFID_DENOMINATION
+		<!--  UPDATE-START  原因：变更过滤条件  update by wangbaozhong  2018/05/23 -->
+		<!-- where DEL_FLAG = '${delFlag}' -->
+		where 1=1
+		<if test="delFlag != null and delFlag != ''">
+		 	AND DEL_FLAG = '${delFlag}'
+		</if>
+		<!--  UPDATE-END  原因：变更过滤条件  update by wangbaozhong  2018/05/23 -->
+		<!-- RFID列表 -->
+        <if test="rfidList != null and rfidList.size != 0">
+            AND RFID in
+            <foreach collection="rfidList" item="rfidTag" separator=","
+                open="(" close=")" index="">
+                #{rfidTag}
+            </foreach>
+        </if>
+        <if test="officeId != null and officeId != ''">
+			AND OFFICE_ID = #{officeId,jdbcType=VARCHAR}
+		</if>
+	</select>
+	
+	<select id="findUnUsedListByOfficeId" resultMap="BaseResultMap" parameterType="com.coffer.businesses.modules.store.v01.entity.StoRfidDenomination">
+		select
+		      <include refid="Base_Column_List" />
+		from STO_RFID_DENOMINATION
+		where DEL_FLAG = '${delFlag}'
+			AND USE_FLAG = '0'
+        <if test="officeId != null and officeId != ''">
+			AND OFFICE_ID = #{officeId,jdbcType=VARCHAR}
+		</if>
+		<if test="businessType != null and businessType != ''">
+			AND BUSINESS_TYPE = #{businessType,jdbcType=VARCHAR}
+		</if>
+		<if test="allId != null and officeId != ''">
+			and ALL_ID = #{allId}
+		</if>
+	</select>
+	
+	<select id="findUsedListByOfficeId" resultMap="BaseResultMap" parameterType="com.coffer.businesses.modules.store.v01.entity.StoRfidDenomination">
+		select
+		      <include refid="Base_Column_List" />
+		from STO_RFID_DENOMINATION
+		where DEL_FLAG = '${delFlag}'
+			AND USE_FLAG = '1'
+        <if test="officeId != null and officeId != ''">
+			AND OFFICE_ID = #{officeId,jdbcType=VARCHAR}
+		</if>
+		<if test="businessType != null and businessType != ''">
+			AND BUSINESS_TYPE = #{businessType,jdbcType=VARCHAR}
+		</if>
+		<if test="allId != null and officeId != ''">
+			and ALL_ID = #{allId}
+		</if>
+	</select>
+
+	<resultMap id="WithStoreResultMap" type="com.coffer.businesses.modules.store.v01.entity.StoRfidDenomination">
+		<id     column="rfid"           property="rfid"             jdbcType="VARCHAR" />
+		<result column="boxStatus"      property="boxStatus"        jdbcType="VARCHAR" />
+		<result column="businessType"   property="businessType" jdbcType="VARCHAR" />
+		<result column="denomination"   property="denomination"     jdbcType="VARCHAR" />
+		<result column="goodsId"        property="goodsId"          jdbcType="VARCHAR" />
+		<result column="officeId"       property="office.id"        jdbcType="VARCHAR" />
+		<result column="officeName"     property="office.name"      jdbcType="VARCHAR" />
+		<result column="officeType"     property="office.type"      jdbcType="VARCHAR" />
+		<result column="officeParentId" property="office.parent.id" jdbcType="VARCHAR" />
+		<result column="areaName"       property="areaName"         jdbcType="VARCHAR" />
+		<result column="storeAreaType"       property="storeAreaType"         jdbcType="VARCHAR" />
+	</resultMap>
+
+	<select id="findListWithStore" resultMap="WithStoreResultMap"
+		parameterType="com.coffer.businesses.modules.store.v01.entity.StoRfidDenomination">
+		select
+            r.RFID            AS rfid,
+            r.BOX_STATUS      AS boxStatus,
+            r.DENOMINATION    AS denomination,
+            r.GOODS_ID        AS goodsId,
+            r.BUSINESS_TYPE   AS businessType,
+            r.OFFICE_ID       AS officeId,
+            r.USE_FLAG       AS useFlag,
+            o.NAME            AS officeName,
+            o.TYPE            AS officeType,
+            o.PARENT_ID       AS officeParentId, 
+            a.STORE_AREA_NAME AS areaName,
+            a.STORE_AREA_TYPE AS storeAreaType
+		from
+		    STO_RFID_DENOMINATION r 
+		    LEFT JOIN STO_GOODS_LOCATION_INFO g ON r.RFID = g.RFID
+		    LEFT JOIN STORE_AREA_SETTING_INFO a ON g.STORE_AREA_ID = a.ID,
+		    SYS_OFFICE o
+		where
+            r.OFFICE_ID = o.ID
+            AND r.DEL_FLAG = '0'
+        <!-- RFID列表 -->
+        <if test="rfidList != null and rfidList.size != 0">
+            AND r.RFID in
+            <foreach collection="rfidList" item="rfidTag" separator=","
+                open="(" close=")" index="">
+                #{rfidTag}
+            </foreach>
+        </if>
+        <if test="officeId != null and officeId != ''">
+			AND OFFICE_ID = #{officeId,jdbcType=VARCHAR}
+		</if>
+    </select>
+
+	<select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.String">
+		select
+		<include refid="Base_Column_List" />
+		from STO_RFID_DENOMINATION
+		where RFID = #{rfid,jdbcType=VARCHAR}
+	</select>
+
+	<delete id="deleteByPrimaryKey" parameterType="java.lang.String">
+		delete from STO_RFID_DENOMINATION
+		where RFID = #{rfid,jdbcType=VARCHAR}
+	</delete>
+	
+	<delete id="deleteByPrimaryKeyAndOfficeId">
+		delete from STO_RFID_DENOMINATION
+		where RFID = #{rfid}
+		<if test="officeId != null and officeId != ''">
+		AND OFFICE_ID = #{officeId}
+		</if>
+	</delete>
+	
+	<insert id="insert" parameterType="com.coffer.businesses.modules.store.v01.entity.StoRfidDenomination">
+		insert into STO_RFID_DENOMINATION 
+		( RFID, 
+		  BOX_STATUS, 
+		  BUSINESS_TYPE,
+		  OFFICE_ID,
+		  OFFICE_NAME,
+		  DENOMINATION, 
+		  GOODS_ID, 
+		  CREATE_BY, 
+		  CREATE_NAME,
+		  CREATE_DATE, 
+		  UPDATE_BY, 
+		  UPDATE_NAME,
+		  UPDATE_DATE, 
+		  DEL_FLAG,
+		  USE_FLAG,
+		  ALL_ID,
+		  AT_OFFICE_ID,
+		  AT_OFFICE_NAME,
+		  DEST_RFID
+		  )
+		values 
+		( #{rfid,jdbcType=VARCHAR}, 
+		  #{boxStatus,jdbcType=VARCHAR},
+		  #{businessType,jdbcType=VARCHAR},
+		  #{officeId,jdbcType=VARCHAR},
+		  #{officeName,jdbcType=VARCHAR},
+		  #{denomination,jdbcType=VARCHAR}, 
+		  #{goodsId,jdbcType=VARCHAR}, 
+		  #{createBy.id,jdbcType=VARCHAR}, 
+		  #{createBy.name,jdbcType=VARCHAR},
+		  #{createDate,jdbcType=OTHER}, 
+		  #{updateBy.id,jdbcType=VARCHAR},
+		  #{updateBy.name,jdbcType=VARCHAR},
+		  #{updateDate,jdbcType=OTHER}, 
+		  #{delFlag,jdbcType=VARCHAR},
+		  #{useFlag,jdbcType=VARCHAR},
+		  #{allId,jdbcType=VARCHAR},
+		  #{atOfficeId,jdbcType=VARCHAR},
+		  #{atOfficeName,jdbcType=VARCHAR},
+		  #{destRfid,jdbcType=VARCHAR}
+		  )
+	</insert>
+	
+    <update id="updateList" parameterType="com.coffer.businesses.modules.store.v01.entity.StoRfidDenomination">
+	    update STO_RFID_DENOMINATION
+		<set>
+			<if test="boxStatus != null and boxStatus != ''">
+				BOX_STATUS = #{boxStatus,jdbcType=VARCHAR},
+			</if>
+			<if test="businessType != null and businessType != ''">
+				BUSINESS_TYPE = #{businessType,jdbcType=VARCHAR},
+			</if>
+			<if test="officeId != null and officeId != ''">
+				OFFICE_ID = #{officeId,jdbcType=VARCHAR},
+			</if>
+			<if test="officeName != null and officeName != ''">
+				OFFICE_NAME = #{officeName,jdbcType=VARCHAR},
+			</if>
+			<if test="denomination != null and denomination != ''">
+				DENOMINATION = #{denomination,jdbcType=VARCHAR},
+			</if>
+			<if test="goodsId != null and goodsId != ''">
+				GOODS_ID = #{goodsId,jdbcType=VARCHAR},
+			</if>
+			<if test="updateBy != null and updateBy.id != null and updateBy.id != ''">
+				UPDATE_BY = #{updateBy.id,jdbcType=VARCHAR},
+			</if>
+			<if test="updateBy != null and updateBy.name != null and updateBy.name != ''">
+				UPDATE_NAME = #{updateBy.name,jdbcType=VARCHAR},
+			</if>
+			<if test="updateDate != null">
+				UPDATE_DATE = #{updateDate,jdbcType=OTHER},
+			</if>
+            <if test="useFlag != null and useFlag != ''">
+                USE_FLAG = #{useFlag,jdbcType=VARCHAR},
+            </if>
+            <if test="atOfficeId != null and atOfficeId != ''">
+				AT_OFFICE_ID = #{atOfficeId,jdbcType=VARCHAR},
+			</if>
+			<if test="atOfficeName != null and atOfficeName != ''">
+				AT_OFFICE_NAME = #{atOfficeName,jdbcType=VARCHAR},
+			</if>
+		</set>
+        where
+        <!-- RFID列表 -->
+        <if test="rfidList != null and rfidList.size != 0">
+            RFID in
+            <foreach collection="rfidList" item="rfidTag" separator=","
+                open="(" close=")" index="">
+                #{rfidTag}
+            </foreach>
+        </if>
+    </update>
+    
+    <update id="updateRfidListByAtOffice" parameterType="com.coffer.businesses.modules.store.v01.entity.StoRfidDenomination">
+	    update STO_RFID_DENOMINATION
+		<set>
+			<if test="boxStatus != null and boxStatus != ''">
+				BOX_STATUS = #{boxStatus,jdbcType=VARCHAR},
+			</if>
+			<if test="businessType != null and businessType != ''">
+				BUSINESS_TYPE = #{businessType,jdbcType=VARCHAR},
+			</if>
+			<if test="officeId != null and officeId != ''">
+				OFFICE_ID = #{officeId,jdbcType=VARCHAR},
+			</if>
+			<if test="officeName != null and officeName != ''">
+				OFFICE_NAME = #{officeName,jdbcType=VARCHAR},
+			</if>
+			<if test="denomination != null and denomination != ''">
+				DENOMINATION = #{denomination,jdbcType=VARCHAR},
+			</if>
+			<if test="goodsId != null and goodsId != ''">
+				GOODS_ID = #{goodsId,jdbcType=VARCHAR},
+			</if>
+			<if test="updateBy != null and updateBy.id != null and updateBy.id != ''">
+				UPDATE_BY = #{updateBy.id,jdbcType=VARCHAR},
+			</if>
+			<if test="updateBy != null and updateBy.name != null and updateBy.name != ''">
+				UPDATE_NAME = #{updateBy.name,jdbcType=VARCHAR},
+			</if>
+			<if test="updateDate != null">
+				UPDATE_DATE = #{updateDate,jdbcType=OTHER},
+			</if>
+            <if test="useFlag != null and useFlag != ''">
+                USE_FLAG = #{useFlag,jdbcType=VARCHAR},
+            </if>
+            <if test="atOfficeId != null and atOfficeId != ''">
+				AT_OFFICE_ID = #{atOfficeId,jdbcType=VARCHAR},
+			</if>
+			<if test="atOfficeName != null and atOfficeName != ''">
+				AT_OFFICE_NAME = #{atOfficeName,jdbcType=VARCHAR},
+			</if>
+		</set>
+        where AT_OFFICE_ID = #{atOfficeId,jdbcType=VARCHAR}
+        <!-- RFID列表 -->
+        <if test="rfidList != null and rfidList.size != 0">
+            AND RFID in
+            <foreach collection="rfidList" item="rfidTag" separator=","
+                open="(" close=")" index="">
+                #{rfidTag}
+            </foreach>
+        </if>
+    </update>
+
+	<insert id="insertSelective" parameterType="com.coffer.businesses.modules.store.v01.entity.StoRfidDenomination">
+		insert into STO_RFID_DENOMINATION
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="rfid != null">
+				RFID,
+			</if>
+			<if test="boxStatus != null">
+				BOX_STATUS,
+			</if>
+			<if test="businessType != null and businessType != ''">
+				BUSINESS_TYPE,
+			</if>
+			<if test="officeId != null">
+				OFFICE_ID,
+			</if>
+			<if test="denomination != null">
+				DENOMINATION,
+			</if>
+            <if test="goodsId != null">
+                GOODS_ID,
+            </if>
+			<if test="createBy != null">
+				CREATE_BY,
+			</if>
+			<if test="createName != null">
+				CREATE_NAME,
+			</if>
+			<if test="createDate != null">
+				CREATE_DATE,
+			</if>
+			<if test="updateBy != null">
+				UPDATE_BY,
+			</if>
+			<if test="updateName != null">
+				UPDATE_NAME,
+			</if>
+			<if test="updateDate != null">
+				UPDATE_DATE,
+			</if>
+			<if test="delFlag != null">
+				DEL_FLAG,
+			</if>
+            <if test="useFlag != null">
+                USE_FLAG,
+            </if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="rfid != null">
+				#{rfid,jdbcType=VARCHAR},
+			</if>
+			<if test="boxStatus != null">
+				#{boxStatus,jdbcType=VARCHAR},
+			</if>
+			<if test="businessType != null and businessType != ''">
+				#{businessType,jdbcType=VARCHAR},
+			</if>
+			<if test="officeId != null">
+				#{officeId,jdbcType=VARCHAR},
+			</if>
+			<if test="denomination != null">
+				#{denomination,jdbcType=VARCHAR},
+			</if>
+            <if test="goodsId != null">
+                #{goodsId,jdbcType=VARCHAR},
+            </if>
+			<if test="createBy != null">
+				#{createBy.id,jdbcType=VARCHAR},
+			</if>
+			<if test="createName != null">
+				#{createBy.name,jdbcType=VARCHAR},
+			</if>
+			<if test="createDate != null">
+				#{createDate,jdbcType=OTHER},
+			</if>
+			<if test="updateBy != null">
+				#{updateBy.id,jdbcType=VARCHAR},
+			</if>
+			<if test="updateName != null">
+				#{updateBy.name,jdbcType=VARCHAR},
+			</if>
+			<if test="updateDate != null">
+				#{updateDate,jdbcType=OTHER},
+			</if>
+			<if test="delFlag != null">
+				#{delFlag,jdbcType=VARCHAR},
+			</if>
+            <if test="useFlag != null">
+                #{useFlag,jdbcType=VARCHAR},
+            </if>
+		</trim>
+	</insert>
+
+	<update id="updateByPrimaryKeySelective" parameterType="com.coffer.businesses.modules.store.v01.entity.StoRfidDenomination">
+		update STO_RFID_DENOMINATION
+		<set>
+			<if test="boxStatus != null">
+				BOX_STATUS = #{boxStatus,jdbcType=VARCHAR},
+			</if>
+			<if test="businessType != null and businessType != ''">
+				BUSINESS_TYPE = #{businessType,jdbcType=VARCHAR},
+			</if>
+			<if test="officeId != null">
+				OFFICE_ID = #{officeId,jdbcType=VARCHAR},
+			</if>
+			<if test="denomination != null">
+				DENOMINATION = #{denomination,jdbcType=VARCHAR},
+			</if>
+            <if test="goodsId != null">
+                GOODS_ID = #{goodsId,jdbcType=VARCHAR},
+            </if>
+			<if test="updateBy != null">
+				UPDATE_BY = #{updateBy.id,jdbcType=VARCHAR},
+			</if>
+			<if test="updateName != null">
+				UPDATE_NAME = #{updateBy.name,jdbcType=VARCHAR},
+			</if>
+			<if test="updateDate != null">
+				UPDATE_DATE = #{updateDate,jdbcType=OTHER},
+			</if>
+			<if test="delFlag != null">
+				DEL_FLAG = #{delFlag,jdbcType=VARCHAR},
+			</if>
+            <if test="useFlag != null">
+                USE_FLAG = #{useFlag,jdbcType=VARCHAR},
+            </if>
+		</set>
+		where RFID = #{rfid,jdbcType=VARCHAR}
+			<if test="officeId != null and officeId !=''">
+				AND OFFICE_ID = #{officeId,jdbcType=VARCHAR}
+			</if>
+	</update>
+
+	<update id="updateByPrimaryKey" parameterType="com.coffer.businesses.modules.store.v01.entity.StoRfidDenomination">
+		update STO_RFID_DENOMINATION
+		set BOX_STATUS = #{boxStatus,jdbcType=VARCHAR},
+			<if test="businessType != null and businessType != ''">
+				BUSINESS_TYPE = #{businessType,jdbcType=VARCHAR},
+			</if>
+			OFFICE_ID = #{officeId,jdbcType=VARCHAR},
+			DENOMINATION = #{denomination,jdbcType=VARCHAR},
+			GOODS_ID = #{goodsId,jdbcType=VARCHAR},
+			UPDATE_BY = #{updateBy.id,jdbcType=VARCHAR},
+			UPDATE_NAME = #{updateBy.name,jdbcType=VARCHAR},
+			UPDATE_DATE = #{updateDate,jdbcType=OTHER},
+			DEL_FLAG = #{delFlag,jdbcType=VARCHAR},
+			USE_FLAG = #{useFlag,jdbcType=VARCHAR}
+		where RFID = #{rfid,jdbcType=VARCHAR}
+	</update>
+
+	<sql id="stoRfidColumns">
+            r.RFID            AS RFID,
+            r.BOX_STATUS      AS boxStatus,
+            r.DENOMINATION    AS denomination,
+            r.GOODS_ID        AS goodsId,
+            r.BUSINESS_TYPE   AS businessType,
+            r.OFFICE_ID       AS officeId,
+            r.CREATE_NAME     AS createName,
+            r.CREATE_DATE     AS createDate,
+            r.UPDATE_NAME     AS updateName,
+            r.UPDATE_DATE     AS updateDate,
+            r.USE_FLAG        AS useFlag,
+            r.DEL_FLAG        AS delFlag,
+            r.ALL_ID          AS allId,
+            r.AT_OFFICE_ID	  AS atOfficeId,
+		  	r.AT_OFFICE_NAME  AS atOfficeName,
+		  	r.DEST_RFID  AS destRfid,
+            o.NAME            AS officeName,
+            g.GOODS_NAME      AS goodsName
+	</sql>
+	
+	<sql id="stoRfidJoins">
+		LEFT JOIN sto_goods g ON g.goods_id = r.goods_id
+		LEFT JOIN sys_office o ON o.id = r.office_id
+	</sql>
+	
+	<select id="getRfidInfo" resultType="StoRfidDenomination">
+		select
+		      <include refid="stoRfidColumns" />
+		from STO_RFID_DENOMINATION  r
+		<include refid="stoRfidJoins"/>
+		where 1=1
+        <if test="rfid != null and rfid != ''">
+			AND (r.rfid like 
+			<!-- '%'||#{rfid}||'%' -->
+			<if test="dbName == 'oracle'">'%'||#{rfid}||'%'</if>
+			<if test="dbName == 'mysql'">CONCAT('%',#{rfid},'%')</if>
+			)
+		</if>
+	</select>
+	
+	<select id="findList" resultType="StoRfidDenomination">
+		select
+		      <include refid="stoRfidColumns" />
+		from STO_RFID_DENOMINATION r
+		<include refid="stoRfidJoins"/>
+		where 1 = 1
+			<if test="atOfficeId != null and atOfficeId != ''">
+				AND RFID IN (
+								select distinct t.rfid 
+								from STO_RFID_DENOMINATION_HISTORY t 
+								where t.AT_OFFICE_ID = #{atOfficeId}
+							)
+			</if>
+		<!-- RFID -->
+			<if test="rfid != null and rfid != '' ">
+				and (r.rfid like 
+				<if test="dbName == 'oracle'">'%'||#{rfid}||'%')</if>
+				<if test="dbName == 'mysql'">CONCAT('%',#{rfid},'%'))</if>
+			</if>
+		<!-- 机构 -->
+			<if test="office != null and office.id != null and office.id != ''">
+				and r.office_id = #{office.id}
+			</if>
+		<!-- 业务类型 -->
+			<if test="businessType != null and businessType != ''">
+				and r.business_type = #{businessType}
+			</if>
+			<!-- 绑卡 时间(开始) -->
+	        <if test="searchDateStart != null and searchDateStart != ''">
+	            <!-- and TO_CHAR(r.create_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}' -->
+	            <if test="dbName == 'oracle'">AND TO_CHAR(r.create_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName == 'mysql'">AND date_format(r.create_date,'%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+	        </if>
+	        <!-- 绑卡 时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	           <!--  and '${searchDateEnd}' >= TO_CHAR(r.create_date, 'yyyy-mm-dd hh24:mi:ss') -->
+	            <if test="dbName == 'oracle'">AND '${searchDateEnd}' >= TO_CHAR(r.create_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName == 'mysql'">AND '${searchDateEnd}' >=date_format(r.create_date,'%Y-%m-%d %H:%i:%S') </if>
+	        </if>
+        <choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY r.create_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<delete id="deleteByAllID">
+		delete from STO_RFID_DENOMINATION
+		where ALL_ID = #{allID}
+	</delete>
+	
+	<sql id="pdaStoRfidColumns">
+            r.RFID            AS RFID,
+            g.GOODS_VAL    	  AS value,
+            r.GOODS_ID        AS goodsId,
+            g.GOODS_NAME      AS goodsName
+	</sql>
+	
+	<resultMap id="pdaStoRfidResultMap" type="com.coffer.businesses.modules.store.v01.entity.StoRfidDenomination">
+		<id     column="RFID"           property="rfid"             jdbcType="VARCHAR" />
+		<result column="value"       property="value"     jdbcType="VARCHAR" />
+		<result column="goodsId"        property="goodsId"          jdbcType="VARCHAR" />
+		<result column="goodsName"     property="goodsName"        jdbcType="VARCHAR" />
+	</resultMap>
+	
+		<sql id="pdaStoRfidJoins">
+		LEFT JOIN sto_goods g ON g.goods_id = r.goods_id
+	</sql>
+	<select id="pdaFindList" resultMap="pdaStoRfidResultMap"  parameterType="com.coffer.businesses.modules.store.v01.entity.StoRfidDenomination">
+		select
+		      <include refid="pdaStoRfidColumns" />
+		from STO_RFID_DENOMINATION r
+		<include refid="pdaStoRfidJoins"/>
+		where r.DEL_FLAG = '${delFlag}'
+		and r.USE_FLAG = '0'
+		<if test="allId != null and officeId != ''">
+			and r.ALL_ID = #{allId}
+		</if>
+	</select>
+	
+	<update id="updateRfidByPrimaryKey">
+		update STO_RFID_DENOMINATION
+		set RFID = #{dstRfid,jdbcType=VARCHAR},
+			UPDATE_BY = #{userId,jdbcType=VARCHAR},
+			UPDATE_NAME = #{userName,jdbcType=VARCHAR},
+			UPDATE_DATE = #{updateDate,jdbcType=OTHER}
+		where RFID = #{srcRfid,jdbcType=VARCHAR}
+	</update>
+	<update id="unbindingAllIdByRfid">
+		update STO_RFID_DENOMINATION
+		set ALL_ID = '',
+			UPDATE_BY = #{updateBy.id,jdbcType=VARCHAR},
+			UPDATE_NAME = #{updateBy.name,jdbcType=VARCHAR},
+			UPDATE_DATE = #{updateDate,jdbcType=OTHER}
+		where RFID = #{rfid,jdbcType=VARCHAR}
+	</update>
+	<update id="update" parameterType="com.coffer.businesses.modules.store.v01.entity.StoRfidDenomination">
+		update STO_RFID_DENOMINATION
+		<set>
+			<if test="boxStatus != null and boxStatus != ''">
+				BOX_STATUS = #{boxStatus,jdbcType=VARCHAR},
+			</if>
+			<if test="officeId != null and officeId != ''">
+				OFFICE_ID = #{officeId,jdbcType=VARCHAR},
+			</if>
+			<if test="officeName != null and officeName != ''">
+				OFFICE_NAME = #{officeName,jdbcType=VARCHAR},
+			</if>
+			<if test="businessType != null and businessType != ''">
+				BUSINESS_TYPE = #{businessType,jdbcType=VARCHAR},
+			</if>
+			<if test="goodsId != null and goodsId != ''">
+				GOODS_ID = #{goodsId,jdbcType=VARCHAR},
+			</if>
+			<if test="useFlag != null and useFlag != ''">
+				USE_FLAG = #{useFlag,jdbcType=VARCHAR},
+			</if>
+			<if test="allId != null">
+				ALL_ID = #{allId,jdbcType=VARCHAR},
+			</if>
+			<if test="atOfficeId != null and atOfficeId != ''">
+				AT_OFFICE_ID = #{atOfficeId,jdbcType=VARCHAR},
+			</if>
+			<if test="atOfficeName != null and atOfficeName != ''">
+				AT_OFFICE_NAME = #{atOfficeName,jdbcType=VARCHAR},
+			</if>
+			<if test="delFlag != null">
+				DEL_FLAG = #{delFlag,jdbcType=VARCHAR},
+			</if>
+          	<if test="destRfid != null and destRfid !='' ">
+				DEST_RFID = #{destRfid,jdbcType=VARCHAR},
+			</if>
+			<if test="updateBy != null">
+				UPDATE_BY = #{updateBy.id,jdbcType=VARCHAR},
+			</if>
+			<if test="updateBy != null">
+				UPDATE_NAME = #{updateBy.name,jdbcType=VARCHAR},
+			</if>
+			<if test="updateDate != null">
+				UPDATE_DATE = #{updateDate,jdbcType=OTHER},
+			</if>
+			
+		</set>
+		where RFID = #{rfid,jdbcType=VARCHAR}
+	</update>
+</mapper>

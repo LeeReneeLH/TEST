@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.coffer.businesses.modules.doorOrder.v01.dao.DepositErrorDao">
+
+	<sql id="depositErrorColumns">
+		a.id AS "id",
+		a.door_id AS "doorId",
+		a.order_id AS "orderId",
+		a.error_type AS "errorType",
+		a.amount AS "amount",
+		a.comments AS "comments",
+		a.REGISTER_ID AS "registerId",
+		a.REGISTER_NAME AS "registerName",
+		a.create_by AS "createBy",
+		a.create_name AS "createName",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createBy.name",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_name AS "update.name",
+		a.update_date AS "updateDate",
+		a.del_flag AS "delFlag",
+		a.office_id AS "office.id",
+		o1.name AS "office.name",
+		a.status AS "status",
+		o.name AS "doorName"
+	</sql>
+
+	<sql id="officeJoins">
+		LEFT JOIN sys_office o1 ON a.office_id = o1.id
+		LEFT JOIN SYS_OFFICE o ON o.id = a.door_id AND o.del_flag =
+		#{DEL_FLAG_NORMAL}
+	</sql>
+
+	<select id="get" resultType="DepositError">
+		SELECT
+		<include refid="depositErrorColumns" />
+		FROM DEPOSIT_ERROR a
+		<include refid="officeJoins" />
+		WHERE a.id = #{id}
+	</select>
+
+	<select id="findList" resultType="DepositError">
+		SELECT
+		<include refid="depositErrorColumns" />
+		FROM DEPOSIT_ERROR a
+		<include refid="officeJoins" />
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="orderId != null and orderId != ''">
+				AND a.order_id = #{orderId}
+			</if>
+			<if test="errorType != null and errorType != ''">
+				and a.error_type = #{errorType}
+			</if>
+			<if test="registerName != null and registerName != ''">
+				AND a.register_name LIKE
+				<if test="dbName == 'oracle'">'%'||#{registerName}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{registerName}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{registerName},'%')</if>
+			</if>
+			<if test="doorId != null and doorId != ''">
+				and a.door_id = #{doorId}
+			</if>
+			<!-- add-start by ZXK 2019-07-15 -->
+			<if test="office != null and office.id != null and office.id != ''">
+				AND a.office_id = '${office.id}'
+			</if>
+			<if test="status != null and status != ''">
+				AND a.status = #{status}
+			</if>
+			<!-- end -->
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<insert id="insert">
+		INSERT INTO DEPOSIT_ERROR(
+		id,
+		door_id ,
+		door_name,
+		order_id ,
+		error_type ,
+		comments,
+		register_id,
+		register_name,
+		amount,
+		create_by,
+		create_name,
+		create_date,
+		update_by,
+		update_name,
+		update_date,
+		del_flag,
+		<!-- add-start by ZXK 2019-7-15 -->
+		office_id,
+		office_name,
+		status
+		<!-- end -->
+		) VALUES (
+		#{id},
+		#{doorId},
+		#{doorName},
+		#{orderId},
+		#{errorType},
+		#{comments},
+		#{registerId},
+		#{registerName},
+		#{amount},
+		#{createBy.id},
+		#{createName},
+		#{createDate},
+		#{updateBy.id},
+		#{updateName},
+		#{updateDate},
+		#{delFlag},
+		<!-- add-start by ZXK 2019-7-15 -->
+		#{office.id},
+		#{office.name},
+		#{status}
+		<!-- end -->
+		)
+	</insert>
+
+	<update id="update">
+		UPDATE DEPOSIT_ERROR SET
+		door_id = #{doorId},
+		door_name = #{doorName},
+		order_id = #{orderId},
+		error_type =
+		#{errorType},
+		comments = #{comments},
+		register_id = #{registerId},
+		register_name = #{registerName},
+		amount = #{amount},
+		status = #{status},
+		create_name = #{createName},
+		update_by = #{updateBy.id},
+		update_name =
+		#{updateBy.name},
+		update_date = #{updateDate}
+		WHERE id = #{id}
+	</update>
+
+	<!-- 获取当天商户存款差错  lihe start-->
+	<select id="getDepositErrorForDay" resultType="DepositError">
+		SELECT
+			o.NAME AS clientName,
+			E .error_type AS errorType,
+			<if test="dbName == 'oracle'">
+			NVL (SUM(E .amount), 0) AS amount
+			</if>
+			<if test="dbName == 'mysql'">
+			COALESCE (SUM(E .amount), 0) AS amount
+			</if>
+		FROM
+			(
+				SELECT
+					A . ID,
+					A . NAME
+				FROM
+					SYS_OFFICE A
+				WHERE
+					A . TYPE = #{type}
+				AND A .PARENT_IDS LIKE 
+					<if test="dbName == 'oracle'">'%' || (SELECT ID FROM SYS_OFFICE WHERE
+							ID = (SELECT PARENT_ID FROM SYS_OFFICE WHERE TYPE = '6' AND ID = #{id})
+						) || '%'
+					</if>
+					<if test="dbName == 'mysql'">CONCAT('%,',(SELECT ID FROM SYS_OFFICE WHERE
+						ID = (
+							SELECT PARENT_ID FROM SYS_OFFICE WHERE TYPE = '6' AND ID = #{id})
+						),',%')
+					</if>
+				ORDER BY
+					A .parent_ids,
+					A .code
+			) o
+		LEFT JOIN SYS_OFFICE s ON s.PARENT_ID = o.ID
+		LEFT JOIN (
+			SELECT
+				ID,
+				error_type,
+				door_id,
+				amount
+			FROM
+				DEPOSIT_ERROR
+			WHERE
+				del_flag = '0'
+				<!-- 查询时间(开始) -->
+				<if test="searchDateStart != null and searchDateStart != ''">
+				AND
+					<if test="dbName == 'oracle'">TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+					<if test="dbName=='mysql'">DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+				</if>
+				<!-- 查询时间(结束) -->
+				<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND
+					<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(update_date,'yyyy-mm-dd hh24:mi:ss')</if>
+					<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s')</if>
+				</if>
+		) E ON s.ID = E .door_id
+		WHERE
+			E .ID IS NOT NULL
+		GROUP BY
+			o.NAME,
+			E .error_type
+	</select>
+	<!-- 获取当天商户存款差错  lihe end-->
+	
+	<!-- 获取当天门店存款差错   lihe start -->
+	<select id="getDoorErrorForDay" resultType="DepositError">
+		SELECT
+			a.error_type AS errorType,
+			a.amount AS amount,
+			a.order_id AS orderId,
+			o.name AS doorName
+		FROM DEPOSIT_ERROR a
+		<include refid="officeJoins" />
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<!-- 查询时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+			AND
+				<if test="dbName == 'oracle'">TO_CHAR(a.update_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.update_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+			</if>
+			<!-- 查询时间(结束) -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND
+				<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.update_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.update_date, '%Y-%m-%d %H:%i:%s')</if>
+			</if>
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	<!-- 获取当天门店存款差错   lihe end -->
+	
+	<!-- 判断存款凭条是否存在 -->
+	<select id="isOrderExists" parameterType="string" resultType="string">
+		SELECT id
+		FROM door_order_detail
+		WHERE tickertape = #{orderId}
+	</select>
+	
+	<!-- 根据单号去查找对应单号的门店，保证二者一致性 -->
+	<select id="getDoorIdByOrderId" parameterType="string" resultType="string">
+	SELECT
+	A.door_id
+	FROM
+	door_order_info A LEFT JOIN door_order_detail B ON
+	A.ORDER_ID=B.ORDER_ID
+	WHERE
+	B.TICKERTAPE = #{orderId}
+	</select>
+	
+	<!-- 在单号未冲正的情况下保证该单号下仅有一条差错记录处于登记状态 -->
+	<select id="getLoginCount" parameterType="string" resultType="int">
+		SELECT count(*)
+		FROM deposit_error
+		WHERE order_id = #{orderId} and status = 1
+	</select>
+	
+	<!-- 登记差错时，短款金额不能多于存款金额 -->
+	<select id="isMoreThanSave" parameterType="string" resultType="String">
+		SELECT amount
+		FROM door_order_detail
+		WHERE tickertape = #{orderId}
+	</select>
+	
+</mapper>

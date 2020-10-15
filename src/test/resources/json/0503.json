@@ -1,0 +1,17 @@
+{
+	"versionNo": "01",
+	"serviceNo": "0503",
+	"custId": "28900239",
+	"userId": "dfdsfdsfdsfdsfdsfdsfdsfdsfdsfdsfdsf",
+	"keyId": "",
+	"list": [
+		{
+			"boxNo": "a111",
+			"amount": "3000"
+		},
+		{
+			"boxNo": "",
+			"amount": "4500"
+		}
+	]
+}

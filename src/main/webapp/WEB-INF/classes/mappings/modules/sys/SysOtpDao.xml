@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.core.modules.sys.dao.SysOtpDao">
+    
+	<sql id="sysOtpColumns">
+		a.id AS "id",
+		a.token_id AS "tokenId",
+		a.auth_key AS "authKey",
+		a.currsucc AS "currsucc",
+		a.currdft AS "currdft",
+		a.brand_no AS "brandNo",
+		a.brand_name AS "brandName",
+		a.model_no AS "modelNo",
+		a.model_name AS "modelName",
+		a.user_id AS "user.id",
+		a.office_id AS "office.id",
+		a.del_flag AS "delFlag",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createName",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_name AS "updateName",
+		a.update_date AS "updateDate",
+		u10.name AS "user.name",
+		o10.name AS "office.name"
+	</sql>
+	
+	<sql id="sysOtpJoins">
+		LEFT JOIN sys_user u10 ON u10.id = a.user_id
+		LEFT JOIN sys_office o10 ON o10.id = a.office_id
+	</sql>
+    
+	<select id="get" resultType="SysOtp">
+		SELECT 
+			<include refid="sysOtpColumns"/>
+		FROM sys_otp a
+		<include refid="sysOtpJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="SysOtp">
+		SELECT 
+			<include refid="sysOtpColumns"/>
+		FROM sys_otp a
+		<include refid="sysOtpJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			 <!-- 令牌号 -->
+			<if test="tokenId != null and tokenId != ''">
+				AND a.token_id like '%${tokenId}%'
+			</if>
+			<!-- 登记机构 -->
+			<if test="office != null and office.id != null and office.id != ''">
+				AND a.OFFICE_ID = '${office.id}'
+			</if>
+			<!-- 用户 -->
+			<if test="user != null and user.id != null and user.id != ''">
+				AND a.user_id = '${user.id}'
+			</if>
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="SysOtp">
+		SELECT 
+			<include refid="sysOtpColumns"/>
+		FROM sys_otp a
+		<include refid="sysOtpJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	
+	<select id="getByTokenId" resultType="SysOtp">
+		SELECT 
+			<include refid="sysOtpColumns"/>
+		FROM sys_otp a
+		<include refid="sysOtpJoins"/>
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+			 <!-- 令牌号 -->
+			<if test="tokenId != null and tokenId != ''">
+				AND a.token_id = #{tokenId}
+			</if>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO sys_otp(
+			id,
+			token_id,
+			auth_key,
+			currsucc,
+			currdft,
+			brand_no,
+			brand_name,
+			model_no,
+			model_name,
+			user_id,
+			del_flag,
+			create_by,
+			create_name,
+			create_date,
+			update_by,
+			update_name,
+			update_date
+		) VALUES (
+			#{id},
+			#{tokenId},
+			#{authKey},
+			#{currsucc},
+			#{currdft},
+			#{brandNo},
+			#{brandName},
+			#{modelNo},
+			#{modelName},
+			#{user.id},
+			#{delFlag},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE sys_otp SET 	
+			token_id = #{tokenId},
+			auth_key = #{authKey},
+			currsucc = #{currsucc},
+			currdft = #{currdft},
+			brand_no = #{brandNo},
+			brand_name = #{brandName},
+			model_no = #{modelNo},
+			model_name = #{modelName},
+			user_id = #{user.id},
+			office_id = #{office.id},
+			create_name = #{createName},
+			update_by = #{updateBy.id},
+			update_name = #{updateName},
+			update_date = #{updateDate}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE sys_otp SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+</mapper>

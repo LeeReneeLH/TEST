@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoRfidDenominationHistoryDao">
+
+	<resultMap id="BaseResultMap" type="com.coffer.businesses.modules.store.v01.entity.StoRfidDenominationHistory">
+		<id     column="id"         property="id" jdbcType="VARCHAR" />
+		<result column="RFID"         property="oldStoRfidDenomination.rfid" jdbcType="VARCHAR" />
+		<result column="BOX_STATUS"   property="oldStoRfidDenomination.boxStatus" jdbcType="VARCHAR" />
+		<result column="BUSINESS_TYPE"   property="oldStoRfidDenomination.businessType" jdbcType="VARCHAR" />
+		<result column="OFFICE_ID"    property="oldStoRfidDenomination.officeId" jdbcType="VARCHAR" />
+		<result column="OFFICE_NAME"     property="oldStoRfidDenomination.officeName" jdbcType="VARCHAR" />
+		<result column="AT_OFFICE_ID"     property="updatedAtOfficeId" jdbcType="VARCHAR" />
+		<result column="AT_OFFICE_NAME"     property="updatedAtOfficeName" jdbcType="VARCHAR" />
+		<result column="UPDATED_AT_OFFICE_ID"     property="oldStoRfidDenomination.atOfficeId" jdbcType="VARCHAR" />
+		<result column="UPDATED_AT_OFFICE_NAME"     property="oldStoRfidDenomination.atOfficeName" jdbcType="VARCHAR" />
+		<result column="DENOMINATION" property="oldStoRfidDenomination.denomination" jdbcType="VARCHAR" />
+		<result column="GOODS_ID"     property="oldStoRfidDenomination.goodsId" jdbcType="VARCHAR" />
+		<result column="GOODS_NAME"     property="oldStoRfidDenomination.goodsName" jdbcType="VARCHAR" />
+		<result column="CREATE_BY"    property="oldStoRfidDenomination.createBy.id" jdbcType="VARCHAR" />
+		<result column="CREATE_NAME"  property="oldStoRfidDenomination.createBy.name" jdbcType="VARCHAR" />
+		<result column="CREATE_DATE"  property="oldStoRfidDenomination.createDate" jdbcType="OTHER" />
+		<result column="UPDATE_BY"    property="oldStoRfidDenomination.updateBy.id" jdbcType="VARCHAR" />
+		<result column="UPDATE_NAME"  property="oldStoRfidDenomination.updateBy.name" jdbcType="VARCHAR" />
+		<result column="UPDATE_DATE"  property="oldStoRfidDenomination.updateDate" jdbcType="OTHER" />
+		<result column="DEL_FLAG"     property="oldStoRfidDenomination.delFlag" jdbcType="VARCHAR" />
+		<result column="USE_FLAG"     property="oldStoRfidDenomination.useFlag" jdbcType="VARCHAR" />
+		<result column="DEST_RFID"     property="oldStoRfidDenomination.destRfid" jdbcType="VARCHAR" />
+		<result column="ALL_ID"     property="oldStoRfidDenomination.allId" jdbcType="VARCHAR" />
+	</resultMap>
+
+	<sql id="Base_Column_List">
+		ID,
+		RFID, 
+		BOX_STATUS, 
+		BUSINESS_TYPE,
+		OFFICE_ID, 
+		OFFICE_NAME,
+		AT_OFFICE_ID,
+		AT_OFFICE_NAME,
+		UPDATED_AT_OFFICE_ID,
+		UPDATED_AT_OFFICE_NAME,
+		DENOMINATION, 
+		GOODS_ID, 
+		CREATE_BY, 
+		CREATE_NAME,
+		CREATE_DATE, 
+		UPDATE_BY,
+		UPDATE_NAME, 
+		UPDATE_DATE, 
+		DEL_FLAG,
+		USE_FLAG,
+		DEST_RFID,
+		ALL_ID
+	</sql>
+
+	<insert id="insert" parameterType="com.coffer.businesses.modules.store.v01.entity.StoRfidDenominationHistory">
+		insert into STO_RFID_DENOMINATION_HISTORY 
+		( 
+		  ID,
+		  RFID, 
+		  BOX_STATUS, 
+		  BUSINESS_TYPE,
+		  OFFICE_ID,
+		  OFFICE_NAME,
+		  DENOMINATION, 
+		  GOODS_ID, 
+		  CREATE_BY, 
+		  CREATE_NAME,
+		  CREATE_DATE, 
+		  UPDATE_BY, 
+		  UPDATE_NAME,
+		  UPDATE_DATE, 
+		  DEL_FLAG,
+		  USE_FLAG,
+		  DEST_RFID,
+		  ALL_ID,
+		  AT_OFFICE_ID,
+		  AT_OFFICE_NAME,
+		  UPDATED_AT_OFFICE_ID,
+		  UPDATED_AT_OFFICE_NAME
+		   )
+		values 
+		(
+		  #{id,jdbcType=VARCHAR},
+		  #{oldStoRfidDenomination.rfid,jdbcType=VARCHAR}, 
+		  #{oldStoRfidDenomination.boxStatus,jdbcType=VARCHAR},
+		  #{oldStoRfidDenomination.businessType,jdbcType=VARCHAR},
+		  #{oldStoRfidDenomination.officeId,jdbcType=VARCHAR},
+		  #{oldStoRfidDenomination.officeName,jdbcType=VARCHAR},
+		  #{oldStoRfidDenomination.denomination,jdbcType=VARCHAR}, 
+		  #{oldStoRfidDenomination.goodsId,jdbcType=VARCHAR}, 
+		  #{oldStoRfidDenomination.createBy.id,jdbcType=VARCHAR}, 
+		  #{oldStoRfidDenomination.createBy.name,jdbcType=VARCHAR},
+		  #{oldStoRfidDenomination.createDate,jdbcType=OTHER}, 
+		  #{oldStoRfidDenomination.updateBy.id,jdbcType=VARCHAR},
+		  #{oldStoRfidDenomination.updateBy.name,jdbcType=VARCHAR},
+		  #{oldStoRfidDenomination.updateDate,jdbcType=OTHER}, 
+		  #{oldStoRfidDenomination.delFlag,jdbcType=VARCHAR},
+		  #{oldStoRfidDenomination.useFlag,jdbcType=VARCHAR},
+		  #{oldStoRfidDenomination.destRfid,jdbcType=VARCHAR},
+		  #{oldStoRfidDenomination.allId,jdbcType=VARCHAR},
+		  #{updatedAtOfficeId,jdbcType=VARCHAR}, 
+		  #{updatedAtOfficeName,jdbcType=VARCHAR}, 
+		  #{oldStoRfidDenomination.atOfficeId,jdbcType=VARCHAR},
+		  #{oldStoRfidDenomination.atOfficeName,jdbcType=VARCHAR}
+		   )
+	</insert>
+	<sql id="Join_Column_List">
+		r.ID,
+		r.RFID, 
+		r.BOX_STATUS, 
+		r.BUSINESS_TYPE,
+		r.OFFICE_ID, 
+		r.OFFICE_NAME,
+		r.AT_OFFICE_ID,
+		r.AT_OFFICE_NAME,
+		r.UPDATED_AT_OFFICE_ID,
+		r.UPDATED_AT_OFFICE_NAME,
+		r.DENOMINATION, 
+		r.GOODS_ID, 
+		g.GOODS_NAME,
+		r.CREATE_BY, 
+		r.CREATE_NAME,
+		r.CREATE_DATE, 
+		r.UPDATE_BY,
+		r.UPDATE_NAME, 
+		r.UPDATE_DATE, 
+		r.DEL_FLAG,
+		r.USE_FLAG,
+		r.DEST_RFID,
+		r.ALL_ID
+	</sql>
+	<sql id="stoRfidJoins">
+		LEFT JOIN sto_goods g ON g.goods_id = r.goods_id
+	</sql>
+	<select id="findList" resultMap="BaseResultMap">
+		select
+		      <include refid="Join_Column_List" />
+		from STO_RFID_DENOMINATION_HISTORY r
+		<include refid="stoRfidJoins"/>
+		where 1 = 1
+		<!-- RFID -->
+		<if test="oldStoRfidDenomination != null and oldStoRfidDenomination.rfid != null and oldStoRfidDenomination.rfid != '' ">
+			and r.rfid = #{oldStoRfidDenomination.rfid}
+		</if>
+	
+        <choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY r.update_date
+			</otherwise>
+		</choose>
+	</select>
+</mapper>

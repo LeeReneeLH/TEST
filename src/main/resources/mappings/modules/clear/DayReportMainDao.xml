@@ -1,0 +1,470 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.clear.v03.dao.DayReportMainDao">
+    
+	<sql id="dayReportMainColumns">
+		a.report_id AS "reportId",
+		a.before_amount AS "beforeAmount",
+		a.in_count AS "inCount",
+		a.in_amount AS "inAmount",
+		a.out_count AS "outCount",
+		a.out_amount AS "outAmount",
+		a.total_amount AS "totalAmount",
+		a.report_date AS "reportDate",
+		a.windup_type AS "windupType",
+		a.status AS "status",
+		a.report_by     AS "reportBy",
+		a.report_name   AS "reportName",
+		a.office_id AS "office.id",
+		a.office_name AS "office.Name",
+		a.del_flag AS "delFlag"
+	</sql>
+	
+	<!-- 查询出的所有账务日结主表信息的字段，保存到关联的Entity里 -->
+	<resultMap id="DayReportMainResult" type="com.coffer.businesses.modules.clear.v03.entity.DayReportMain">
+	    <id column="report_id"               	   property="reportId" />
+	    <result column="before_amount"     property="beforeAmount"/>
+	    <result column="in_count"          property="inCount"/>
+	    <result column="in_amount"         property="inAmount"/>
+	    <result column="out_count"         property="outCount"/>
+	    <result column="out_amount"        property="outAmount"/>
+	    <result column="total_amount"      property="totalAmount"/>
+	    <result column="report_date"       property="report_date"/>
+	    <result column="del_flag"      	   property="del_flag"/>
+	    <result column="windup_type"       property="windupType"/>
+	    <result column="status"      	   property="status"/>
+	    <result column="report_by"	       property="reportBy.id"/>
+	    <result column="report_name"       property="reportName"/>
+	    <!--  中心账务日结详细信息 -->
+	    <collection column="reportId" property="dayReportCenterList" javaType="ArrayList" select="com.coffer.businesses.modules.clear.v03.dao.DayReportCenterDao.getAccountByreportMainId" fetchType="lazy" />
+	    <!--  客户账务日结详细信息 -->
+ 	    <collection column="reportId" property="dayReportGuestList" javaType="ArrayList" select="com.coffer.businesses.modules.clear.v03.dao.DayReportGuestDao.getAccountByreportMainId" fetchType="lazy" />
+	</resultMap>
+	
+	<sql id="dayReportMainJoins">
+	</sql>
+    
+	<select id="get" resultMap="DayReportMainResult">
+		SELECT 
+			<include refid="dayReportMainColumns"/>
+		FROM day_report_main a
+		<include refid="dayReportMainJoins"/>
+		WHERE a.report_id = #{reportId}
+	</select>
+	
+	<select id="findList" resultType="DayReportMain">
+		SELECT 
+			<include refid="dayReportMainColumns"/>
+		FROM day_report_main a 
+		left join sys_office o 
+			on a.office_id=o.id
+		<include refid="dayReportMainJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.report_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.report_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>
+		
+		<!-- add-start by QPH 2017-11-14 -->
+		<if test="office != null and office.id != null and office.id != ''">
+				AND A.OFFICE_ID = #{office.id}
+		</if>
+		${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				order by a.report_date desc
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findListByReportDate" resultMap="DayReportMainResult">
+		SELECT 
+			<include refid="dayReportMainColumns"/>
+		FROM day_report_main a
+		<include refid="dayReportMainJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.report_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.report_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>
+		
+		<!-- add-start by QPH 2017-11-14 -->
+		<if test="office != null and office.id != null and office.id != ''">
+				AND A.OFFICE_ID = '${office.id}'
+		</if>
+		
+		</where>
+		order by a.report_date desc
+	</select>
+	
+	
+	<select id="findAllList" resultType="DayReportMain">
+		SELECT 
+			<include refid="dayReportMainColumns"/>
+		FROM day_report_main a
+		<include refid="dayReportMainJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	
+	<select id="getDayReportMaxDate" resultType="Date">
+		SELECT MAX(a.report_date)
+		FROM day_report_main a
+		WHERE a.report_date &lt; #{reportDate}
+		<!-- add-start by QPH 2017-11-14 -->
+		<if test="office != null and office.id != null and office.id != ''">
+				AND A.OFFICE_ID = '${office.id}'
+		</if>
+	</select>
+	
+	
+	<insert id="insert">
+		INSERT INTO day_report_main(
+			report_id,
+			before_amount,
+			in_count,
+			in_amount,
+			out_count,
+			out_amount,
+			total_amount,
+			report_date,
+			windup_type,
+			status,
+			report_by,
+			report_name,
+			del_flag,
+			<!-- add-start by QPH 2017-11-14 -->
+			office_id,
+		    office_name
+		    <!-- end -->
+		) VALUES (
+			#{reportId},
+			#{beforeAmount},
+			#{inCount},
+			#{inAmount},
+			#{outCount},
+			#{outAmount},
+			#{totalAmount},
+			#{reportDate},
+			#{windupType},
+			#{status},
+			#{reportBy.id},
+			#{reportName},
+			#{delFlag},
+			<!-- add-start by QPH 2017-11-14 -->
+			#{office.id},
+			#{office.name}
+		    <!-- end -->
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE day_report_main SET 	
+			status = #{status},
+			in_count = #{inCount},
+			in_amount = #{inAmount},
+			out_count = #{outCount},
+			out_amount = #{outAmount},
+			report_date = #{reportDate}
+		WHERE report_id" = #{reportId}
+	</update>
+	
+	<update id="updateStatus">
+		UPDATE day_report_main  a SET 	
+			a.status = #{status}
+		WHERE 	a.del_flag = #{DEL_FLAG_NORMAL}
+		
+		<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.report_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.report_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>
+		<if test="reportId != null and reportId != ''">
+			AND a.report_id  != #{reportId}
+		</if>
+		
+		<!-- add-start by QPH 2017-11-14 -->
+		<if test="office != null and office.id != null and office.id != ''">
+				AND A.OFFICE_ID = '${office.id}'
+		</if>
+		
+	</update>
+	
+	<update id="delete">
+		UPDATE day_report_main SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE report_id" = #{reportId}
+	</update>
+	
+	<!-- 根据年月日季度周进行分组查询 -->
+	<select id="findChartList" resultType="DayReportMain">
+		SELECT 
+			sum(inAmount) AS inAmount,
+			sum(outAmount) AS outAmount,
+			<if test="dbName == 'oracle'">
+				TO_CHAR(reportDate, '${filterCondition}') AS handInDate
+			</if>
+			<if test="dbName == 'mysql'">
+				<if test="filterCondition == 'yyyy'">
+					DATE_FORMAT(reportDate, '%Y') AS handInDate
+				</if>
+				<if test="filterCondition == 'yyyy-mm'">
+					DATE_FORMAT(reportDate, '%Y-%m') AS handInDate
+				</if>
+				<if test="filterCondition == 'yyyy-Q'">
+					CONCAT(YEAR(reportDate),'-',quarter(reportDate)) AS handInDate
+				</if>
+				<if test="filterCondition == 'yyyy-IW'">
+					DATE_FORMAT(reportDate,'%Y-%u') AS handInDate
+				</if>
+				<if test="filterCondition == 'yyyy-mm-dd'">
+					DATE_FORMAT(reportDate,'%Y-%m-%d') AS handInDate
+				</if>
+			</if>
+		FROM 	
+				(SELECT 
+						SUM(a.IN_AMOUNT) AS inAmount,
+						SUM(a.OUT_AMOUNT) AS outAmount,
+						SUM(a.BEFORE_AMOUNT) AS beforeAmount,
+						SUM(a.TOTAL_AMOUNT) AS totalAmount ,
+						a.REPORT_DATE AS reportDate
+					FROM day_report_center a 
+					LEFT JOIN  day_report_main b ON a.REPORTMAIN_ID = b.REPORT_ID
+					LEFT JOIN  sys_office o on b.office_id=o.id
+		<where>
+			b.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="status != null and status != ''">
+			AND b.status = '${status}'
+			</if>
+			<if test="accountsType != null and accountsType != ''">
+			AND a.ACCOUNTS_TYPE != '${accountsType}'
+			</if>
+			<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.report_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.report_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>
+		
+		<!-- add-start by QPH 2017-11-14 -->
+		<if test="office != null and office.id != null and office.id != ''">
+				AND (b.OFFICE_ID = #{office.id}${sqlMap.dsf})
+		</if>
+		
+		</where>
+		GROUP BY
+				a.REPORT_DATE
+		ORDER BY a.report_date desc )b
+		<if test="dbName == 'oracle'">
+		      GROUP BY TO_CHAR(reportDate, '${filterCondition}')
+		 </if>
+		 <if test="dbName == 'mysql'">
+		    <if test="filterCondition == 'yyyy'">
+		       	GROUP BY DATE_FORMAT(reportDate, '%Y') 
+	    	</if>
+		    <if test="filterCondition == 'yyyy-mm'">
+		     	 GROUP BY DATE_FORMAT(reportDate, '%Y-%m')
+	        </if>
+		    <if test="filterCondition == 'yyyy-Q'">
+		     	 GROUP BY CONCAT(YEAR(reportDate),'-',quarter(reportDate)) 
+		    </if>
+		    <if test="filterCondition == 'yyyy-IW'">
+    	    	GROUP BY DATE_FORMAT(reportDate,'%Y-%u') 
+	        </if>
+	        <if test="filterCondition == 'yyyy-mm-dd'">
+	          	GROUP BY DATE_FORMAT(reportDate,'%Y-%m-%d')
+	        </if>
+	    </if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				order by handInDate asc
+			</otherwise>
+		</choose>
+	</select>
+	
+<!-- 根据开始时间结束时间查询数据(清分统计图用) -->
+	<select id="findChartaList" resultType="DayReportMain">
+				SELECT 
+						SUM(a.IN_AMOUNT) AS inAmount,
+						SUM(a.OUT_AMOUNT) AS outAmount,
+						SUM(a.BEFORE_AMOUNT) AS beforeAmount,
+						SUM(a.TOTAL_AMOUNT) AS totalAmount ,
+						b.REPORT_DATE AS reportDate
+					FROM day_report_center a 
+					LEFT JOIN  day_report_main b ON a.REPORTMAIN_ID = b.REPORT_ID
+					LEFT JOIN  sys_office o on b.office_id=o.id
+		<where>
+			b.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="status != null and status != ''">
+			AND b.status = '${status}'
+			</if>
+			<if test="accountsType != null and accountsType != ''">
+			AND a.ACCOUNTS_TYPE != '${accountsType}'
+			</if>
+			<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(b.report_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(b.report_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(b.report_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(b.report_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>
+		
+		<!-- add-start by QPH 2017-11-14 -->
+		<if test="office != null and office.id != null and office.id != ''">
+				AND (b.OFFICE_ID = #{office.id}${sqlMap.dsf})
+		</if>
+		
+		</where>
+		GROUP BY
+				b.REPORT_DATE
+		ORDER BY b.report_date desc 
+	</select>
+	
+	<!-- 根据年月日季度周进行分组查询 -->
+	<select id="findChartsList" resultType="DayReportMain">
+		SELECT 
+			sum(beforeAmount) AS beforeAmount,
+			sum(totalAmount) AS totalAmount,
+			sum(inAmount) AS inAmount,
+			sum(outAmount) AS outAmount,
+			<if test="dbName == 'oracle'">
+				TO_CHAR(reportDate, '${filterCondition}') AS handInDate
+			</if>
+			<if test="dbName == 'mysql'">
+				<if test="filterCondition == 'yyyy'">
+					DATE_FORMAT(reportDate, '%Y') AS handInDate
+				</if>
+				<if test="filterCondition == 'yyyy-mm'">
+					DATE_FORMAT(reportDate, '%Y-%m') AS handInDate
+				</if>
+				<if test="filterCondition == 'yyyy-Q'">
+					CONCAT(YEAR(reportDate),'-',quarter(reportDate)) AS handInDate
+				</if>
+				<if test="filterCondition == 'yyyy-IW'">
+					DATE_FORMAT(reportDate,'%Y-%u') AS handInDate
+				</if>
+				<if test="filterCondition == 'yyyy-mm-dd'">
+					DATE_FORMAT(reportDate,'%Y-%m-%d') AS handInDate
+				</if>
+			</if>
+		FROM 	
+				(SELECT 
+						SUM(a.IN_AMOUNT) AS inAmount,
+						SUM(a.OUT_AMOUNT) AS outAmount,
+						SUM(a.BEFORE_AMOUNT) AS beforeAmount,
+						SUM(a.TOTAL_AMOUNT) AS totalAmount ,
+						a.REPORT_DATE AS reportDate
+					FROM day_report_guest a 
+					LEFT JOIN  day_report_main b ON a.REPORTMAIN_ID = b.REPORT_ID
+					LEFT JOIN  sys_office o on b.office_id=o.id
+		<where>
+			b.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="status != null and status != ''">
+			AND b.status = '${status}'
+			</if>
+			<if test="accountsType != null and accountsType != ''">
+			AND a.ACCOUNTS_TYPE != '${accountsType}'
+			</if>
+			<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.report_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.report_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>
+		
+		<if test="office != null and office.id != null and office.id != ''">
+				AND a.CLIENT_ID = #{office.id}
+		</if>
+		
+		</where>
+		GROUP BY
+				a.REPORT_DATE
+		ORDER BY a.report_date desc )b
+		<if test="dbName == 'oracle'">
+		      GROUP BY TO_CHAR(reportDate, '${filterCondition}')
+		 </if>
+		 <if test="dbName == 'mysql'">
+		    <if test="filterCondition == 'yyyy'">
+		       	GROUP BY DATE_FORMAT(reportDate, '%Y') 
+	    	</if>
+		    <if test="filterCondition == 'yyyy-mm'">
+		     	 GROUP BY DATE_FORMAT(reportDate, '%Y-%m')
+	        </if>
+		    <if test="filterCondition == 'yyyy-Q'">
+		     	 GROUP BY CONCAT(YEAR(reportDate),'-',quarter(reportDate)) 
+		    </if>
+		    <if test="filterCondition == 'yyyy-IW'">
+    	    	GROUP BY DATE_FORMAT(reportDate,'%Y-%u') 
+	        </if>
+	        <if test="filterCondition == 'yyyy-mm-dd'">
+	          	GROUP BY DATE_FORMAT(reportDate,'%Y-%m-%d')
+	        </if>
+	    </if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				order by handInDate asc
+			</otherwise>
+		</choose>
+	</select>
+</mapper>

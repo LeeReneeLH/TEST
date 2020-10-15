@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.allocation.v01.dao.AllHandoverDetailDao">
+	<sql id="allHandoverDetailColumns">
+	<!-- 修改别名 修改人：xp 修改时间：2017-9-12 begin -->
+		hd.detail_id              AS "detailId",
+		hd.handover_id            AS "handoverId",
+		hd.escort_id              AS "escortId",
+		hd.escort_name            AS "escortName",
+		hd.type                   AS "type",
+		hd.manager_reason         AS "managerReason",
+		hd.operation_type         AS "operationType"
+	<!-- end -->
+	</sql>
+		
+	<select id="get" resultType="AllHandoverDetail">
+		SELECT 
+			<include refid="allHandoverDetailColumns"/>
+		FROM all_handover_detail hd
+		WHERE hd.detail_id = #{detailId}
+	</select>
+	
+	
+	<select id="findListByHandoverId" resultType="AllHandoverDetail">
+		SELECT 
+			<include refid="allHandoverDetailColumns"/>
+		FROM all_handover_detail hd
+		WHERE hd.handover_id = #{handoverId}
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO all_handover_detail (
+			detail_id,      
+			handover_id,    
+			escort_id,      
+			escort_name,    
+			type,           
+			manager_reason, 
+			operation_type
+		) VALUES (
+			#{detailId},
+			#{handoverId},
+			#{escortId},
+			#{escortName},
+			#{type},
+			#{managerReason},
+			#{operationType}
+		)
+	</insert>
+	<update id="update">
+		UPDATE all_handover_detail 
+		SET
+			<if test="handoverId != null and handoverId != ''">
+				handover_id = #{handoverId},
+			</if>
+			<if test="escortId != null and escortId != ''">
+				escort_id = #{escortId},
+			</if>
+			<if test="escortName != null and escortName != ''">
+				escort_name = #{escortName},
+			</if>
+			<if test="type != null and type != ''">
+				type = #{type},
+			</if>
+			<if test="managerReason != null and managerReason != ''">
+				manager_reason = #{managerReason},
+			</if>
+			<if test="operationType != null and operationType != ''">
+				operation_type = #{operationType},
+			</if>
+		WHERE detail_id = #{detailId}
+	</update>
+
+	<delete id="delete">
+		Delete 
+		from  all_allocate_items 
+   		WHERE detail_id = #{detailId}
+	</delete>
+</mapper>

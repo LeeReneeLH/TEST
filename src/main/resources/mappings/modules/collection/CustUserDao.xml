@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.collection.v03.dao.CustUserDao">
+	<!-- 上门收款客户管理 -->
+	<sql id="custUserColumns">
+		a.store_id AS "storeId",
+		case when c.name is null then '' else c.name end AS "storeName",
+		a.id,
+		a.login_name AS "loginName",
+		a.password,
+		a.no,
+		a.name,
+		a.idcard_no AS "idcardNo",
+		a.email, 
+		a.phone, 
+		a.mobile, 
+		a.user_type AS "userType",
+		a.remarks,
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.del_flag AS "delFlag"
+	</sql>
+	
+	<sql id="CustUserJoins">
+		LEFT JOIN door_store_office c ON c.id = a.store_id AND c.del_flag = '0'
+	</sql>
+
+	<!-- 主键查询，记录取得-->
+	<select id="get" resultType="CustUser">
+		SELECT
+			 <include refid="custUserColumns"/> 
+		FROM door_cust_user a
+		<include refid="CustUserJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<!-- 一览数据的取得-->
+	<select id="findList" resultType="CustUser">
+		SELECT 
+			<include refid="custUserColumns"/>
+		FROM door_cust_user a
+		<include refid="CustUserJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			
+			<!-- 商户 -->
+			<if test="storeId != null and storeId != ''">
+				AND a.store_id = #{storeId}
+			</if>
+			
+			<!-- 登录名 -->
+			<if test="loginName != null and loginName != ''">
+				AND a.login_name = #{loginName}
+			</if>
+			
+			<!-- 姓名 -->
+			<if test="name != null and name != ''">
+				AND a.name like '%${name}%'
+			</if>
+			
+			<!-- 客户类别 -->
+			<if test="userType != null and userType != ''">
+				AND a.user_type = #{userType}
+			</if>
+			
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.user_type,a.store_id,a.login_name
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 数据插入-->
+	<insert id="insert">
+	INSERT INTO door_cust_user(
+			id,
+			store_id,
+			login_name,
+			password,
+			no,
+			name,
+			idcard_no,
+			email,
+			phone,
+			mobile,
+			user_type,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{storeId},
+			#{loginName},
+			#{password},
+			#{no},
+			#{name},
+			#{idcardNo},
+			#{email},
+			#{phone},
+			#{mobile},
+			#{userType},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+		
+		
+	<!-- 数据更新-->
+	<update id="update">
+		UPDATE door_cust_user SET 
+			store_id = #{storeId},
+			login_name = #{loginName},
+			password = #{password},
+			no = #{no},
+			name = #{name},
+			idcard_no = #{idcardNo},
+			email = #{email},
+			phone = #{phone},
+			mobile = #{mobile},
+			user_type = #{userType},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+
+	<update id="delete">
+		UPDATE door_cust_user SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id} 
+	</update>
+	
+	<!-- 客户编码检查-->
+	<select id="checkCustUserCode" resultType="Office">
+		SELECT
+			<include refid="custUserColumns"/>
+		FROM door_cust_user a
+		<include refid="CustUserJoins"/>
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		AND a.code = #{code}
+	</select>
+
+
+  <!-- 商户下拉列表 -->
+  <select id="findStoreSelect"  resultType="SelectItem">
+	SELECT id value,
+		   name label
+	FROM
+		door_store_office a
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<!-- 启用标识 -->
+			<if test="enabledFlag != null and enabledFlag != ''">
+				AND (a.enabled_flag = #{enabledFlag}
+				<if test="id != null and id != ''">
+				or a.id = #{id}
+			    </if>
+			    )
+			</if>
+
+		</where>
+	ORDER BY a.code
+  </select>
+
+
+	<!-- 根据登录名查询用户 -->
+	<select id="getUserByLoginName" resultType="CustUser" parameterType="CustUser">
+		SELECT
+			<include refid="custUserColumns"/>
+		FROM door_cust_user a
+		<include refid="CustUserJoins"/>
+		WHERE a.login_name = #{loginName} AND a.del_flag = #{DEL_FLAG_NORMAL}
+	</select>
+
+	<select id="findByIdcardNo" resultType="CustUser">
+		SELECT 
+			<include refid="custUserColumns"/>
+		FROM door_cust_user a
+		<include refid="CustUserJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			
+			<!-- 身份证 -->
+			<if test="idcardNo != null and idcardNo != ''">
+				AND a.idcard_no = #{idcardNo}
+			</if>
+			
+			<!-- 主键ID -->
+			<if test="id != null and id != ''">
+				AND a.id != #{id}
+			</if>
+			
+		</where>
+	</select>
+
+
+</mapper>

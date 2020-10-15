@@ -1,0 +1,3817 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.doorOrder.v01.dao.DoorCenterAccountsMainDao">
+    
+	<sql id="centerAccountsMainColumns">
+		a.accounts_id AS "accountsId",
+		a.client_id AS "clientId",
+		<!-- a.client_name AS "clientName", -->
+		q.name AS "clientName",
+		a.business_type AS "businessType",
+		a.business_id AS "businessId",
+		a.roffice_id AS "rofficeId",
+		<!-- a.roffice_name AS "rofficeName", -->
+		o.name AS "rofficeName",
+		a.aoffice_id AS "aofficeId",
+		<!-- a.aoffice_name AS "aofficeName", -->
+		s.name AS "aofficeName",
+		a.in_amount AS "inAmount",
+		a.out_amount AS "outAmount",
+		a.total_amount AS "totalAmount",
+		a.guest_totalAmount AS "guestTotalAmount",
+		a.business_status AS "businessStatus",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createName",
+		a.create_date AS "createDate",
+		a.del_flag AS "delFlag",
+		a.tickertape AS "tickertape",
+		a.status AS "status",
+		a.is_take_up AS "isTakeUp",
+		a.report_id AS "reportId",
+		q.parent_id AS "merchantOfficeId",
+		a.seven_code AS "sevenCode"
+	</sql>
+		<!-- 查询出的所有信息的字段，保存到关联的Entity里 -->
+	<resultMap id="CenterAccountsMainResult" type="com.coffer.businesses.modules.doorOrder.v01.entity.DoorCenterAccountsMain">
+	    <id column="a.accountsId"             	property="accountsId" />
+	    <result column="a.clientId"     	property="clientId"/>
+	    <result column="a.clientName"  		property="clientName"/>
+	    <result column="a.businessType"        	property="businessType"/>
+	    <result column="a.businessId"        property="businessId"/>
+	    <result column="a.rofficeId"      	property="rofficeId"/>
+	    <result column="a.rofficeName"   	property="rofficeName"/>
+	    <result column="a.aofficeId" 	property="aofficeId"/>
+	     <result column="a.aofficeName" 	property="aofficeName"/>
+ 	    <result column="a.inAmount"   	property="inAmount"/>
+	    <result column="a.outAmount" 	property="outAmount"/>
+	    <result column="a.totalAmount"   	property="totalAmount"/>
+	    <result column="a.guestTotalAmount" 	property="guestTotalAmount"/>
+	    <result column="a.businessStatus" 	property="businessStatus"/>
+	    <result column="a.createBy" 	property="createBy.id"/>
+	    <result column="a.createName" 	property="createName"/>
+	    <result column="a.createDate" 	property="createDate"/>
+	    <result column="a.delFlag"     	property="delFlag"/>
+		<result column="a.tickertape" 	property="tickertape"/>
+	    <result column="a.status"     	property="status"/>
+	    <result column="a.isTakeUp"     	property="isTakeUp"/>
+	    <result column="a.reportId"     	property="reportId"/>
+	    <result column="q.merchantOfficeId"     	property="merchantOfficeId"/>
+	    <result column="a.seven_code"     	property="sevenCode"/>
+		<!--财务明细 -->
+		<collection column="accountsId" property="centerAccountsDetailList" javaType="ArrayList"
+					select="com.coffer.businesses.modules.doorOrder.v01.dao.CenterAccountsDetailDao.findItemsList"
+					fetchType="lazy"/>
+	</resultMap>
+		
+	<sql id="centerAccountsMainJoins">
+	left join sys_office o on a.roffice_id=o.id and o.del_flag=${delFlag.valid}
+	LEFT JOIN door_order_info p ON p.order_id=A.BUSINESS_ID
+	LEFT JOIN sys_office q ON a.client_id=q.id and q.del_flag=${delFlag.valid}
+	LEFT JOIN sys_office s ON s.id = a.AOFFICE_ID and s.del_flag=${delFlag.valid}
+	</sql>
+    
+	<select id="get" resultType="DoorCenterAccountsMain">
+		SELECT 
+			<include refid="centerAccountsMainColumns"/>
+		FROM center_accounts_door_main a
+		<include refid="centerAccountsMainJoins"/>
+		WHERE a.accounts_id = #{accountsId}
+	</select>
+	
+	<select id="findList" resultType="DoorCenterAccountsMain">
+		SELECT 
+			a.accounts_id AS "accountsId",
+			a.client_id AS "clientId",
+			<!-- a.client_name AS "clientName", -->
+			q.name AS "clientName",
+			a.business_type AS "businessType",
+			a.business_id AS "businessId",
+			a.roffice_id AS "rofficeId",
+			<!-- a.roffice_name AS "rofficeName", -->
+			o.name AS "rofficeName",
+			a.aoffice_id AS "aofficeId",
+			<!-- a.aoffice_name AS "aofficeName", -->
+			s.name AS "aofficeName",
+			a.in_amount AS "inAmount",
+			a.out_amount AS "outAmount",
+			<!-- BDE.tot  AS "totalAmount", -->
+			a.business_status AS "businessStatus",
+			a.create_by AS "createBy.id",
+			a.create_name AS "createName",
+			a.create_date AS "createDate",
+			a.del_flag AS "delFlag",
+			a.tickertape AS "tickertape",
+			a.status AS "status",
+			a.is_take_up AS "isTakeUp",
+			a.report_id AS "reportId",
+			q.parent_id AS "merchantOfficeId",
+			a.seven_code AS "sevenCode",
+			<!-- SUM(IF (amount.TYPE_ID= '01' AND amount.DENOMINATION IN(15,16,17,18,19,20,21,22,23,24,25,26,27),amount.COUNT_ZHANG,0)) AS 'paperMoneyCount',
+			SUM(IF (amount.TYPE_ID= '01' AND amount.DENOMINATION IN(28,29,30,31,32,33),amount.COUNT_ZHANG,0)) AS 'coinMoneyCount',
+			SUM(IF (amount.TYPE_ID= '01' AND amount.DENOMINATION IN(15,16,17,18,19,20,21,22,23,24,25,26,27),amount.COUNT_ZHANG,0))+
+			SUM(IF (amount.TYPE_ID= '01' AND amount.DENOMINATION IN(28,29,30,31,32,33),amount.COUNT_ZHANG,0)) AS 'saveTotal',
+			SUM(IF (amount.TYPE_ID= '01' AND amount.DENOMINATION IN(28,29,30,31,32,33),amount.DETAIL_AMOUNT,0)) AS 'coinMoneyTotal',
+			SUM(IF(amount.TYPE_ID = '01' AND amount.DENOMINATION IN(15,16,17,18,19,20,21,22,23,24,25,26,27),amount.DETAIL_AMOUNT, 0)) AS 'paperMoneyTotal',
+			SUM(IF(amount.TYPE_ID = '01',amount.DETAIL_AMOUNT, 0)) AS 'cash',
+			SUM(IF(amount.TYPE_ID = '02', amount.DETAIL_AMOUNT, 0)) AS 'pack',
+			SUM(IF(amount.TYPE_ID = '03', amount.DETAIL_AMOUNT, 0)) AS 'other', -->
+			detail.paper_count AS "paperMoneyCount",
+			detail.coin_count AS "coinMoneyCount",
+			detail.coin_amount AS "coinMoneyTotal",
+			detail.paper_amount AS "paperMoneyTotal",
+			detail.force_amount AS "pack",
+			detail.other_amount AS "other",
+			<if test="dbName == 'oracle'">
+				NVL(detail.paper_count,0) + NVL(detail.coin_count,0) AS "saveTotal",
+				NVL(detail.paper_amount,0) + NVL(detail.coin_amount,0) AS "cash",
+			</if>
+			<if test="dbName == 'mysql'">
+				IFNULL(detail.paper_count,0) + IFNULL(detail.coin_count,0) AS "saveTotal",
+				IFNULL(detail.paper_amount,0) + IFNULL(detail.coin_amount,0) AS "cash",
+			</if>
+			user.login_name as 'createBy.loginName',
+			<!-- doi.id as infoId, -->
+			detail.rfid as 'rfid',
+			detail.id as 'detailId'
+			<!-- ,
+		    detail.remarks as 'doorOrderDetail.remarks',
+		    checkCash.codeNo as codeNo,
+		    checkCash.packNum as packNum -->
+		FROM center_accounts_door_main a 
+		<include refid="centerAccountsMainJoins"/>
+		<!-- LEFT JOIN (
+		SELECT de.ORDER_ID as businessId , dod.ORDER_ID as codeNo , dod.RFID as packNum FROM deposit_error de 
+		LEFT JOIN door_order_detail dod ON dod.TICKERTAPE = de.ORDER_ID
+		UNION ALL
+		SELECT dei.ERROR_NO as businessId,ccm.OUT_NO as codeNo,ccm.RFID as packNum from door_error_info dei
+		LEFT JOIN check_cash_main ccm ON dei.BUSINESS_ID = ccm.OUT_NO
+		) checkCash on checkCash.businessId = a.BUSINESS_ID	 
+		LEFT JOIN door_order_info doi ON doi.order_id=checkCash.codeNo-->
+		left join door_order_detail detail on detail.tickertape = a.tickertape
+		left join sys_user user on a.create_by = user.id
+		<!-- LEFT JOIN door_order_amount amount ON detail.id = amount.detail_id -->
+		<!-- left join (select dict.value as value,dict.label as label from sys_dict dict where dict.TYPE = 'save_method' and dict.del_flag=${delFlag.valid}) stype on amount.type_id = stype.value -->
+		<!-- LEFT JOIN (
+			SELECT
+				*,CAST(@csum :=@csum + (
+					IFNULL(ABD.a, 0) - IFNULL(ABD.b, 0)
+				) AS decimal(15,2)) AS tot
+			FROM
+				(
+					SELECT
+						@csum := 0,
+						in_amount AS a,
+						out_amount AS b,
+						accounts_id,
+            CREATE_DATE
+					FROM
+						center_accounts_door_main ccc
+					<where>
+						<if test=" rofficeId != null and rofficeId != ''">
+			               ccc.roffice_id = #{rofficeId}
+			            </if>
+					</where>
+					GROUP BY
+						ccc.create_date ASC
+				) ABD
+		) BDE ON BDE.accounts_id=a.accounts_id -->
+		<!-- LEFT JOIN (
+			SELECT
+				*,
+				CAST(
+				@csum := @csum + (  
+				IFNULL( ABD.a, 0 ) - IFNULL( ABD.b, 0 ) ) AS DECIMAL ( 15, 2 )) AS tot 
+			FROM
+				(
+				SELECT
+					@csum := 0,
+					in_amount AS a,
+					out_amount AS b,
+					accounts_id,
+					CLIENT_ID,
+					CREATE_DATE 
+				FROM
+					center_accounts_door_main ccc 
+				<where>
+								<if test=" rofficeId != null and rofficeId != ''">
+					               ccc.roffice_id = #{rofficeId}
+					            </if>
+							</where>
+				GROUP BY
+					ccc.CLIENT_ID,ccc.create_date ASC 
+				) ABD 
+			) BDF ON BDF.accounts_id = a.accounts_id -->
+		
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		<!-- 业务类型集合 -->
+		<if test="businessTypes != null and businessTypes.size != 0">
+			AND a.business_type in 
+			<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+			 	#{businessTypes[${index}]}
+			</foreach>
+		</if>
+		<!-- 业务类型 -->
+		<if test="businessType != null and businessType != ''">
+			AND a.business_type = '${businessType}'
+		</if>
+		<!-- 机构ID -->
+		<if test="clientId != null and clientId != ''">
+			AND a.client_id = '${clientId}'
+		</if>
+		<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>	
+		<!-- 客户列表 -->
+		<if test="clientIdList != null and clientIdList.size != 0">
+			AND a.client_id in 
+			<foreach collection="clientIdList" item="clientIdTag" separator="," open="(" close=")" index="">
+			 	#{clientIdTag}
+			</foreach>
+		</if>
+		
+		<if test=" rofficeId != null and rofficeId != ''">
+			AND (a.roffice_id = #{rofficeId}${sqlMap.dsf})
+		</if>
+		<!-- 门店父机构 -->
+		<if test=" merchantOfficeId != null and merchantOfficeId != ''">
+			AND  q.parent_id = #{merchantOfficeId}
+		</if>
+		<!-- 日结ID -->
+		<if test=" reportId != null and reportId != ''">
+			AND  a.report_id = #{reportId}
+		</if>
+		<!-- 存款人姓名 -->
+		<if test=" createName != null and createName != ''">
+			AND  a.create_name like 
+				<if test="dbName == 'oracle'">'%,' || #{createName} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{createName}, '%')</if>
+		</if>
+		<!-- 七位码 -->
+		<if test=" sevenCode != null and sevenCode != ''">
+			AND  a.seven_code = #{sevenCode}
+		</if>
+		
+		</where>
+		GROUP BY
+			A.ACCOUNTS_ID
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.create_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 获取客户账务列表  add by lihe 2020-05-27 start -->
+	<select id="findGuestAccountsList" resultType="DoorCenterAccountsMain">
+		SELECT 
+			a.accounts_id AS "accountsId",
+			a.client_id AS "clientId",
+			q.name AS "clientName",
+			a.business_type AS "businessType",
+			a.business_id AS "businessId",
+			a.roffice_id AS "rofficeId",
+			o.name AS "rofficeName",
+			a.aoffice_id AS "aofficeId",
+			s.name AS "aofficeName",
+			a.in_amount AS "inAmount",
+			a.out_amount AS "outAmount",
+			<!-- BDF.tot AS "guestTotalAmount", -->
+			a.business_status AS "businessStatus",
+			a.create_by AS "createBy.id",
+			a.create_name AS "createName",
+			a.create_date AS "createDate",
+			a.del_flag AS "delFlag",
+			a.tickertape AS "tickertape",
+			a.status AS "status",
+			a.is_take_up AS "isTakeUp",
+			a.report_id AS "reportId",
+			q.parent_id AS "merchantOfficeId",
+			a.seven_code AS "sevenCode",
+			detail.paper_count AS "paperMoneyCount",
+			detail.coin_count AS "coinMoneyCount",
+			detail.coin_amount AS "coinMoneyTotal",
+			detail.paper_amount AS "paperMoneyTotal",
+			detail.force_amount AS "pack",
+			detail.other_amount AS "other",
+			<if test="dbName == 'oracle'">
+				IFNULL(detail.paper_count,0) + IFNULL(detail.coin_count,0) AS "saveTotal",
+				IFNULL(detail.paper_amount,0) + IFNULL(detail.coin_amount,0) AS "cash",
+			</if>
+			<if test="dbName == 'mysql'">
+				IFNULL(detail.paper_count,0) + IFNULL(detail.coin_count,0) AS "saveTotal",
+				IFNULL(detail.paper_amount,0) + IFNULL(detail.coin_amount,0) AS "cash",
+			</if>
+			user.login_name as 'createBy.loginName',
+			detail.rfid as 'rfid',
+			detail.id as 'detailId'
+		FROM center_accounts_door_main a 
+		<include refid="centerAccountsMainJoins"/>
+		left join door_order_detail detail on detail.tickertape = a.tickertape
+		left join sys_user user on a.create_by = user.id
+		<!-- LEFT JOIN (
+			SELECT
+				*,
+				CAST(
+				@csum := @csum + (  
+				IFNULL( ABD.a, 0 ) - IFNULL( ABD.b, 0 ) ) AS DECIMAL ( 15, 2 )) AS tot 
+			FROM
+				(
+				SELECT
+					@csum := 0,
+					in_amount AS a,
+					out_amount AS b,
+					accounts_id,
+					CLIENT_ID,
+					CREATE_DATE 
+				FROM
+					center_accounts_door_main ccc 
+				<where>
+								<if test=" rofficeId != null and rofficeId != ''">
+					               ccc.roffice_id = #{rofficeId}
+					            </if>
+							</where>
+				GROUP BY
+					ccc.CLIENT_ID,ccc.create_date ASC 
+				) ABD 
+			) BDF ON BDF.accounts_id = a.accounts_id -->
+		
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		<!-- 业务类型集合 -->
+		<if test="businessTypes != null and businessTypes.size != 0">
+			AND a.business_type in 
+			<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+			 	#{businessTypes[${index}]}
+			</foreach>
+		</if>
+		<!-- 业务类型 -->
+		<if test="businessType != null and businessType != ''">
+			AND a.business_type = '${businessType}'
+		</if>
+		<!-- 机构ID -->
+		<if test="clientId != null and clientId != ''">
+			AND a.client_id = '${clientId}'
+		</if>
+		<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>	
+		<!-- 客户列表 -->
+		<if test="clientIdList != null and clientIdList.size != 0">
+			AND a.client_id in 
+			<foreach collection="clientIdList" item="clientIdTag" separator="," open="(" close=")" index="">
+			 	#{clientIdTag}
+			</foreach>
+		</if>
+		<if test=" rofficeId != null and rofficeId != ''">
+			AND (a.roffice_id = #{rofficeId}${sqlMap.dsf})
+		</if>
+		<!-- 门店父机构 -->
+		<if test=" merchantOfficeId != null and merchantOfficeId != ''">
+			AND  q.parent_id = #{merchantOfficeId}
+		</if>
+		<!-- 日结ID -->
+		<if test=" reportId != null and reportId != ''">
+			AND  a.report_id = #{reportId}
+		</if>
+		<!-- 存款人姓名 -->
+		<if test=" createName != null and createName != ''">
+			AND  a.create_name like 
+				<if test="dbName == 'oracle'">'%,' || #{createName} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{createName}, '%')</if>
+		</if>
+		<!-- 七位码 -->
+		<if test=" sevenCode != null and sevenCode != ''">
+			AND  a.seven_code = #{sevenCode}
+		</if>
+		</where>
+		GROUP BY
+			A.ACCOUNTS_ID
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.create_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	<!-- 获取客户账务列表  add by lihe 2020-05-27 end -->
+
+	<select id="findAllList" resultType="DoorCenterAccountsMain">
+		SELECT 
+			<include refid="centerAccountsMainColumns"/>
+		FROM center_accounts_door_main a
+		<include refid="centerAccountsMainJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="getAccountByBusinessType" resultType="DoorCenterAccountsMain">
+		SELECT
+		<include refid="centerAccountsMainColumns" />
+		FROM center_accounts_door_main a
+		<include refid="centerAccountsMainJoins" />
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		<!-- 业务类型 -->
+		<if test="businessTypes != null and businessTypes.size != 0">
+			AND a.business_type in 
+			<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="">
+			 	#{businessTypeTag}
+			</foreach>
+		</if>
+		<!-- 机构ID -->
+		<if test="clientId != null and clientId != ''">
+			AND a.client_id = '${clientId}'
+		</if>
+		<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>	
+		
+		<!-- 客户列表 -->
+		<if test="clientIdList != null and clientIdList.size != 0">
+			AND a.client_id in 
+			<foreach collection="clientIdList" item="clientIdTag" separator="," open="(" close=")" index="">
+			 	#{clientIdTag}
+			</foreach>
+		</if>
+		<if test=" rofficeId != null and rofficeId != ''">
+			AND a.roffice_id = #{rofficeId}
+		</if>
+		order by a.create_date   desc
+	</select>
+	
+	<select id="getAccountByBusinessTypeForClient" resultType="DoorCenterAccountsMain">
+		SELECT
+		<include refid="centerAccountsMainColumns" />
+		FROM center_accounts_door_main a
+		<include refid="centerAccountsMainJoins" />
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		<!-- 业务类型 -->
+		<if test="businessTypes != null and businessTypes.size != 0">
+			AND a.business_type in 
+			<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="">
+			 	#{businessTypeTag}
+			</foreach>
+		</if>
+		<!-- 机构ID -->
+		<if test="clientId != null and clientId != ''">
+			AND a.client_id = '${clientId}'
+		</if>
+		<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>	
+		
+		<!-- 客户列表 -->
+		<if test="clientIdList != null and clientIdList.size != 0">
+			AND a.client_id in 
+			<foreach collection="clientIdList" item="clientIdTag" separator="," open="(" close=")" index="">
+			 	#{clientIdTag}
+			</foreach>
+		</if>
+		<if test=" rofficeId != null and rofficeId != ''">
+			AND a.roffice_id = #{rofficeId}
+		</if>
+		order by a.create_date   desc
+		LIMIT 1
+	</select>
+	
+		<select id="getAccountByBusinessTypeForCenter" resultType="DoorCenterAccountsMain">
+		SELECT
+		<include refid="centerAccountsMainColumns" />
+		FROM center_accounts_door_main a
+		<include refid="centerAccountsMainJoins" />
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		<!-- 业务类型 -->
+		<if test="businessTypes != null and businessTypes.size != 0">
+			AND a.business_type in 
+			<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="">
+			 	#{businessTypeTag}
+			</foreach>
+		</if>
+		<!-- 机构ID -->
+		<if test="clientId != null and clientId != ''">
+			AND a.client_id = '${clientId}'
+		</if>
+		<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>	
+		
+		<!-- 客户列表 -->
+		<if test="clientIdList != null and clientIdList.size != 0">
+			AND a.client_id in 
+			<foreach collection="clientIdList" item="clientIdTag" separator="," open="(" close=")" index="">
+			 	#{clientIdTag}
+			</foreach>
+		</if>
+		<if test=" rofficeId != null and rofficeId != ''">
+			AND a.roffice_id = #{rofficeId}
+		</if>
+		order by a.create_date   desc
+		LIMIT 1
+	</select>
+	
+	<select id="getAccountByBusinessTypeForReport" resultType="DoorCenterAccountsMain">
+		SELECT
+		<include refid="centerAccountsMainColumns" />
+		FROM center_accounts_door_main a 
+		LEFT JOIN DOOR_ORDER_INFO e on a.business_id=e.order_id
+		<include refid="centerAccountsMainJoins" />
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		<!-- 去掉status的引号 wzj 2017-12-12 begin  -->
+		<!-- end -->
+		<!-- 业务类型 -->
+		<if test="businessTypes != null and businessTypes.size != 0">
+			AND a.business_type in 
+			<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="">
+			 	#{businessTypeTag}
+			</foreach>
+		</if>
+		<!-- 机构ID -->
+		<if test="clientId != null and clientId != ''">
+			AND a.client_id = '${clientId}'
+		</if>
+		<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>	
+		
+		<!-- 客户列表 -->
+		<if test="clientIdList != null and clientIdList.size != 0">
+			AND a.client_id in 
+			<foreach collection="clientIdList" item="clientIdTag" separator="," open="(" close=")" index="">
+			 	#{clientIdTag}
+			</foreach>
+		</if>
+		
+		<if test=" rofficeId != null and rofficeId != ''">
+			AND a.roffice_id = #{rofficeId}
+		</if>
+		<!-- 商户机构 -->
+		<if test=" merchantOfficeId != null and merchantOfficeId != ''">
+			AND q.parent_id = #{merchantOfficeId}
+		</if>
+		
+		order by a.create_date   desc
+	</select>
+	
+	<select id="getDetailListByAccountsId" resultMap="CenterAccountsMainResult">
+		SELECT 
+		<include refid="centerAccountsMainColumns" />
+		FROM center_accounts_door_main a 
+		<include refid="centerAccountsMainJoins" />
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		<if test="clientId != null and clientId != ''">
+			AND a.client_id = '${clientId}'
+		</if>
+		<if test="rofficeId != null and rofficeId != ''">
+			AND (a.roffice_id = #{rofficeId}${sqlMap.dsf})
+		</if>
+		
+	</select>
+	
+	
+	
+	<!-- 查询出的所有信息的字段，保存到关联的Entity里 -->
+	<resultMap id="CenterAccountsMainGroupBy" type="com.coffer.businesses.modules.doorOrder.v01.entity.DoorCenterAccountsMain">
+	    <result column="inCount"     	property="inCount"/>
+	    <result column="outCount"  		property="outCount"/>
+	    <result column="inAmount"        	property="inAmount"/>
+	    <result column="outAmount"        	property="outAmount"/>
+	</resultMap>
+
+
+	<select id="findListGroupByBusinessType" resultMap="CenterAccountsMainGroupBy">
+		SELECT
+		t.business_type,
+		sum(case when t.in_amount is null then 0 else 1 end) as inCount,
+		sum(case when t.out_amount is null then 0 else 1 end) as outCount,
+		sum(t.in_amount) as inAmount,
+		sum(t.out_amount) as outAmount
+		FROM CENTER_ACCOUNTS_DOOR_MAIN t LEFT JOIN cl_in_main b on t.BUSINESS_ID = b.in_NO
+		LEFT JOIN cl_out_main c on t.BUSINESS_ID = c.OUT_NO
+		LEFT JOIN CL_ERROR_INFO d on t.business_id = d.error_no
+		<include refid="centerAccountsMainJoins" />
+		WHERE t.del_flag = '0'
+		and (b.STATUS = '1' or c.STATUS = '1' or d.status = '1')
+		<if test=" rofficeId != null and rofficeId != ''">
+			AND t.roffice_id = #{rofficeId}
+		</if>
+		<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(t.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(t.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(t.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(t.create_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>	
+		<if test="businessTypes != null and businessTypes.size != 0">
+			AND t.business_type in 
+			<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+			 	#{businessTypes[${index}]}
+			</foreach>
+		</if>
+		group by t.business_type
+	</select>
+	
+	<!-- 根据开始结束时间查询入库金额及出库金额总数 -->
+	<select id="findSumList" resultMap="CenterAccountsMainResult">
+		SELECT
+		sum(t.in_amount) as inAmount,
+		sum(t.out_amount) as outAmount
+		FROM CENTER_ACCOUNTS_DOOR_MAIN t
+		left join sys_office o 
+			on t.roffice_id=o.id AND o.del_flag = ${delFlag.valid}
+		LEFT JOIN cl_out_main b on t.BUSINESS_ID = b.OUT_NO 
+		LEFT JOIN  cl_in_main c on t.BUSINESS_ID = c.IN_NO
+		<include refid="centerAccountsMainJoins" />
+		WHERE t.del_flag = '0'
+			<!-- 业务类型集合 -->
+		<if test="businessTypes != null and businessTypes.size != 0">
+			AND t.business_type in 
+			<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+			 	#{businessTypes[${index}]}
+			</foreach>
+		</if>
+		<if test=" rofficeId != null and rofficeId != ''">
+			AND (t.roffice_id = #{rofficeId}${sqlMap.dsf})
+		</if>
+		<!-- 机构ID -->
+		<if test="clientId != null and clientId != ''">
+			AND t.client_id = '${clientId}'
+		</if>
+		<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(t.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(t.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(t.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(t.create_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>	
+			and ( b.STATUS = '1' or c.STATUS = '1')
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO center_accounts_door_main(
+			accounts_id,
+			client_id,
+			client_name,
+			business_type,
+			business_id,
+			roffice_id,
+			roffice_name,
+			aoffice_id,
+			aoffice_name,
+			in_amount,
+			out_amount,
+			total_amount,
+			guest_totalAmount,
+			business_status,
+			create_by,
+			create_name,
+			create_date,
+			del_flag,
+			tickertape,
+			status,
+			update_date,
+			update_by, 
+		    update_name,
+		    is_take_up,
+		    report_id,
+		    seven_code
+		) VALUES (
+			#{accountsId},
+			#{clientId},
+			#{clientName},
+			#{businessType},
+			#{businessId},
+			#{rofficeId},
+			#{rofficeName},
+			#{aofficeId},
+			#{aofficeName},
+			#{inAmount},
+			#{outAmount},
+			#{totalAmount},
+			#{guestTotalAmount},
+			#{businessStatus},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{delFlag},
+			#{tickertape},
+			#{status},
+			#{updateDate},
+			#{updateBy.id},
+			#{updateBy.name},
+			#{isTakeUp},
+			#{reportId},
+			#{sevenCode}
+		)
+	</insert>
+	
+	<update id="update">	
+		UPDATE center_accounts_door_main SET 	
+			accounts_id = #{accountsId},
+			client_id = #{clientId},
+			client_name = #{clientName},
+			business_type = #{businessType},
+			business_id = #{businessId},
+			roffice_id = #{rofficeId},
+			roffice_name = #{rofficeName},
+			aoffice_id = #{aofficeId},
+			aoffice_name = #{aofficeName},
+			in_amount = #{inAmount},
+			out_amount = #{outAmount},
+			total_amount = #{totalAmount},
+			guest_totalAmount = #{guestTotalAmount},
+			business_status = #{businessStatus},
+			tickertape = #{tickertape},
+			status = #{status},
+			update_date=#{updateDate},
+			update_by =#{updateBy.id},
+			update_name=#{updateBy.name},
+			is_take_up=#{isTakeUp},
+			report_id=#{reportId},
+			seven_code=#{sevenCode}
+		WHERE accounts_id = #{accountsId}
+	</update>
+	
+	<update id="delete">
+		UPDATE center_accounts_door_main SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE accounts_id = #{accountsId}
+	</update>
+	
+    <!-- 获取未处理的差错记录列表  wqj start -->
+	<select id="findUntakeErrorList" resultType="DoorCenterAccountsMain">
+	SELECT
+		<include refid="centerAccountsMainColumns" />
+	FROM
+		CENTER_ACCOUNTS_DOOR_MAIN A
+		<include refid="centerAccountsMainJoins"/>
+	WHERE
+		a.del_flag = #{DEL_FLAG_NORMAL} 
+	AND A .BUSINESS_TYPE = #{businessType}
+	AND A .ROFFICE_ID = #{rofficeId}
+	AND A .IS_TAKE_UP = #{isTakeUp}
+	</select>
+	<!-- 获取该门店未处理的差错记录列表  wqj end -->
+	
+	<!-- 中心首页  start-->
+	<!-- 获取中心存款、已汇款、未汇款列表  lihe start -->
+	<select id="getDepoRemitAmount" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.OfficeAmount">
+		SELECT
+			s.ID,
+			s.NAME,
+			<if test="dbName == 'oracle'">
+			    <!-- 存款总额-冲正金额 = 最终存款金额 -->
+				NVL(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) THEN  M.inAmount ELSE 0 END), 0)
+				-NVL(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND M.businessStatus = '2' THEN  M.outAmount ELSE 0 END),0) AS depositAmount, 
+				<!-- 中心汇款金额 = 已汇款金额 -->
+				NVL(SUM(CASE WHEN M.businessType = '78' THEN M.outAmount ELSE 0 END),0) AS remitAmount,
+				<!-- 存款总额-已代付金额-冲正金额 = 未汇款金额 -->
+				NVL(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND M.status = '1' AND M.businessStatus = '1' THEN M.inAmount ELSE 0 END),0)
+				-NVL(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND M.status = '1' AND M.businessStatus = '2' THEN M.outAmount ELSE 0 END),0) AS unremittedAmount
+			</if>
+			<if test="dbName=='mysql'">
+			<!-- 存款总额-冲正金额 = 最终存款金额 -->
+				COALESCE(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) THEN  M.inAmount ELSE 0 END), 0)
+				-COALESCE(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND M.businessStatus = '2' THEN  M.outAmount ELSE 0 END),0) AS depositAmount, 
+				<!-- 中心汇款金额 = 已汇款金额 -->
+				COALESCE(SUM(CASE WHEN M.businessType = '78' THEN M.outAmount ELSE 0 END),0) AS remitAmount,
+				<!-- 存款总额-已代付金额-冲正金额 = 未汇款金额 -->
+				COALESCE(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND M.status = '1' AND M.businessStatus = '1' THEN M.inAmount ELSE 0 END),0)
+				-COALESCE(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND M.status = '1' AND M.businessStatus = '2' THEN M.outAmount ELSE 0 END),0) AS unremittedAmount	
+			</if>
+		FROM
+			(
+				SELECT
+					B.ID,
+					B.NAME,
+					MAX(DR.dayReportDate) AS dayReportDate
+				FROM
+					SYS_OFFICE A
+				LEFT JOIN sys_office B ON A.PARENT_ID=B.ID
+				LEFT JOIN (
+					SELECT
+						OFFICE_ID,
+						MAX(CREATE_DATE) AS dayReportDate
+					FROM
+						DAY_REPORT_DOOR_MERCHAN
+					WHERE
+						SETTLEMENT_TYPE = ${centerAccounts.settlementType.deposit}
+					GROUP BY
+						OFFICE_ID
+				) DR ON A.ID = DR.OFFICE_ID
+				WHERE
+					B . TYPE = ${office.type.merchant}
+					AND A.DEL_FLAG = #{DEL_FLAG_NORMAL}
+					AND B.DEL_FLAG = #{DEL_FLAG_NORMAL}
+					${sqlMap.dsf}
+				GROUP BY
+					B.ID,
+					B.NAME
+			) s
+		LEFT JOIN SYS_OFFICE D ON D.PARENT_ID = s.ID AND D.DEL_FLAG = #{DEL_FLAG_NORMAL}
+		LEFT JOIN (
+			SELECT
+				C.client_id AS clientId,
+				C.client_name AS clientName,
+				C.in_amount AS inAmount,
+				C.out_amount AS outAmount,
+				C.business_status AS businessStatus,
+				C.business_type AS businessType,
+				C.status
+			FROM
+				center_accounts_door_main C
+			WHERE
+				C.del_flag = '0'
+				<!-- 创建时间(开始) -->
+				<if test="searchDateStart != null and searchDateStart != ''">
+					AND 
+					<if test="dbName == 'oracle'">TO_CHAR(C.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+					<if test="dbName=='mysql'">DATE_FORMAT(C.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+				</if>
+				<!-- 创建时间(结束) -->
+				<if test="searchDateEnd != null and searchDateEnd != ''">
+					AND 
+					<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(C.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+					<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(C.create_date, '%Y-%m-%d %H:%i:%s')</if>
+				</if>	
+				<!-- <if test="businessTypes != null and businessTypes.size != 0">
+					AND C.business_type in 
+					<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+					 	#{businessTypes[${index}]}
+					</foreach>
+				</if> -->
+			) M ON D.ID = M.clientId
+		GROUP BY
+			s.ID,
+			s.NAME
+		<!-- ORDER BY depositAmount DESC -->
+	</select>
+	<!-- 获取中心存款、已汇款、未汇款列表  lihe end -->
+	
+	<!-- 获取中心存款、汇款总额   lihe start -->
+	<select id="getDepositAllAmount" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.OfficeAmount">
+		SELECT
+			COUNT(M.businessId) AS depositCount,
+			<if test="dbName == 'oracle'">
+			    <!-- 存款总额-冲正金额 = 最终存款金额 -->
+				NVL(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>
+				) THEN  M.inAmount ELSE 0 END), 0)
+				-NVL(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>
+				) AND M.businessStatus = ${centerAccounts.businessStatus.cancel} THEN  M.outAmount ELSE 0 END),0) AS depositAmount, 
+				<!-- 中心汇款金额 = 已汇款金额 -->
+				NVL(SUM(CASE WHEN M.businessType = ${centerAccounts.businessType.remit} THEN M.outAmount ELSE 0 END),0) AS repayAmount
+			</if>
+			<if test="dbName=='mysql'">
+				<!-- 存款总额-冲正金额 = 最终存款金额 -->
+				COALESCE(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>
+				) THEN  M.inAmount ELSE 0 END), 0)
+				-COALESCE(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>
+				) AND M.businessStatus = ${centerAccounts.businessStatus.cancel} THEN  M.outAmount ELSE 0 END),0) AS depositAmount, 
+				<!-- 中心汇款金额 = 已汇款金额 -->
+				COALESCE(SUM(CASE WHEN M.businessType = ${centerAccounts.businessType.remit} THEN M.outAmount ELSE 0 END),0) AS repayAmount
+			</if>
+		FROM
+			(
+				SELECT
+					B.ID,
+					B.NAME,
+					MAX(DR.dayReportDate) AS dayReportDate
+				FROM
+					SYS_OFFICE A
+				LEFT JOIN sys_office B ON A.PARENT_ID=B.ID
+				LEFT JOIN (
+					SELECT
+						OFFICE_ID,
+						MAX(CREATE_DATE) AS dayReportDate
+					FROM
+						DAY_REPORT_DOOR_MERCHAN
+					WHERE
+						SETTLEMENT_TYPE = ${centerAccounts.settlementType.deposit}
+					GROUP BY
+						OFFICE_ID
+				) DR ON A.ID = DR.OFFICE_ID
+				WHERE
+					B . TYPE = ${office.type.merchant}
+					AND A.DEL_FLAG = #{DEL_FLAG_NORMAL}
+					AND B.DEL_FLAG = #{DEL_FLAG_NORMAL}
+					${sqlMap.dsf}
+				GROUP BY
+					B.ID,
+					B.NAME
+			) s
+		LEFT JOIN SYS_OFFICE D ON D .PARENT_ID = s.ID AND D.DEL_FLAG = #{DEL_FLAG_NORMAL}
+		LEFT JOIN (
+			SELECT
+				C .client_id AS clientId,
+				C .client_name AS clientName,
+				C.in_amount AS inAmount,
+				C.out_amount AS outAmount,
+				C.business_id AS businessId,
+				C.business_type AS businessType,
+				C.business_status AS businessStatus
+			FROM
+				center_accounts_door_main C
+			WHERE
+				C.del_flag = '0'
+				<!-- 创建时间(开始) -->
+				<if test="searchDateStart != null and searchDateStart != ''">
+					AND 
+					<if test="dbName == 'oracle'">TO_CHAR(C.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+					<if test="dbName=='mysql'">DATE_FORMAT(C.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+				</if>
+				<!-- 创建时间(结束) -->
+				<if test="searchDateEnd != null and searchDateEnd != ''">
+					AND 
+					<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(C.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+					<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(C.create_date, '%Y-%m-%d %H:%i:%s')</if>
+				</if>	
+				<!-- <if test="businessTypes != null and businessTypes.size != 0">
+					AND C.business_type in 
+					<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+					 	#{businessTypes[${index}]}
+					</foreach>
+				</if> -->
+			) M ON D.ID = M.clientId
+	</select>
+	<!-- 获取中心存款、汇款总额   lihe end -->
+	
+	<!-- 查询中心近一周存款   lihe start-->
+	<select id="getDepositByWeek" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.OfficeAmount">
+		SELECT
+			w.DAY AS day,
+			<if test="dbName == 'oracle'">
+			    <!-- 存款总额-冲正金额 = 最终存款金额 -->
+				NVL(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) THEN  M .inAmount ELSE 0 END), 0)
+				-NVL(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND M.businessStatus = ${centerAccounts.businessStatus.cancel} THEN  M.outAmount ELSE 0 END),0) AS depositAmount
+			</if>
+			<if test="dbName=='mysql'">
+				<!-- 存款总额-冲正金额 = 最终存款金额 -->
+				COALESCE(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) THEN  M .inAmount ELSE 0 END), 0)
+				-COALESCE(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND M.businessStatus = ${centerAccounts.businessStatus.cancel} THEN  M.outAmount ELSE 0 END),0) AS depositAmount 
+			</if>
+		FROM
+			<if test="dbName == 'oracle'">
+				(SELECT TO_CHAR(SYSDATE - LEVEL + 1, 'yyyy-mm-dd') AS DAY FROM DUAL CONNECT BY LEVEL &lt;= 7) w
+			</if>
+			<if test="dbName == 'mysql'">
+				(SELECT @s :=@s + 1 AS 'index', DATE(DATE_SUB(CURRENT_DATE, INTERVAL @s DAY)) AS DAY FROM mysql.help_topic,
+						(SELECT @s := - 1) temp WHERE @s &lt; 7 ORDER BY DAY) w
+			</if>
+		LEFT JOIN (
+			<!-- SELECT
+				D.ID,
+				C.create_date AS create_date,
+				C.inAmount AS inAmount,
+				C.outAmount AS outAmount,
+				C.business_type AS businessType,
+				C.businessStatus AS businessStatus
+			FROM
+				(
+					SELECT
+						B.ID,
+						B.NAME,
+						MAX(DR.dayReportDate) AS dayReportDate
+					FROM
+						SYS_OFFICE A
+					LEFT JOIN sys_office B ON A.PARENT_ID=B.ID
+					LEFT JOIN (
+						SELECT
+							OFFICE_ID,
+							MAX(CREATE_DATE) AS dayReportDate
+						FROM
+							DAY_REPORT_DOOR_MERCHAN
+						WHERE
+							SETTLEMENT_TYPE = ${centerAccounts.settlementType.deposit}
+						GROUP BY
+							OFFICE_ID
+					) DR ON A.ID = DR.OFFICE_ID
+					WHERE
+						B . TYPE = ${office.type.merchant}
+						AND A.DEL_FLAG = #{DEL_FLAG_NORMAL}
+						AND B.DEL_FLAG = #{DEL_FLAG_NORMAL}
+						${sqlMap.dsf}
+					GROUP BY
+						B.ID,
+						B.NAME
+				) s
+			LEFT JOIN SYS_OFFICE D ON D.PARENT_ID = s.ID AND D.DEL_FLAG = #{DEL_FLAG_NORMAL}
+			LEFT JOIN (
+				SELECT
+					client_id AS clientId,
+					client_name AS clientName,
+					in_amount AS inAmount,
+					out_amount AS outAmount,
+					create_date,
+					business_type,
+					business_status AS businessStatus
+				FROM
+					center_accounts_door_main
+				WHERE
+					del_flag = '0'
+				<if test="businessTypes != null and businessTypes.size != 0">
+					AND business_type in 
+					<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+					 	#{businessTypes[${index}]}
+					</foreach>
+				</if>
+			) C ON D.ID = C.clientId  -->
+			
+			SELECT
+				C.client_id as ID,
+				C.in_amount AS inAmount,
+				C.out_amount AS outAmount,
+				C.create_date AS create_date,
+				C.business_type AS businessType,
+				C.business_status AS businessStatus 
+			FROM
+				center_accounts_door_main C 
+			LEFT JOIN SYS_OFFICE A ON C.client_id = A.id AND A.del_flag = #{DEL_FLAG_NORMAL}
+				WHERE
+				C.del_flag = '0' 
+				AND C.CREATE_DATE >  DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+			<if test="businessTypes != null and businessTypes.size != 0">
+				AND business_type in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+			 		#{businessTypes[${index}]}
+				</foreach>
+			</if> 
+			${sqlMap.dsf} 
+		) M ON w.DAY = 
+			<if test="dbName == 'oracle'">TO_CHAR (M.create_date, 'yyyy-mm-dd')</if>
+			<if test="dbName == 'mysql'">DATE_FORMAT(M.create_date,'%Y-%m-%d')</if>	
+		GROUP BY
+			w.DAY
+		ORDER BY
+			w.DAY DESC
+	</select>
+	<!-- 查询中心近一周存款  lihe end -->
+	
+	<!-- 按照月份获取中心存款金额  lihe start -->
+	<select id="getDepositByMonth" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.OfficeAmount">
+		SELECT
+			T.MONTH,
+			T.LABEL,
+			<if test="dbName == 'oracle'">
+			NVL(b.amount,0) AS depositAmount
+			</if>
+			<if test="dbName == 'mysql'">
+			COALESCE(b.amount,0) AS depositAmount
+			</if>
+		FROM
+			(
+				SELECT
+					LABEL,
+					VALUE AS MONTH
+				FROM
+					sys_dict
+				WHERE
+					type = 'door_echarts_month'
+					AND DEL_FLAG = ${delFlag.valid}
+				ORDER BY
+					SORT ASC
+			) T
+		LEFT JOIN (
+		SELECT 
+			<if test="dbName == 'oracle'">
+				TO_CHAR(M.create_date, 'mm') AS create_date,
+				<!-- 总存款金额-冲正金额=最终存款金额 -->
+				NVL (SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) THEN  M.inAmount ELSE 0 END), 0)
+				-NVL(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND M.businessStatus = ${centerAccounts.businessStatus.cancel} THEN  M.outAmount ELSE 0 END),0) AS amount
+			</if>
+			<if test="dbName == 'mysql'">
+				DATE_FORMAT(M.create_date,'%m') AS create_date,
+				<!-- 总存款金额-冲正金额=最终存款金额 -->
+				COALESCE(SUM(CASE WHEN (M.businessType in <foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) THEN  M.inAmount ELSE 0 END), 0)
+				-COALESCE(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND M.businessStatus = ${centerAccounts.businessStatus.cancel} THEN  M.outAmount ELSE 0 END),0) AS amount
+			</if>
+		FROM 
+			<!-- (
+				SELECT
+					B.ID,
+					B.NAME,
+					MAX(DR.dayReportDate) AS dayReportDate
+				FROM
+					SYS_OFFICE A
+				LEFT JOIN sys_office B ON A.PARENT_ID=B.ID
+				LEFT JOIN (
+					SELECT
+						OFFICE_ID,
+						MAX(CREATE_DATE) AS dayReportDate
+					FROM
+						DAY_REPORT_DOOR_MERCHAN
+					WHERE
+						SETTLEMENT_TYPE = ${centerAccounts.settlementType.deposit}
+					GROUP BY
+						OFFICE_ID
+				) DR ON A.ID = DR.OFFICE_ID
+				WHERE
+					B . TYPE = ${office.type.merchant}
+					AND A.DEL_FLAG = #{DEL_FLAG_NORMAL}
+					AND B.DEL_FLAG = #{DEL_FLAG_NORMAL}
+					${sqlMap.dsf}
+				GROUP BY
+					B.ID,
+					B.NAME
+			) o
+		LEFT JOIN SYS_OFFICE s ON o.ID = s.parent_id AND s.DEL_FLAG = #{DEL_FLAG_NORMAL}
+		LEFT JOIN --> (
+			SELECT
+				C.client_id AS clientId,
+				C.in_Amount AS inAmount,
+				C.out_Amount AS outAmount,
+				C.create_date,
+				C.business_type AS businessType,
+				C.business_status AS businessStatus
+			FROM
+				CENTER_ACCOUNTS_DOOR_MAIN C
+			LEFT JOIN SYS_OFFICE A ON A.ID = C.client_id
+			LEFT JOIN sys_office B ON A.PARENT_ID = B.ID	
+			WHERE
+				C.del_flag = '0'
+				<if test="businessTypes != null and businessTypes.size != 0">
+					AND C.business_type in 
+					<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+					 	#{businessTypes[${index}]}
+					</foreach>
+				</if>
+				<if test="dbName == 'oracle'">AND TO_CHAR (C.create_date, 'yyyy') = #{year}</if>
+				<if test="dbName == 'mysql'">AND DATE_FORMAT(C.create_date, '%Y') = #{year}</if>
+			AND B . TYPE = ${office.type.merchant}
+			AND A.DEL_FLAG = #{DEL_FLAG_NORMAL}
+			AND B.DEL_FLAG = #{DEL_FLAG_NORMAL}
+			${sqlMap.dsf}
+		) M 
+		GROUP BY
+			<if test="dbName == 'oracle'">TO_CHAR (M.create_date, 'mm')</if>
+			<if test="dbName == 'mysql'">DATE_FORMAT(M.create_date,'%m')</if>	
+		) b ON b.create_date = T.MONTH 
+		ORDER BY T.MONTH ASC
+		
+	</select>
+	<!-- 按照月份获取商户存款金额  lihe end -->
+	
+	<!-- 按照季度获取中心存款金额  lihe start (暂不用)-->
+	<!-- <select id="getDepositByQuarter" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.OfficeAmount">
+		SELECT
+			"NVL" (sum(decode(to_char(C.update_date,'q'),'1',C."inAmount",0)),0) as one,
+		　　   "NVL" (sum(decode(to_char(C.update_date,'q'),'2',C."inAmount",0)),0) as two,
+			"NVL" (sum(decode(to_char(C.update_date,'q'),'3',C."inAmount",0)),0) as three,
+			"NVL" (sum(decode(to_char(C.update_date,'q'),'4',C."inAmount",0)),0) as four
+		FROM
+			(
+				SELECT
+					A . ID,
+					A . NAME
+				FROM
+					SYS_OFFICE A
+				WHERE
+					A . TYPE = #{type}
+				AND A .PARENT_IDS LIKE '%' || (
+					SELECT
+						ID
+					FROM
+						SYS_OFFICE
+					WHERE
+						ID = (
+							SELECT
+								PARENT_ID
+							FROM
+								SYS_OFFICE
+							WHERE
+								TYPE = '6'
+							AND ID = #{id}
+						)
+				) || '%'
+				ORDER BY
+					A .parent_ids,
+					A .code
+			) s
+		LEFT JOIN SYS_OFFICE D ON D .PARENT_ID = s."ID"
+		LEFT JOIN (
+			SELECT
+				client_id AS "clientId",
+				client_name AS "clientName",
+				in_amount AS "inAmount",
+				update_date
+			FROM
+				center_accounts_door_main
+			WHERE
+				del_flag = '0'
+			AND TO_CHAR (update_date,'yyyy') = #{year}
+			<if test="businessTypes != null and businessTypes.size != 0">
+				AND business_type in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>
+			</if>
+		) C ON D ."ID" = C."clientId"
+		WHERE
+			C.update_date IS NOT NULL
+		ORDER BY TO_CHAR (C.update_date, 'q') ASC
+	</select> -->
+	<!-- 按照季度获取商户存款金额  lihe start -->
+	
+	<!-- 获取中心差错记录   lihe start -->
+	<select id="getCenterErrorForDay" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.DoorCenterAccountsMain">
+		SELECT
+			o.NAME AS merchantOfficeName,
+			CASE WHEN E.amount > 0 THEN 2 WHEN 0 > E.amount THEN 3 ELSE 0 END AS errorType,
+			<if test="dbName == 'oracle'">NVL(E.PAID_STATUS,1) AS paidStatus,</if>
+			<if test="dbName=='mysql'">IFNULL(E.PAID_STATUS,1) AS paidStatus,</if>
+			E.BUSINESS_STATUS AS businessStatus,
+			E.errorCount AS errorCount,
+			abs(E.AMOUNT) AS totalAmount
+		FROM
+			(
+				SELECT
+					B.ID,
+					B.NAME,
+					MAX(DR.dayReportDate) AS dayReportDate
+				FROM
+					SYS_OFFICE A
+				LEFT JOIN sys_office B ON A.PARENT_ID=B.ID
+				LEFT JOIN (
+					SELECT
+						OFFICE_ID,
+						MAX(CREATE_DATE) AS dayReportDate
+					FROM
+						DAY_REPORT_DOOR_MERCHAN
+					WHERE
+						SETTLEMENT_TYPE = ${centerAccounts.settlementType.deposit}
+					GROUP BY
+						OFFICE_ID
+				) DR ON A.ID = DR.OFFICE_ID
+				WHERE
+					B . TYPE = ${office.type.merchant}
+					AND A.DEL_FLAG = #{DEL_FLAG_NORMAL}
+					AND B.DEL_FLAG = #{DEL_FLAG_NORMAL}
+					${sqlMap.dsf}
+				GROUP BY
+					B.ID,
+					B.NAME
+			) o
+			LEFT JOIN SYS_OFFICE s ON s.PARENT_ID = o.ID 
+			AND s.DEL_FLAG = 0
+			LEFT JOIN (
+			SELECT
+				a.client_id,
+				<!-- b.PAID_STATUS, -->
+				a.IS_TAKE_UP AS PAID_STATUS,
+				CASE WHEN a.BUSINESS_STATUS='1' THEN count(a.ACCOUNTS_ID) ELSE 0 END AS errorCount,
+				a.BUSINESS_STATUS,
+			<if test="dbName == 'oracle'">
+			    NVL((SUM(a.in_amount), 0)- NVL(SUM(a.out_amount), 0) AS AMOUNT 
+			</if>
+			<if test="dbName=='mysql'">
+				COALESCE(SUM( a.in_amount), 0)- COALESCE(SUM(a.out_amount), 0) AS AMOUNT 
+			</if>
+			FROM
+				CENTER_ACCOUNTS_DOOR_MAIN a
+				<!-- LEFT JOIN day_report_door_merchan b ON a.CLIENT_ID = b.OFFICE_ID AND a.REPORT_ID = b.REPORT_ID --> 
+			WHERE
+				a.del_flag = #{DEL_FLAG_NORMAL} 
+				AND (( a.report_id IS NOT NULL ) OR a.report_id IS NULL ) 
+				<if test="businessTypes != null and businessTypes.size != 0">
+				AND a.BUSINESS_TYPE in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>
+				</if>
+				<!-- 查询时间(开始) -->
+				<if test="searchDateStart != null and searchDateStart != ''">
+				AND
+					<if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+					<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+				</if>
+				<!-- 查询时间(结束) -->
+				<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND
+					<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+					<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+				</if> 
+			GROUP BY
+				a.client_id,a.BUSINESS_STATUS,a.IS_TAKE_UP
+			) E ON s.ID = E.client_id 
+		WHERE
+			E.amount IS NOT NULL 
+		GROUP BY
+			o.NAME,
+			E.PAID_STATUS,
+			E.BUSINESS_STATUS,
+			E.errorCount,
+			E.AMOUNT
+		ORDER BY E.PAID_STATUS DESC 
+	</select>
+	<!-- 获取中心差错记录  lihe end -->
+	<!-- 中心首页  end-->
+	
+	<!-- 商户首页  start -->
+	<!-- 获取商户汇款汇总金额   lihe start -->
+	<select id="getClientDepoRepay" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.OfficeAmount">
+		SELECT
+			COUNT(M.businessId) AS depositCount,
+			<if test="dbName == 'oracle'">
+			    <!-- 存款总额-冲正金额 = 最终存款金额 -->
+				NVL(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) THEN  M.inAmount ELSE 0 END), 0)
+				-NVL(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND M.businessStatus = ${centerAccounts.businessStatus.cancel} THEN  M.outAmount ELSE 0 END),0) AS depositAmount, 
+				<!-- 中心汇款金额 = 已汇款金额 -->
+				NVL(SUM(CASE WHEN M.businessType = ${centerAccounts.businessType.remit} THEN M.outAmount ELSE 0 END),0) AS repayAmount
+			</if>
+			<if test="dbName=='mysql'">
+				<!-- 存款总额-冲正金额 = 最终存款金额 -->
+				COALESCE(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) THEN  M.inAmount ELSE 0 END), 0)
+				-COALESCE(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND M.businessStatus = ${centerAccounts.businessStatus.cancel} THEN  M.outAmount ELSE 0 END),0) AS depositAmount, 
+				<!-- 中心汇款金额 = 已汇款金额 -->
+				COALESCE(SUM(CASE WHEN M.businessType = ${centerAccounts.businessType.remit} THEN M.outAmount ELSE 0 END),0) AS repayAmount
+			</if>
+		FROM SYS_OFFICE D
+		LEFT JOIN (
+			SELECT
+				C .client_id AS clientId,
+				C .client_name AS clientName,
+				C.in_amount AS inAmount,
+				C.out_amount AS outAmount,
+				C.business_type AS businessType,
+				C.business_status AS businessStatus,
+				C.business_id AS businessId
+			FROM
+				center_accounts_door_main C
+			WHERE
+				C.del_flag = #{DEL_FLAG_NORMAL}
+				<!-- 创建时间(开始) -->
+				<if test="searchDateStart != null and searchDateStart != ''">
+					AND 
+					<if test="dbName == 'oracle'">TO_CHAR(C.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+					<if test="dbName=='mysql'">DATE_FORMAT(C.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+				</if>
+				<!-- 创建时间(结束) -->
+				<if test="searchDateEnd != null and searchDateEnd != ''">
+					AND 
+					<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(C.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+					<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(C.create_date, '%Y-%m-%d %H:%i:%s')</if>
+				</if>	
+				<!-- <if test="businessTypes != null and businessTypes.size != 0">
+					AND C.business_type in 
+					<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+					 	#{businessTypes[${index}]}
+					</foreach>
+				</if> -->
+			) M ON D.ID = M.clientId
+			where 
+				D.del_flag = #{DEL_FLAG_NORMAL}
+				${sqlMap.dsf}
+	</select>
+	<!-- 获取商户汇款汇总金额  lihe end -->
+	
+	<!-- 按存款类型查询存款金额 lihe start -->
+	<select id="getAmountByType" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.OfficeAmount">
+		SELECT
+			<if test="dbName == 'oracle'">
+			NVL(T.TYPE_NAME,'其他') AS typeName,
+			NVL(SUM(M.DETAIL_AMOUNT), 0) AS typeAmount
+			</if>
+			<if test="dbName == 'mysql'">
+			COALESCE(T.TYPE_NAME,'其他') AS typeName,
+			COALESCE(SUM(M.DETAIL_AMOUNT), 0) AS typeAmount
+			</if>
+		FROM
+		(
+			SELECT
+				<!-- A.TYPE_ID AS TYPE_ID, -->
+				<!-- A.DETAIL_AMOUNT AS DETAIL_AMOUNT, -->
+				D.AMOUNT AS DETAIL_AMOUNT,
+				D.BUSINESS_TYPE
+			FROM
+				(
+					<!-- SELECT
+						DOOR_ID,
+						METHOD,
+						ORDER_ID,
+						OFFICE_ID
+					FROM
+						DOOR_ORDER_INFO
+					WHERE
+						status != '4'
+					AND del_flag = #{DEL_FLAG_NORMAL} -->
+					<!-- <if test=" doorId != null and doorId != ''">
+						AND door_id = #{doorId}
+					</if>	 -->
+					SELECT 
+						IN_AMOUNT,
+						BUSINESS_ID,
+						AOFFICE_ID,
+						ROFFICE_ID,
+						TICKERTAPE
+					FROM 
+						center_accounts_door_main 
+					WHERE BUSINESS_TYPE in('74','81') 
+					AND del_flag = #{DEL_FLAG_NORMAL}
+					<if test=" doorId != null and doorId != ''">
+						AND AOFFICE_ID = #{doorId}
+					</if>
+					<!-- 查询时间(开始) -->
+					<if test="searchDateStart != null and searchDateStart != ''">
+						AND 
+						<if test="dbName == 'oracle'">TO_CHAR(create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+						<if test="dbName=='mysql'">DATE_FORMAT(create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+					</if>
+					<!-- 查询时间(结束) -->
+					<if test="searchDateEnd != null and searchDateEnd != ''">
+						AND 
+						<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+						<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(create_date, '%Y-%m-%d %H:%i:%s')</if>
+					</if>
+				) o
+			<!-- LEFT JOIN sys_office o1 ON o1.ID = o.DOOR_ID
+			LEFT JOIN sys_office o2 ON o2.ID = o.OFFICE_ID -->
+			LEFT JOIN sys_office o1 ON o1.ID = o.AOFFICE_ID
+			LEFT JOIN sys_office o2 ON o2.ID = o.ROFFICE_ID
+			LEFT JOIN 
+				(SELECT
+					ID,
+					BUSINESS_TYPE,
+					ORDER_ID,
+					AMOUNT,
+					TICKERTAPE
+				FROM
+					DOOR_ORDER_DETAIL
+				WHERE
+					DEL_FLAG = #{DEL_FLAG_NORMAL}
+				<!-- 查询时间(开始) -->
+				<if test="searchDateStart != null and searchDateStart != ''">
+					AND 
+					<if test="dbName == 'oracle'">TO_CHAR(create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+					<if test="dbName=='mysql'">DATE_FORMAT(create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+				</if>
+				<!-- 查询时间(结束) -->
+				<if test="searchDateEnd != null and searchDateEnd != ''">
+					AND 
+					<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+					<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(create_date, '%Y-%m-%d %H:%i:%s')</if>
+				</if>
+			) D ON o.BUSINESS_ID = D.order_id AND O.TICKERTAPE = D.TICKERTAPE
+			<!-- LEFT JOIN (
+				SELECT
+					detail_id,
+					TYPE_ID,
+					SUM(DETAIL_AMOUNT) AS DETAIL_AMOUNT
+				FROM
+					DOOR_ORDER_AMOUNT
+				WHERE TYPE_ID != ${door.saveMethod.other}
+				GROUP BY
+					detail_id,
+					TYPE_ID
+			) A ON A.detail_id = D.ID -->
+			<where>
+				${sqlMap.dsf}
+				<if test="id != null and id != ''">
+					AND	o1.PARENT_ID = #{id}
+				</if>
+			</where>
+		) M 
+		LEFT JOIN
+			(
+				SELECT
+					ID,
+					TYPE_NAME
+				FROM
+					SAVE_TYPE
+				WHERE
+					DEL_FLAG = #{DEL_FLAG_NORMAL}
+				<!-- AND MERCHANT_ID = #{id} -->
+			) T ON M.business_type = T.ID
+		GROUP BY
+			T.TYPE_NAME
+	
+	</select>
+	<!-- 按存款类型查询存款金额 lihe end -->
+	
+	<!-- 获取商户存款、已汇款、未汇款列表  lihe start -->
+	<select id="getClientDeReAmount" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.OfficeAmount">
+		SELECT
+			o.ID,
+			o.NAME,
+			<if test="dbName == 'oracle'">
+			    <!-- 存款总额-冲正金额 = 最终存款金额 -->
+				NVL(SUM(CASE WHEN (C.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) THEN  C .inAmount ELSE 0 END), 0)
+				-NVL(SUM(CASE WHEN (C.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND C.businessStatus = '2' THEN  C.outAmount ELSE 0 END),0) AS depositAmount, 
+				<!-- 中心汇款金额 = 已汇款金额 -->
+				NVL(SUM(CASE WHEN C.businessType = '78' THEN C .outAmount ELSE 0 END),0) AS remitAmount,
+				<!-- 存款总额-已代付金额-冲正金额 = 未汇款金额 -->
+				NVL(SUM(CASE WHEN (C.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND C .status = '1' AND C.businessStatus = '1' THEN C.inAmount ELSE 0 END),0)
+				-NVL(SUM(CASE WHEN (C.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND C.status = '1' AND C.businessStatus = '2' THEN C.outAmount ELSE 0 END),0) AS unremittedAmount
+			</if>
+			<if test="dbName=='mysql'">
+			<!-- 存款总额-冲正金额 = 最终存款金额 -->
+				COALESCE(SUM(CASE WHEN (C.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) THEN  C.inAmount ELSE 0 END), 0)
+				-COALESCE(SUM(CASE WHEN (C.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND C.businessStatus = '2' THEN  C.outAmount ELSE 0 END),0) AS depositAmount, 
+				<!-- 中心汇款金额 = 已汇款金额 -->
+				COALESCE(SUM(CASE WHEN C.businessType = '78' THEN C.outAmount ELSE 0 END),0) AS remitAmount,
+				<!-- 存款总额-已代付金额-冲正金额 = 未汇款金额 -->
+				COALESCE(SUM(CASE WHEN (C.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND C.status = '1' AND C.businessStatus = '1' THEN C.inAmount ELSE 0 END),0)
+				-COALESCE(SUM(CASE WHEN (C.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND C.status = '1' AND C.businessStatus = '2' THEN C.outAmount ELSE 0 END),0) AS unremittedAmount
+			</if>
+		FROM
+			sys_office o
+		LEFT JOIN (
+			SELECT
+				client_id AS clientId,
+				in_Amount AS inAmount,
+				out_Amount AS outAmount,
+				business_type AS businessType,
+				business_status AS businessStatus,
+				status,
+				IS_TAKE_UP AS isTakeUp
+			FROM
+				CENTER_ACCOUNTS_DOOR_MAIN
+			WHERE 
+				del_flag = #{DEL_FLAG_NORMAL}
+				<!-- 创建时间(开始) -->
+				<if test="searchDateStart != null and searchDateStart != ''">
+					AND 
+					<if test="dbName == 'oracle'">TO_CHAR(create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+					<if test="dbName=='mysql'">DATE_FORMAT(create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+				</if>
+				<!-- 创建时间(结束) -->
+				<if test="searchDateEnd != null and searchDateEnd != ''">
+					AND 
+					<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(create_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+					<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(create_date, '%Y-%m-%d %H:%i:%s')</if>
+				</if>	
+				<!-- <if test="businessTypes != null and businessTypes.size != 0">
+					AND business_type in 
+					<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+					 	#{businessTypes[${index}]}
+					</foreach>
+				</if> -->
+		) C ON C.clientId = o.ID
+		WHERE
+			o.TYPE = #{type}
+			AND o.DEL_FLAG = #{DEL_FLAG_NORMAL}
+			AND (o.ID = #{id} OR o.PARENT_IDS LIKE 
+				<if test="dbName == 'oracle'">'%,' || #{id} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%,', #{id}, ',%')</if>
+				)
+		GROUP BY
+			o. ID,
+			o. NAME
+		ORDER BY
+			<if test="dbName == 'oracle'">NVL(SUM(C.inAmount), 0) DESC</if>
+			<if test="dbName == 'mysql'">COALESCE(sum(C.inAmount), 0) DESC</if>
+	</select>
+	<!-- 获取商户存款、已汇款、未汇款列表  lihe end -->
+	
+	<!-- 查询商户近一周存款   lihe start-->
+	<select id="getClientDepositByWeek" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.OfficeAmount">
+		SELECT
+			w.DAY AS day,
+			<if test="dbName == 'oracle'">
+			    <!-- 存款总额-冲正金额 = 最终存款金额 -->
+				NVL(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) THEN  M.inAmount ELSE 0 END), 0)
+				-NVL(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND M.businessStatus = '2' THEN  M.outAmount ELSE 0 END),0) AS depositAmount
+			</if>
+			<if test="dbName=='mysql'">
+				<!-- 存款总额-冲正金额 = 最终存款金额 -->
+				COALESCE(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) THEN  M.inAmount ELSE 0 END), 0)
+				-COALESCE(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND M.businessStatus = '2' THEN  M.outAmount ELSE 0 END),0) AS depositAmount 
+			</if>
+		FROM
+			<if test="dbName == 'oracle'">
+				(
+					SELECT
+						TO_CHAR (
+							SYSDATE - LEVEL + 1,
+							'yyyy-mm-dd'
+						) AS DAY
+					FROM
+						DUAL CONNECT BY LEVEL &lt;= 7
+				) w
+			</if>
+			<if test="dbName == 'mysql'">
+				(
+					SELECT
+						@s :=@s + 1 AS 'index',
+						DATE(
+							DATE_SUB(CURRENT_DATE, INTERVAL @s DAY)
+						) AS DAY
+					FROM
+						mysql.help_topic,
+						(SELECT @s := - 1) temp
+					WHERE
+						@s &lt; 7
+					ORDER BY
+						DAY) w
+			</if>
+		LEFT JOIN (
+			<!-- SELECT
+				D.ID,
+				C.create_date AS create_date,
+				C.inAmount AS inAmount,
+				C.outAmount AS outAmount,
+				C.business_type AS businessType,
+				C.businessStatus AS businessStatus
+			FROM
+			SYS_OFFICE D
+			LEFT JOIN (
+				SELECT
+					client_id AS clientId,
+					client_name AS clientName,
+					in_amount AS inAmount,
+					out_amount AS outAmount,
+					create_date,
+					business_type,
+					business_status AS businessStatus
+				FROM
+					center_accounts_door_main
+				WHERE
+					del_flag = '0' -->
+				SELECT
+					C.client_id as ID,
+					C.in_amount AS inAmount,
+					C.out_amount AS outAmount,
+					C.create_date AS create_date,
+					C.business_type AS businessType,
+					C.business_status AS businessStatus 
+				FROM
+					center_accounts_door_main C 
+				LEFT JOIN SYS_OFFICE D ON C.client_id = D.id AND D.del_flag = #{DEL_FLAG_NORMAL}
+				WHERE
+					C.del_flag = '0' 
+					AND C.CREATE_DATE > DATE_SUB(CURDATE(), INTERVAL 7 DAY) 
+				<if test="businessTypes != null and businessTypes.size != 0">
+					AND business_type in 
+					<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+					 	#{businessTypes[${index}]}
+					</foreach>
+				</if>
+				${sqlMap.dsf}
+		) M ON w.DAY = 
+			<if test="dbName == 'oracle'">TO_CHAR (M.create_date, 'yyyy-mm-dd')</if>
+			<if test="dbName == 'mysql'">DATE_FORMAT(M.create_date,'%Y-%m-%d')</if>	
+		GROUP BY
+			w.DAY
+		ORDER BY
+			w.DAY DESC
+	</select>
+	<!-- 查询门店近一周存款  lihe end -->
+	
+	<!-- 按月份查询商户存款   lihe start -->
+	<select id="getClientDepositByMonth" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.OfficeAmount">
+		SELECT
+			T.MONTH,
+			T.LABEL,
+			<if test="dbName == 'oracle'">
+			NVL(b.amount,0) AS depositAmount
+			</if>
+			<if test="dbName == 'mysql'">
+			COALESCE(b.amount,0) AS depositAmount
+			</if>
+		FROM
+			(
+				SELECT
+					LABEL,
+					VALUE AS MONTH
+				FROM
+					sys_dict
+				WHERE
+					type = 'door_echarts_month'
+					and del_flag = #{DEL_FLAG_NORMAL}
+				ORDER BY
+					SORT ASC
+			) T
+		LEFT JOIN (
+		SELECT 
+			<if test="dbName == 'oracle'">
+				TO_CHAR(C.create_date, 'mm') AS create_date,
+				NVL(SUM(CASE WHEN (C.business_type in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) THEN  C.in_Amount ELSE 0 END), 0)
+				-NVL(SUM(CASE WHEN (C.business_type in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND C.business_status = '2' THEN  C.out_Amount ELSE 0 END),0) AS amount
+			</if>
+			<if test="dbName == 'mysql'">
+				DATE_FORMAT(C.create_date,'%m') AS create_date,
+				<!-- 总存款金额-冲正金额=最终存款金额 -->
+				COALESCE(SUM(CASE WHEN (C.business_type in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) THEN C.in_Amount ELSE 0 END), 0)
+				-COALESCE(SUM(CASE WHEN (C.business_type in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND C.business_status = '2' THEN  C.out_Amount ELSE 0 END),0) AS amount
+			</if>
+		FROM <!-- SYS_OFFICE o
+		LEFT JOIN (
+			SELECT
+				client_id AS clientId,
+				in_Amount AS inAmount,
+				out_Amount AS outAmount,
+				create_date,
+				business_type AS businessType,
+				business_status AS businessStatus
+			FROM -->
+				CENTER_ACCOUNTS_DOOR_MAIN C
+				LEFT JOIN SYS_OFFICE O ON O.ID = C.client_id AND o.DEL_FLAG = #{DEL_FLAG_NORMAL}
+			WHERE
+					C.DEL_FLAG = '0'
+				<if test="businessTypes != null and businessTypes.size != 0">
+					AND C.business_type in 
+					<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+					 	#{businessTypes[${index}]}
+					</foreach>
+				</if>
+				<if test="dbName == 'oracle'">AND TO_CHAR (C.create_date, 'yyyy') = #{year}</if>
+				<if test="dbName == 'mysql'">AND DATE_FORMAT(C.create_date, '%Y') = #{year}</if>
+		<!-- ) C ON C.clientId = o.ID -->
+		<!-- WHERE --> AND  o.TYPE = #{type}
+		<!-- AND o.DEL_FLAG = #{DEL_FLAG_NORMAL} -->
+		AND ( o.parent_id = #{id} OR o.PARENT_IDS LIKE 
+				<if test="dbName == 'oracle'">'%,' || #{id} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%,', #{id}, ',%')</if>
+			)
+		GROUP BY
+			<if test="dbName == 'oracle'">TO_CHAR(C.create_date, 'mm')</if>
+			<if test="dbName == 'mysql'">DATE_FORMAT(C.create_date,'%m')</if>	
+		) b ON b.create_date = T.MONTH
+		ORDER BY T.MONTH ASC
+	</select>
+	<!-- 按月份查询商户存款   lihe end -->
+	
+	<!-- 获取商户或门店差错记录   lihe start -->
+	<select id="getClientErrorForDay" resultType="DoorCenterAccountsMain">
+		SELECT
+			o.NAME AS clientName,
+			CASE WHEN E.amount > 0 THEN 2 WHEN 0 > E.amount THEN 3 ELSE 0 END AS errorType,
+			<if test="dbName == 'oracle'">NVL(E.PAID_STATUS,1) AS paidStatus,</if>
+			<if test="dbName=='mysql'">IFNULL(E.PAID_STATUS,1) AS paidStatus,</if>
+			E.errorCount AS errorCount,
+			E.BUSINESS_STATUS AS businessStatus,
+			<if test="doorId != null and doorId != ''">
+			E.BUSINESS_ID AS businessId,
+			</if>
+			abs(E.AMOUNT) AS totalAmount 
+		FROM
+			SYS_OFFICE o 
+		LEFT JOIN (
+			SELECT
+				a.client_id,
+				<!-- b.PAID_STATUS, -->
+				a.IS_TAKE_UP AS PAID_STATUS,
+				a.BUSINESS_STATUS,
+				<if test="doorId != null and doorId != ''">
+				a.BUSINESS_ID,
+				</if>
+				CASE WHEN a.BUSINESS_STATUS='1' THEN count(a.ACCOUNTS_ID) ELSE 0 END AS errorCount,
+				COALESCE ( SUM( a.in_amount ), 0 )- COALESCE ( SUM( a.out_amount ), 0 ) AS AMOUNT 
+			FROM
+				CENTER_ACCOUNTS_DOOR_MAIN a
+				<!-- LEFT JOIN day_report_door_merchan b ON a.CLIENT_ID = b.OFFICE_ID AND a.REPORT_ID = b.REPORT_ID  -->
+			WHERE
+				a.del_flag = #{DEL_FLAG_NORMAL} 
+				AND (( a.report_id IS NOT NULL ) OR a.report_id IS NULL ) 
+				<if test="businessTypes != null and businessTypes.size != 0">
+				AND a.BUSINESS_TYPE in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>
+				</if>
+				<!-- 查询时间(开始) -->
+				<if test="searchDateStart != null and searchDateStart != ''">
+				AND
+					<if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+					<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+				</if>
+				<!-- 查询时间(结束) -->
+				<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND
+					<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+					<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+				</if> 
+			GROUP BY
+				<if test="doorId != null and doorId != ''">
+				a.BUSINESS_ID,
+				</if>
+				a.BUSINESS_STATUS,
+				a.client_id,
+				a.IS_TAKE_UP
+				) E ON o.ID = E.client_id
+			WHERE
+				E.amount IS NOT NULL
+			AND o.del_flag = #{DEL_FLAG_NORMAL}
+			<!-- 机构过滤 -->
+			${sqlMap.dsf}
+			GROUP BY 
+	 			<if test="doorId != null and doorId != ''">
+				E.business_id,
+	 			</if>
+				o.NAME,
+				E.BUSINESS_STATUS,
+				E.PAID_STATUS,
+				E.errorCount,
+				E.AMOUNT
+			ORDER BY E.PAID_STATUS DESC
+	</select>
+	<!-- 获取商户差错记录  lihe end -->
+	<!-- 商户首页  end -->
+	
+	<!-- 门店首页  start -->
+	<!-- 获取门店汇款汇总金额   lihe start -->
+	<select id="getDoorDepoRepay" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.OfficeAmount">
+		SELECT
+			<if test="dbName == 'oracle'">
+			    <!-- 存款总额-冲正金额 = 最终存款金额 -->
+				NVL(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) THEN  M.inAmount ELSE 0 END), 0)
+				-NVL(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND M.businessStatus = '2' THEN  M.outAmount ELSE 0 END),0) AS depositAmount, 
+				<!-- 中心汇款金额 = 已汇款金额 -->
+				NVL(SUM(CASE WHEN M.businessType = '78' THEN M.outAmount ELSE 0 END),0) AS repayAmount
+			</if>
+			<if test="dbName=='mysql'">
+				<!-- 存款总额-冲正金额 = 最终存款金额 -->
+				COALESCE(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) THEN  M.inAmount ELSE 0 END), 0)
+				-COALESCE(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND M.businessStatus = '2' THEN  M.outAmount ELSE 0 END),0) AS depositAmount, 
+				<!-- 中心汇款金额 = 已汇款金额 -->
+				COALESCE(SUM(CASE WHEN M.businessType = '78' THEN M.outAmount ELSE 0 END),0) AS repayAmount
+			</if>
+		FROM SYS_OFFICE D
+		LEFT JOIN (
+			SELECT
+				C .client_id AS clientId,
+				C .client_name AS clientName,
+				C.in_amount AS inAmount,
+				C.out_amount AS outAmount,
+				C.business_type AS businessType,
+				C.business_status AS businessStatus
+			FROM
+				center_accounts_door_main C
+			WHERE
+				C.del_flag = '0'
+				<!-- 创建时间(开始) -->
+				<if test="searchDateStart != null and searchDateStart != ''">
+					AND 
+					<if test="dbName == 'oracle'">TO_CHAR(C.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+					<if test="dbName=='mysql'">DATE_FORMAT(C.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+				</if>
+				<!-- 创建时间(结束) -->
+				<if test="searchDateEnd != null and searchDateEnd != ''">
+					AND 
+					<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(C.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+					<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(C.create_date, '%Y-%m-%d %H:%i:%s')</if>
+				</if>	
+				<!-- <if test="businessTypes != null and businessTypes.size != 0">
+					AND C.business_type in 
+					<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+					 	#{businessTypes[${index}]}
+					</foreach>
+				</if> -->
+			) M ON D.ID = M.clientId
+			where 
+				D.del_flag = #{DEL_FLAG_NORMAL}
+				${sqlMap.dsf}
+	</select>
+	<!-- 获取门店汇款汇总金额  lihe end -->
+	
+	<!-- 按月份查询门店存款   lihe start -->
+	<select id="getDoorDepositByMonth" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.OfficeAmount">
+		SELECT
+			T.MONTH,
+			T.LABEL,
+			<if test="dbName == 'oracle'">
+			NVL(b.amount,0) AS depositAmount
+			</if>
+			<if test="dbName == 'mysql'">
+			COALESCE(b.amount,0) AS depositAmount
+			</if>
+		FROM
+			(
+				SELECT
+					LABEL,
+					VALUE AS MONTH
+				FROM
+					sys_dict
+				WHERE
+					type = 'door_echarts_month'
+				ORDER BY
+					SORT ASC
+			) T
+		LEFT JOIN (
+		SELECT 
+			<if test="dbName == 'oracle'">
+				TO_CHAR(C.create_date, 'mm') AS create_date,
+				NVL(SUM(CASE WHEN (C.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) THEN  C.inAmount ELSE 0 END), 0)
+				-NVL(SUM(CASE WHEN (C.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND C.businessStatus = '2' THEN  C.outAmount ELSE 0 END),0) AS amount
+			</if>
+			<if test="dbName == 'mysql'">
+				DATE_FORMAT(C.create_date,'%m') AS create_date,
+				<!-- 总存款金额-冲正金额=最终存款金额 -->
+				COALESCE(SUM(CASE WHEN (C.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) THEN C.inAmount ELSE 0 END), 0)
+				-COALESCE(SUM(CASE WHEN (C.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>) AND C.businessStatus = '2' THEN  C.outAmount ELSE 0 END),0) AS amount
+			</if>
+		FROM 
+		(
+			SELECT
+				client_id AS clientId,
+				in_Amount AS inAmount,
+				out_Amount AS outAmount,
+				create_date,
+				business_type AS businessType,
+				business_status AS businessStatus
+			FROM
+				CENTER_ACCOUNTS_DOOR_MAIN
+			WHERE
+					DEL_FLAG = #{DEL_FLAG_NORMAL}
+				<if test="businessTypes != null and businessTypes.size != 0">
+					AND business_type in 
+					<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+					 	#{businessTypes[${index}]}
+					</foreach>
+				</if>
+				<if test="dbName == 'oracle'">AND TO_CHAR(create_date, 'yyyy') = #{year}</if>
+				<if test="dbName == 'mysql'">AND DATE_FORMAT(create_date, '%Y') = #{year}</if>
+				AND client_id = #{id}
+		) C
+		<!-- WHERE C.clientId = #{id} -->
+		GROUP BY
+			<if test="dbName == 'oracle'">TO_CHAR (C.create_date, 'mm')</if>
+			<if test="dbName == 'mysql'">DATE_FORMAT(C.create_date,'%m')</if>	
+		) b ON b.create_date = T.MONTH
+		ORDER BY T.MONTH ASC
+	</select>
+	<!-- 按月份查询门店存款   lihe end -->
+	<!-- 门店首页  end -->
+	
+	<!-- 查询账务信息按商户汇总 -->
+	<select id="findListByMerchant" resultType="DoorCenterAccountsMain">
+		SELECT 
+			SUM(A.in_amount) AS "inAmount",
+			SUM(A.out_amount) AS "outAmount",
+			q.parent_id AS "merchantOfficeId",
+			 r.NAME AS "merchantOfficeName"
+		FROM center_accounts_door_main a 
+			LEFT JOIN sys_office q ON A .client_id = q. ID AND q.DEL_FLAG = ${delFlag.valid}
+			 LEFT JOIN SYS_OFFICE r ON q.parent_id=r.id AND r.DEL_FLAG = ${delFlag.valid}
+			 LEFT JOIN SYS_OFFICE t ON A.roffice_id=t.id AND t.DEL_FLAG = ${delFlag.valid}
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		<!-- 业务类型集合 -->
+		<if test="businessTypes != null and businessTypes.size != 0">
+			AND a.business_type in 
+			<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+			 	#{businessTypes[${index}]}
+			</foreach>
+		</if>
+		<!-- 商户机构ID -->
+		<if test="merchantOfficeId != null and merchantOfficeId != ''">
+			AND q.parent_id = '${merchantOfficeId}'
+		</if>
+		<if test=" rofficeId != null and rofficeId != ''">
+			AND (a.roffice_id = #{rofficeId}${sqlMap.dsf})
+		</if>
+		</where>
+		GROUP BY
+			q.parent_id,r.NAME
+			<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			
+		</choose>
+	</select>
+	
+	<select id="getCenterDoorErrorForDay" resultType="DoorCenterAccountsMain">
+		SELECT
+			t1.ID AS "merchantOfficeId",
+			so.NAME AS "merchantOfficeName",
+			t1.ERROR_TYPE,
+			t1.IS_TAKE_UP,
+			t1.inAmount,
+			t1.outAmount,
+			t1.errorCount "errorCount"
+		FROM
+			(
+				SELECT
+					o.ID,
+					e.ERROR_TYPE,
+					c.IS_TAKE_UP,
+					COUNT(*) AS 'errorCount',
+					<if test="dbName == 'oracle'">
+			   			NVL(SUM(e.DIFF_AMOUNT), 0) AS "inAmount",
+						NVL(SUM(e.DIFF_AMOUNT), 0) AS "outAmount"
+					</if>
+					<if test="dbName=='mysql'">
+						COALESCE(SUM(e.DIFF_AMOUNT), 0) AS "inAmount",
+						COALESCE(SUM(e.DIFF_AMOUNT), 0) AS "outAmount"
+					</if>
+				FROM
+					door_error_info e
+				LEFT JOIN center_accounts_door_main c ON e.ERROR_NO = c.BUSINESS_ID
+				LEFT JOIN sys_office o1 ON o1.ID = e.CUST_NO AND o1.DEL_FLAG = ${delFlag.valid}
+				LEFT JOIN sys_office o ON o.id = o1.PARENT_ID AND o.DEL_FLAG = ${delFlag.valid}
+				WHERE
+					e. STATUS = '0'
+					AND o.PARENT_IDS LIKE 
+					<if test="dbName == 'oracle'">'%' ||  #{id} || '%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%,', #{id},',%')</if>
+					<!-- 查询时间(开始) -->
+					<if test="searchDateStart != null and searchDateStart != ''">
+					AND
+						<if test="dbName == 'oracle'">TO_CHAR(e.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+						<if test="dbName=='mysql'">DATE_FORMAT(e.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+					</if>
+					<!-- 查询时间(结束) -->
+					<if test="searchDateEnd != null and searchDateEnd != ''">
+					AND
+						<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(e.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+						<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(e.create_date, '%Y-%m-%d %H:%i:%s')</if>
+					</if>
+				GROUP BY
+					o.ID,
+					e.ERROR_TYPE,
+					c.IS_TAKE_UP
+			) t1
+		LEFT JOIN sys_office so ON t1.ID = so.ID
+	</select>
+	
+	<select id="getClientDoorErrorForDay" resultType="DoorCenterAccountsMain">
+		SELECT
+			t1.ID AS "clientId",
+			so.NAME AS "clientName",
+			t1.ERROR_TYPE,
+			t1.IS_TAKE_UP,
+			t1.inAmount,
+			t1.outAmount,
+			t1.errorCount "errorCount"
+		FROM
+			(
+				SELECT
+					o.ID,
+					e.ERROR_TYPE,
+					c.IS_TAKE_UP,
+					COUNT(*) AS 'errorCount',
+					<if test="dbName == 'oracle'">
+			   			NVL(SUM(e.DIFF_AMOUNT), 0) AS "inAmount",
+						NVL(SUM(e.DIFF_AMOUNT), 0) AS "outAmount"
+					</if>
+					<if test="dbName=='mysql'">
+						COALESCE(SUM(e.DIFF_AMOUNT), 0) AS "inAmount",
+						COALESCE(SUM(e.DIFF_AMOUNT), 0) AS "outAmount"
+					</if>
+				FROM
+					door_error_info e
+				LEFT JOIN center_accounts_door_main c ON e.ERROR_NO = c.BUSINESS_ID
+				LEFT JOIN sys_office o ON o.ID = e.CUST_NO AND o.DEL_FLAG = ${delFlag.valid}
+				WHERE
+					e. STATUS = '0'
+					<!-- 查询时间(开始) -->
+					<if test="searchDateStart != null and searchDateStart != ''">
+					AND
+						<if test="dbName == 'oracle'">TO_CHAR(e.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+						<if test="dbName=='mysql'">DATE_FORMAT(e.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+					</if>
+					<!-- 查询时间(结束) -->
+					<if test="searchDateEnd != null and searchDateEnd != ''">
+					AND
+						<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(e.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+						<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(e.create_date, '%Y-%m-%d %H:%i:%s')</if>
+					</if>
+					${sqlMap.dsf}
+				GROUP BY
+					o.ID,
+					e.ERROR_TYPE,
+					c.IS_TAKE_UP
+			) t1
+		LEFT JOIN sys_office so ON t1.ID = so.ID
+	</select>
+	
+	<!-- 小程序查询中心下商户存款信息  lihe start 2019-08-15 -->
+	<select id="getClientInfoForCenter" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.DepositAmount">
+		SELECT 
+			al.merchantId,
+			al.merchantName,
+			al.lastDayReportDate,
+			al.doCount,
+			al.deCount
+		FROM
+		(
+			SELECT
+				s.ID AS merchantId,
+				s.NAME AS merchantName,
+				<if test="dbName == 'oracle'">TO_CHAR(s.dayReportDate, 'yyyy-mm-dd hh24:mi') AS lastDayReportDate,</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(s.dayReportDate, '%Y-%m-%d %H:%i') AS lastDayReportDate,</if>
+				COUNT(D.ID) AS doCount,
+				COUNT(M.clientId) AS deCount
+			FROM
+				(
+					SELECT
+						B.ID,
+						B.NAME,
+						MAX(DR.dayReportDate) AS dayReportDate
+					FROM
+						SYS_OFFICE A
+					LEFT JOIN sys_office B ON A.PARENT_ID=B.ID
+					LEFT JOIN (
+						SELECT
+							OFFICE_ID,
+							MAX(CREATE_DATE) AS dayReportDate
+						FROM
+							DAY_REPORT_DOOR_MERCHAN
+						WHERE
+							SETTLEMENT_TYPE = ${centerAccounts.settlementType.deposit}
+						GROUP BY
+							OFFICE_ID
+					) DR ON A.ID = DR.OFFICE_ID
+					WHERE
+						B . TYPE = ${office.type.merchant}
+						AND A.DEL_FLAG = #{DEL_FLAG_NORMAL}
+						AND B.DEL_FLAG = #{DEL_FLAG_NORMAL}
+						${sqlMap.dsf}
+					GROUP BY
+						B.ID,
+						B.NAME
+					<!-- AND A .PARENT_IDS LIKE 
+					<if test="dbName == 'oracle'">'%' || (SELECT ID FROM SYS_OFFICE WHERE
+							ID = (SELECT PARENT_ID FROM SYS_OFFICE WHERE TYPE = ${office.type.center} AND ID = #{centerId})
+						) || '%'
+					</if>
+					<if test="dbName == 'mysql'">
+					CONCAT('%,',(SELECT ID FROM SYS_OFFICE WHERE
+						ID = (
+							SELECT PARENT_ID FROM SYS_OFFICE WHERE TYPE = ${office.type.center} AND ID = #{centerId})
+						),',%')
+					</if> -->
+				) s
+			LEFT JOIN SYS_OFFICE D ON D.PARENT_ID = s.ID AND D.DEL_FLAG = #{DEL_FLAG_NORMAL}
+			LEFT JOIN (
+				SELECT DISTINCT
+					C.client_id AS clientId,
+					C.client_name AS clientName
+				FROM
+					center_accounts_door_main C
+					left join door_order_info di on C.business_id = di.order_id
+					LEFT JOIN sys_office a ON a.ID = C.ROFFICE_ID and a.del_flag = ${delFlag.valid}
+				WHERE
+					C.del_flag = #{DEL_FLAG_NORMAL}
+					AND di.status != ${order.status.cancel}
+				<!-- AND C.business_type IN (74) -->
+				<if test="businessTypes != null and businessTypes.size != 0">
+					AND C.business_type in 
+					<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+					 	#{businessTypes[${index}]}
+					</foreach>
+				</if>
+				<!-- AND C.BUSINESS_STATUS != ${centerAccounts.businessStatus.cancel} -->
+				AND a.type = ${office.type.center}
+				AND C.report_id IS NULL
+			) M ON M.clientId = D.ID
+			GROUP BY
+				s.ID,
+				s.NAME,
+				s.dayReportDate
+		) al
+		<!-- 过滤掉无存款商户 -->
+		WHERE al.deCount > 0
+		ORDER BY
+			al.merchantId ASC
+	</select>
+	<!-- 小程序查询中心下商户存款信息  lihe end 2019-08-15 -->
+	
+	<!-- 小程序按照商户查询门店存款列表  lihe start 2019-08-16 -->
+	<select id="getDoorDepositByMerchantId" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.DepositAmount">
+		SELECT 
+			al.doorId,
+			al.doorName,
+			al.depositCount,
+			al.depositAmount
+		FROM
+		(
+			SELECT
+				M.clientId AS doorId,
+				M.clientName AS doorName,
+				COUNT(M.businessId) AS depositCount,
+				<if test="dbName == 'oracle'">
+				    <!-- 存款总额-冲正金额 = 最终存款金额 -->
+					NVL(SUM(CASE WHEN M.businessType in 
+					 <foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+					 	#{businessTypes[${index}]}
+					</foreach> THEN  M.inAmount ELSE 0 END), 0)
+					-NVL(SUM(CASE WHEN (M.businessType in 
+					<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+					 	#{businessTypes[${index}]}
+					</foreach>
+					) AND M.businessStatus = ${centerAccounts.businessStatus.cancel} THEN  M.outAmount ELSE 0 END),0) AS depositAmount
+				</if>
+				<if test="dbName=='mysql'">
+					<!-- 存款总额-冲正金额 = 最终存款金额 -->
+					COALESCE(SUM(CASE WHEN M.businessType in 
+					<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+					 	#{businessTypes[${index}]}
+					</foreach> THEN  M.inAmount ELSE 0 END), 0)
+					-COALESCE(SUM(CASE WHEN (M.businessType in 
+					<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+					 	#{businessTypes[${index}]}
+					</foreach>
+					) AND M.businessStatus = ${centerAccounts.businessStatus.cancel} THEN  M.outAmount ELSE 0 END),0) AS depositAmount 
+				</if>
+			FROM
+				(SELECT
+					C.client_id AS clientId,
+					C.client_name AS clientName,
+					C.in_amount AS inAmount,
+					C.out_amount AS outAmount,
+					C.business_status AS businessStatus,
+					C.business_type AS businessType,
+					C.BUSINESS_ID AS businessId,
+					C.status,
+					C.create_date
+				FROM
+					center_accounts_door_main C
+					left join door_order_info di on C.business_id = di.order_id
+					LEFT JOIN sys_office so ON so.ID = c.ROFFICE_ID AND so.DEL_FLAG = ${delFlag.valid}
+					LEFT JOIN sys_office so1 ON so1.ID = c.CLIENT_ID AND so1.DEL_FLAG = ${delFlag.valid}
+				<where>
+					<if test="merchantId != null and merchantId != ''">
+					AND so1.parent_id = #{merchantId}
+					</if>
+					<if test="doorId != null and doorId != ''">
+					AND so1.ID = #{doorId}
+					</if>
+					AND C.del_flag = #{DEL_FLAG_NORMAL}
+					AND di.status != ${order.status.cancel}
+					<if test="businessTypes != null and businessTypes.size != 0">
+						AND C.business_type in 
+						<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+						 	#{businessTypes[${index}]}
+						</foreach>
+					</if>
+					AND so.TYPE = ${office.type.center}
+					AND C.report_id IS NULL
+					${sqlMap.dsf}
+				</where>
+			) M
+			GROUP BY
+				M.clientId,
+				M.clientName
+		) al
+		<!-- 过滤掉无存款门店 -->
+		WHERE al.depositCount > 0
+		ORDER BY
+			al.doorId ASC
+	</select>
+	<!-- 小程序按照商户查询门店存款信息  lihe end 2019-08-16 -->
+	
+	<!-- 小程序查询中心(上次日结至今)总存款  lihe start 2019-08-16 -->
+	<select id="getCenterDepoAndCount" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.OfficeAmount">
+		SELECT
+			COUNT(M.businessId) AS depositCount,
+			<if test="dbName == 'oracle'">
+			    <!-- 存款总额-冲正金额 = 最终存款金额 -->
+				NVL(SUM(CASE WHEN M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach> THEN  M.inAmount ELSE 0 END), 0)
+				-NVL(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>
+				) AND M.businessStatus = ${centerAccounts.businessStatus.cancel} THEN  M.outAmount ELSE 0 END),0) AS depositAmount
+			</if>
+			<if test="dbName=='mysql'">
+				<!-- 存款总额-冲正金额 = 最终存款金额 -->
+				COALESCE(SUM(CASE WHEN M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach> THEN  M.inAmount ELSE 0 END), 0)
+				-COALESCE(SUM(CASE WHEN (M.businessType in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>
+				) AND M.businessStatus = ${centerAccounts.businessStatus.cancel} THEN  M.outAmount ELSE 0 END),0) AS depositAmount 
+			</if>
+		FROM
+		(
+			SELECT
+				C.client_id AS clientId,
+				C.client_name AS clientName,
+				C.in_amount AS inAmount,
+				C.out_amount AS outAmount,
+				C.business_status AS businessStatus,
+				C.business_type AS businessType,
+				C.BUSINESS_ID AS businessId,
+				C. STATUS,
+				C.create_date,
+				C.ROFFICE_ID
+			FROM
+				center_accounts_door_main C
+				left join door_order_info di on C.business_id = di.order_id
+				LEFT JOIN sys_office a ON a.ID = C.ROFFICE_ID and a.del_flag = ${delFlag.valid}
+			WHERE
+				C.del_flag = #{DEL_FLAG_NORMAL}
+				AND di.status != ${order.status.cancel}
+				AND a.TYPE = ${office.type.center}
+				AND C.report_id IS NULL
+			<if test="businessTypes != null and businessTypes.size != 0">
+				AND C.business_type in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>
+			</if>
+		) M
+		LEFT JOIN SYS_OFFICE D ON D.ID = M.clientId
+		WHERE 
+			D.DEL_FLAG = #{DEL_FLAG_NORMAL}
+		<if test="id != null and id != ''">
+			AND M.ROFFICE_ID = '${id}'
+		</if>
+		${sqlMap.dsf}
+		
+	</select>
+	<!-- 小程序查询中心(上次日结至今)总存款  lihe end 2019-08-16 -->
+	
+	<resultMap type="com.coffer.businesses.modules.doorOrder.v01.entity.DepositInfo" id="depositInfoMap">
+        <id property="doorId" column="doorId" />
+        <result property="doorName" column="doorName" />
+        <collection  property="detailList"  ofType="com.coffer.businesses.modules.doorOrder.v01.entity.DepositInfoDetail">
+            <id property="id" column="id" />
+            <result property="orderId" column="orderId" />   
+            <result property="depositAmount" column="depositAmount" />  
+            <result property="depositDate" column="depositDate" />  
+            <result property="uploadDate" column="uploadDate" />  
+            <result property="equipmentId" column="equipmentId" />  
+            <result property="photo" column="photo" />  
+            <result property="tickerNo" column="tickerNo" />  
+            <result property="depositName" column="depositName" />  
+            <result property="depositNo" column="depositNo" />   
+        </collection>
+    </resultMap>
+	
+	<!-- 小程序根据门店编号查询存款列表  lihe start 2019-08-19 -->
+	<select id="getOrderInfoByDoorId" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.DepositInfo">
+		SELECT
+			DISTINCT
+			M .clientId AS doorId,
+			M .clientName AS doorName,
+			<!-- E .AMOUNT AS depositAmount,
+			E .REMARKS AS remarks, -->
+			o.AMOUNT AS depositAmount,
+			o.REMARKS AS remarks,
+			D .ORDER_ID AS orderId,
+			D.RFID AS rfid,
+			EQ .SERIES_NUMBER AS equipmentId,
+			<!-- E .PHOTO AS photo, 
+			case when E.photo is null then 1 else 0 end AS uploadFlag,  
+			E .TICKERTAPE AS tickerNo,
+			E . NAME AS depositName,
+			E . NO AS depositNo, 
+			<if test="dbName == 'oracle'">
+			TO_CHAR(E.CREATE_DATE, 'yyyy-mm-dd hh24:mi') AS depositDate,
+			TO_CHAR(E.UPDATE_DATE, 'yyyy-mm-dd hh24:mi') AS uploadDate
+			</if>
+			<if test="dbName=='mysql'">
+			DATE_FORMAT(E.CREATE_DATE, '%Y-%m-%d %H:%i') AS depositDate,
+			DATE_FORMAT(E.UPDATE_DATE, '%Y-%m-%d %H:%i') AS uploadDate
+			</if>
+			-->
+			case when o.photo is null then 1 else 0 end AS uploadFlag,
+			o.TICKERTAPE AS tickerNo,
+			U. NAME AS depositName,
+			U. NO AS depositNo,
+			<if test="dbName == 'oracle'">
+			TO_CHAR(o.CREATE_DATE, 'yyyy-mm-dd hh24:mi') AS depositDate,
+			TO_CHAR(o.UPDATE_DATE, 'yyyy-mm-dd hh24:mi') AS uploadDate
+			</if>
+			<if test="dbName=='mysql'">
+			DATE_FORMAT(o.CREATE_DATE, '%Y-%m-%d %H:%i') AS depositDate,
+			DATE_FORMAT(o.UPDATE_DATE, '%Y-%m-%d %H:%i') AS uploadDate
+			</if>
+		FROM
+			(
+				SELECT
+					C.client_id AS clientId,
+					so1.name AS clientName,
+					C.IN_AMOUNT AS IN_AMOUNT,
+					C.BUSINESS_ID AS businessId,
+					C.TICKERTAPE AS TICKERTAPE
+				FROM
+					center_accounts_door_main C
+				LEFT JOIN sys_office so ON so.ID = c.ROFFICE_ID AND so.DEL_FLAG = 0
+				LEFT JOIN sys_office so1 ON so1.ID = c.CLIENT_ID AND so1.DEL_FLAG = 0
+				WHERE
+					C.del_flag = #{DEL_FLAG_NORMAL}
+				AND so.type = ${office.type.center}
+				<if test="businessTypes != null and businessTypes.size != 0">
+				AND C.business_type in 
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				 	#{businessTypes[${index}]}
+				</foreach>
+				</if>
+				<if test="orderId != null and orderId != ''">
+				AND C.BUSINESS_ID = #{orderId}
+				</if>
+				<!-- 查询时间(开始) -->
+				<if test="searchDateStart != null and searchDateStart != ''">
+				AND
+					<if test="dbName == 'oracle'">TO_CHAR(C.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+					<if test="dbName=='mysql'">DATE_FORMAT(C.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+				</if>
+				<!-- 查询时间(结束) -->
+				<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND
+					<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(C.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+					<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(C.create_date, '%Y-%m-%d %H:%i:%s')</if>
+				</if>
+				AND C.BUSINESS_STATUS != ${centerAccounts.businessStatus.cancel}
+				<!-- <if test="createBy != null and createBy.id != null and createBy.id != ''">
+				AND C.report_id IS NOT NULL
+				</if> -->
+				<if test="createBy == null">
+				AND C.report_id IS NULL
+				</if>
+				<!-- 数据过滤 -->
+				${sqlMap.dsf}
+			) M
+		LEFT JOIN DOOR_ORDER_INFO D ON D .order_id = M .businessId
+		LEFT JOIN EQUIPMENT_INFO EQ ON EQ .ID = D .EQUIPMENT_ID
+		LEFT JOIN DOOR_ORDER_DETAIL o ON D.order_id = o.order_id
+			AND M.TICKERTAPE = o.TICKERTAPE
+			AND o.del_flag = #{DEL_FLAG_NORMAL}
+			LEFT JOIN SYS_USER U ON o.create_by = U.ID
+			AND u.DEL_FLAG = #{DEL_FLAG_NORMAL}
+		<!-- LEFT JOIN (
+			SELECT
+				U . NAME,
+				U . NO,
+				o.PHOTO,
+				o.TICKERTAPE,
+				o.AMOUNT,
+				o.ORDER_ID,
+				o.CREATE_BY,
+				o.UPDATE_BY,
+				o.CREATE_DATE,
+				o.UPDATE_DATE,
+				o.REMARKS
+			FROM
+				DOOR_ORDER_DETAIL o
+			LEFT JOIN SYS_USER U ON o.create_by = U.ID
+						
+			LEFT JOIN (SELECT DETAIL_ID,SUM(DETAIL_AMOUNT) AS DETAIL_AMOUNT FROM door_order_amount WHERE TYPE_ID=${door.saveMethod.other} GROUP BY DETAIL_ID) oa ON oa.DETAIL_ID = o.ID
+			
+			WHERE 
+				o.del_flag = #{DEL_FLAG_NORMAL}
+				AND U.del_flag = #{DEL_FLAG_NORMAL}
+		) E ON D .order_id = E .order_id AND M.TICKERTAPE = E.TICKERTAPE -->
+		WHERE
+			D .STATUS != ${order.status.cancel}
+			<if test="doorId != null and doorId != ''">
+			AND M.clientId = #{doorId}
+			</if>
+			<if test="createBy != null and createBy.id != null and createBy.id != ''">
+			AND ( o.create_by = #{createBy.id} OR o.update_by = #{createBy.id} )
+			</if>
+			<if test="orderId != null and orderId != ''">
+			AND D.ORDER_ID = #{orderId}
+			</if>
+		ORDER BY o.CREATE_DATE DESC
+	</select>
+	<!-- 小程序根据门店编号查询存款列表  lihe end 2019-08-19 -->
+	
+	<!-- 小程序获取差错笔数及金额汇总 XL begin 2019-08-23 -->
+	<select id="getTotalDoorError" resultType="java.util.Map">
+		SELECT
+		<if test="dbName=='oracle'">SUM(NVL(c.IN_AMOUNT,0)-NVL(c.OUT_AMOUNT,0)) AS
+			"errorAmount",</if>
+		<if test="dbName=='mysql'">SUM(IFNULL(c.IN_AMOUNT,0)-IFNULL(c.OUT_AMOUNT,0)) AS
+			"errorAmount",</if>
+		SUM(CASE WHEN c.BUSINESS_STATUS = '2' THEN -1 ELSE 1 END) AS "errorCount",
+		SUM(c.IN_AMOUNT) AS "inAmount",
+		SUM(c.OUT_AMOUNT) AS "outAmount"
+		FROM center_accounts_door_main c
+		<!-- LEFT JOIN sys_office o3 ON o3.id = c.CLIENT_ID -->
+		LEFT JOIN day_report_door_merchan a ON c.REPORT_ID = a.REPORT_ID  <!-- AND 
+			o3.PARENT_ID=d.OFFICE_ID -->
+		AND c.CLIENT_ID=a.OFFICE_ID
+		AND c.BUSINESS_TYPE = '79'
+		LEFT JOIN sys_office o2 ON o2.id = a.office_id AND o2.DEL_FLAG = ${delFlag.valid}
+		<where>
+			c.REPORT_ID IS NOT NULL
+			<!-- AND c.BUSINESS_STATUS = '1' -->
+			<if test="clientForApp != null and clientForApp != ''">
+				AND c.CLIENT_ID=#{clientForApp}
+			</if>
+			<!-- 日结时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				AND
+				<if test="dbName == 'oracle'">TO_CHAR(a.report_date, 'yyyy-mm-dd hh24:mi:ss')
+					>='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.report_date, '%Y-%m-%d %H:%i:%s')
+					>='${searchDateStart}'</if>
+			</if>
+			<!-- 日结时间(结束) -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND
+				<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.report_date,'yyyy-mm-dd
+					hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.report_date,
+					'%Y-%m-%d %H:%i:%s')</if>
+			</if>
+			<!-- <if test="paidStatus != null and paidStatus != ''"> AND (d.paid_status=#{paidStatus} 
+				OR <if test="dbName == 'oracle'"> TO_CHAR(d.report_date,'yyyy-mm-dd')= TO_CHAR(SYSDATE,'yyyy-mm-dd') 
+				</if> <if test="dbName == 'mysql'"> DATE_FORMAT(d.report_date, '%Y-%m-%d')= 
+				DATE_FORMAT(now(), '%Y-%m-%d') </if> ) </if> -->
+			<if test="paidStatusList != null and paidStatusList.size != 0">
+				AND ( a.paid_status in
+				<foreach collection="paidStatusList" item="paidStatus"
+					separator="," open="(" close=")" index="index">
+					#{paidStatusList[${index}]}
+				</foreach>
+				OR
+				<if test="dbName == 'oracle'">
+					TO_CHAR(a.report_date,'yyyy-mm-dd')=
+					TO_CHAR(SYSDATE,'yyyy-mm-dd')
+				</if>
+				<if test="dbName == 'mysql'">
+					DATE_FORMAT(a.report_date, '%Y-%m-%d')=
+					DATE_FORMAT(now(), '%Y-%m-%d')
+				</if>
+				)
+			</if>
+			<if test="reportId != null and reportId != ''">
+				AND a.REPORT_ID=#{reportId}
+			</if>
+			<if test="rofficeId != null and rofficeId != ''">
+				AND a.ROFFICE_ID=#{rofficeId}
+			</if>
+			<!-- 数据过滤 -->
+			${sqlMap.dsf}
+		</where>
+	</select>
+	<!-- 小程序获取差错笔数及金额汇总 XL end 2019-08-23 -->
+	
+	<!-- 小程序获取门店日结汇总列表  XL begin 2019-08-23 -->
+	<select id="findDoorSummaryList" resultType="DoorCenterAccountsMain">
+		SELECT
+			t2.clientId AS "doorId",
+			o.name AS "doorName",
+			t2.errorAmount AS "errorAmount",
+			t2.errorCount AS "errorCount",
+			t2.totalAmount AS "totalAmount",
+			t2.createDate AS "startDate",
+			t2.updateDate AS "endDate",
+			#{reportId} AS "reportId"
+		FROM
+			(SELECT
+				<if test="dbName=='oracle'">
+					SUM(NVL(t1.inAmount,0)-NVL(t1.outAmount,0)) AS "totalAmount",
+					SUM(CASE WHEN t1.businessType=#{businessType} AND t1.businessStatus='1' THEN (NVL(t1.inAmount, 0)-NVL(t1.outAmount, 0)) else 0 END)  AS "errorAmount",
+				</if>
+				<if test="dbName=='mysql'">
+					SUM(IFNULL(t1.inAmount,0)-IFNULL(t1.outAmount,0)) AS "totalAmount",
+					SUM(CASE WHEN t1.businessType=#{businessType} AND t1.businessStatus='1' THEN (IFNULL(t1.inAmount, 0)-IFNULL(t1.outAmount, 0)) ELSE 0 END)  AS "errorAmount",
+				</if>
+				COUNT(CASE WHEN t1.businessType=#{businessType} AND t1.businessStatus='1' THEN '1' ELSE NULL END) AS "errorCount",
+				t1.clientId AS "clientId",
+				MIN(t1.createDate) AS "createDate",
+				MAX(t1.createDate) AS "updateDate"
+			FROM
+				(
+					SELECT
+						<include refid="centerAccountsMainColumns"/>
+					FROM
+						center_accounts_door_main a
+					<include refid="centerAccountsMainJoins"/>
+					<where>
+						q.parent_id = #{merchantOfficeId}
+						AND a.REPORT_ID = #{reportId}
+						AND a.business_type in 
+						<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+						 	#{businessTypes[${index}]}
+						</foreach>
+					</where>
+				) t1
+			GROUP BY t1.clientId)t2	
+		LEFT JOIN sys_office o ON t2.clientId = o.id AND o.DEL_FLAG = ${delFlag.valid}
+		<where>
+			<if test="clientId !=null and clientId !=''">
+				AND t2.clientId=#{clientId}
+			</if>		
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY t2.clientId DESC
+			</otherwise>
+		</choose>
+	</select>
+	<!-- 小程序获取门店日结汇总列表  XL end 2019-08-23 -->
+	
+	<resultMap id="DoorCenterAccountsResult" type="DoorCenterAccountsMain">
+          <id property="groupDate" column="groupDate" />
+		<!-- 外连 主表对应机具信息集合 -->
+		<collection property="doorCenterList" ofType="DoorCenterAccountsMain">
+			<result property="doorId" column="doorId" />
+			<result property="doorName" column="doorName" />
+			<result property="userId" column="userId" />
+			<result property="userName" column="userName" />
+			<result property="bustype" column="bustype" />
+			<result property="tickertape" column="tickertape" />
+			<result property="orderId" column="orderId" />
+			<result property="groupDate" column="groupDate" />
+			<result property="createDate" column="createDate" />
+            <result property="uploadFlag" column="uploadFlag" />
+            <result property="businessStatus" column="businessStatus" />
+			<result property="day" column="day" />
+			<result property="time" column="time" />
+			<result property="totalAmount" column="totalAmount" />
+		</collection>
+	</resultMap>
+	
+	<!-- 查询门店日结信息列表 zxk 2019-8-29 -->
+	<select id="getDoorDayReportInfoList" resultMap="DoorCenterAccountsResult">
+		SELECT
+		a.client_id AS doorId,
+		so.name AS doorName,
+		a.create_by AS userId,
+		a.create_name AS userName,
+		a.create_date AS createDate,
+		a.business_status AS businessStatus,
+		a.business_type AS busType,
+		d.TICKERTAPE AS tickertape,
+		d.ORDER_ID AS orderId,
+		CASE WHEN d.photo IS NULL THEN 1 ELSE 0 END AS uploadFlag,
+		<if test="dbName == 'oracle'">
+			to_char(a.create_date,'yyyy-MM') AS groupDate,
+			to_char(a.create_date,'dd') AS day,
+			to_char(a.create_date, 'HH24:mi') AS time,
+			(NVL(a.in_amount,0)-NVL(a.out_amount,0)) AS totalAmount
+		</if>
+		<if test="dbName == 'mysql'">
+			date_format(a.create_date, '%Y-%m') AS groupDate,
+			date_format(a.create_date, '%d') AS day,
+			date_format(a.create_date, '%H:%i') AS time,
+			(IFNULL(a.in_amount,0)-IFNULL(a.out_amount,0)) AS totalAmount
+		</if>
+		FROM
+		center_accounts_door_main a
+		LEFT JOIN sys_office so on a.client_id = so.id AND so.DEL_FLAG = ${delFlag.valid}
+		LEFT JOIN door_order_detail d ON a.BUSINESS_ID = d.ORDER_ID
+		AND a.TICKERTAPE = d.TICKERTAPE
+		LEFT JOIN day_report_door_merchan d1 ON a.CLIENT_ID = d1.OFFICE_ID AND
+		a.REPORT_ID = d1.REPORT_ID
+		WHERE
+		a.del_flag = #{DEL_FLAG_NORMAL}
+		<if test="paidStatusList != null and paidStatusList.size != 0">
+			AND (d1.paid_status in
+			<foreach collection="paidStatusList" item="paidStatus"
+				separator="," open="(" close=")" index="index">
+				#{paidStatusList[${index}]}
+			</foreach>
+			OR
+			<if test="dbName == 'oracle'">
+				TO_CHAR(d1.report_date,'yyyy-mm-dd')=
+				TO_CHAR(SYSDATE,'yyyy-mm-dd')
+			</if>
+			<if test="dbName == 'mysql'">
+				DATE_FORMAT(d1.report_date, '%Y-%m-%d')=
+				DATE_FORMAT(now(), '%Y-%m-%d')
+			</if>
+			)
+		</if>
+		<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND
+			<if test="dbName == 'oracle'">TO_CHAR(d1.report_date, 'yyyy-mm-dd hh24:mi:ss')
+				>='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(d1.report_date, '%Y-%m-%d %H:%i:%s')
+				>='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(d1.report_date,'yyyy-mm-dd
+				hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(d1.report_date,
+				'%Y-%m-%d %H:%i:%s')</if>
+		</if>
+		<!-- 门店ID -->
+		AND a.client_id = #{clientId}
+		<!-- 日结ID -->
+		AND a.report_id = #{reportId}
+		<!-- 增加类型判定 -->
+		AND a.business_type IN
+		<foreach item="list" index="index" collection="list" open="("
+			separator="," close=")">#{list}</foreach>
+		ORDER BY createDate asc
+		<!-- GROUP BY a.client_id,a.create_by,d.TICKERTAPE,date_format(a.create_date, 
+			'%Y-%m') -->
+	</select>
+	
+	 <!-- 账务导出部分SQL WQJ 2019-10-30  -->
+	 <select id="excelExporterList" resultType="DoorCenterAccountsMain">
+	SELECT DISTINCT
+	'人民币' AS CURRENCY,
+
+	IF (
+	A.BUSINESS_TYPE = 74,
+	AA.nubmer,
+	NULL
+	) AS equipmentId,
+
+	IF (
+	A.BUSINESS_TYPE = 74,
+	P.`NAME`,
+	NULL
+	) AS area,
+	A.TICKERTAPE AS saveMoneyBatch,
+
+	IF (
+	A.BUSINESS_TYPE = 74,
+	DATE_FORMAT(A.CREATE_DATE, '%Y-%m-%d'),
+	NULL
+	) AS saveMoneyDate,
+
+	IF (
+	A.BUSINESS_TYPE = 74,
+	DATE_FORMAT(F.CREATE_DATE, '%H:%i:%s'),
+	NULL
+	) AS
+	saveStartDate,
+
+	IF (
+	A.BUSINESS_TYPE = 74,
+	DATE_FORMAT(F.CREATE_DATE,
+	'%H:%i:%s'),
+	NULL
+	) AS saveEndDate,
+
+	IF (
+	A.BUSINESS_TYPE = 74,
+	F.cost_time,
+	NULL
+	) AS elapsedTime,
+
+	IF (
+	A.BUSINESS_TYPE = 74,
+	E.LOGIN_NAME,
+	NULL
+	) AS
+	people,
+
+	IF (
+	A.BUSINESS_TYPE = 74,
+	A.CREATE_NAME,
+	NULL
+	) AS peopleName,
+
+	IF (
+	A.BUSINESS_TYPE = 74,
+	DATE_FORMAT(N.UPDATE_DATE, '%Y-%m-%d'),
+	NULL
+	) AS
+	doorOrderDate,
+	IF (
+	A.BUSINESS_TYPE = 74,
+	F.shipmentNumber,
+	NULL
+	) AS
+	shipmentNumber,
+	F.TYPE_NAME AS saveType,
+	IFNULL(A.IN_AMOUNT,
+	A.OUT_AMOUNT) AS totalMoney,
+	DATE_FORMAT(J.PAID_DATE, '%Y-%m-%d') AS
+	confirmTransferAccountsDate,
+	J.UPDATE_NAME AS
+	confirmTransferAccountsPeople,
+	L.LABEL AS businessTypeReport,
+	M.LABEL AS
+	businessStatusReport,
+	A.ACCOUNTS_ID AS ID,
+	A.BUSINESS_TYPE AS
+	businessType,
+	F.ID AS detailId,
+	C. NAME AS clientName
+	FROM
+	center_accounts_door_main A
+	LEFT JOIN sys_office o ON a.roffice_id =
+	o.id
+	LEFT JOIN sys_office C ON A.CLIENT_ID = C.ID
+	LEFT JOIN (
+	SELECT
+	EQUIP.SERIES_NUMBER AS nubmer,
+	DOOR.ORDER_ID AS orderId
+	FROM
+	door_order_info DOOR
+	LEFT JOIN equipment_info EQUIP ON DOOR.EQUIPMENT_ID
+	= EQUIP.ID
+	) AA ON AA.orderId = A.BUSINESS_ID
+	LEFT JOIN (
+	SELECT
+	u.ID,
+	u.LOGIN_NAME
+	FROM
+	sys_user u
+	) E ON e.ID = a.CREATE_BY
+	LEFT JOIN (
+	SELECT
+	orderdetail.TICKERTAPE,
+	orderdetail.ORDER_ID,
+	orderdetail.ID,
+	orderdetail.BUSINESS_TYPE,
+	G.TYPE_NAME,
+	orderdetail.CREATE_DATE,
+	TIMESTAMPDIFF(
+	SECOND,
+	orderdetail.CREATE_DATE,
+	orderdetail.CREATE_DATE
+	) AS cost_time,
+	orderdetail.REMARKS AS
+	shipmentNumber
+	FROM
+	door_order_detail orderdetail
+	LEFT JOIN save_type G ON
+	G.ID = orderdetail.BUSINESS_TYPE
+	) F ON A.BUSINESS_ID = F.ORDER_ID
+	AND
+	A.TICKERTAPE = F.TICKERTAPE
+	LEFT JOIN (
+	SELECT
+	PAID_DATE,
+	UPDATE_NAME,
+	OFFICE_ID,
+	REPORT_ID
+	FROM
+	day_report_door_merchan
+	) merchan ON
+	merchan.OFFICE_ID = a.CLIENT_ID
+	AND a.REPORT_ID = merchan.REPORT_ID
+	LEFT
+	JOIN day_report_door_merchan J ON A.REPORT_ID = J.REPORT_ID
+	AND
+	A.CLIENT_ID = J.OFFICE_ID
+	LEFT JOIN (
+	SELECT
+	`VALUE`,
+	LABEL
+	FROM
+	sys_dict
+	WHERE
+	TYPE = 'door_businesstype'
+	AND DEL_FLAG = 0
+	) L ON A.BUSINESS_TYPE =
+	L.`VALUE`
+	LEFT JOIN (
+	SELECT
+	`VALUE`,
+	LABEL
+	FROM
+	sys_dict
+	WHERE
+	TYPE =
+	'cl_status_type'
+	AND DEL_FLAG = 0
+	) M ON A.BUSINESS_STATUS = M.`VALUE`
+	LEFT JOIN clear_plan_info N ON A.BUSINESS_ID = N.PLAN_ID
+	AND N.`STATUS`
+	= '1'
+	LEFT JOIN sys_office P ON C.PARENT_ID = P.ID
+	<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>
+		<if test=" rofficeId != null and rofficeId != ''">
+			AND (a.roffice_id = #{rofficeId}${sqlMap.dsf})
+		</if>	
+		<!-- 业务类型 -->
+		<if test="businessType != null and businessType != ''">
+			AND a.business_type = #{businessType}
+		</if>
+		<!-- 客户名称  客户账务导出时条件限制   gzd 2019-11-29 -->
+		<if test="clientId != null and clientId != ''">
+			AND a.client_id = #{clientId}
+		</if>
+		<!-- 存款人姓名 -->
+		<if test=" createName != null and createName != ''">
+			AND  a.create_name like 
+				<if test="dbName == 'oracle'">'%,' || #{createName} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{createName}, '%')</if>
+		</if>
+	</where> 
+	</select> 
+	
+	<!-- 门店日结导出列表  XL  2019-10-30  -->
+	<select id="findDayReportExportList" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.DayReportExport">
+		SELECT
+			ei.SERIES_NUMBER AS "equipmentId",
+			c.CREATE_NAME AS "userName",
+			d.RFID AS "boxNo",
+			DATE_FORMAT(c.CREATE_DATE,'%Y-%m-%d %H:%i:%s') AS "depositTime",
+			d.ORDER_ID AS "orderId",
+			IFNULL(dd.TICKERTAPE, dod.TICKERTAPE) AS "tickertape",
+			IFNULL(c.IN_AMOUNT, 0) - IFNULL(c.OUT_AMOUNT, 0) AS "amount",
+			m.OFFICE_NAME AS "officeName",
+			IFNULL(t1.count_zhang, 0) AS "countZhang",
+			IFNULL(CASE WHEN c.BUSINESS_STATUS = #{businessStatus} THEN t1.amount_zhang ELSE -t1.amount_zhang END , 0) AS "amountZhang",
+			IFNULL(CASE WHEN c.BUSINESS_STATUS = #{businessStatus} THEN t1.amount_coin ELSE -t1.amount_coin END , 0) AS "amountForce",
+			IFNULL(CASE WHEN c.BUSINESS_STATUS = #{businessStatus} THEN t1.amount_other ELSE -t1.amount_other END , 0) AS "amountOther",
+			DATE_FORMAT(cpi.UPDATE_DATE,'%Y-%m-%d %H:%i:%s'), <!--  AS "exchangeTime" -->
+			CASE WHEN c.BUSINESS_TYPE=#{businessType} THEN IFNULL(c.IN_AMOUNT, 0) - IFNULL(c.OUT_AMOUNT, 0) ELSE 0 END AS "amountError",
+		    <!-- 钞袋替换时间-->
+		    DATE_FORMAT( cc.change_date,'%Y-%m-%d %H:%i:%s') AS "exchangeTime"
+		FROM
+			center_accounts_door_main c
+		LEFT JOIN door_error_info e ON e.ERROR_NO=c.BUSINESS_ID
+		LEFT JOIN door_order_detail dod ON dod.TICKERTAPE=c.BUSINESS_ID
+		LEFT JOIN day_report_door_merchan m ON m.REPORT_ID = c.REPORT_ID AND c.CLIENT_ID = m.OFFICE_ID
+		LEFT JOIN door_order_info d ON (d.ORDER_ID = c.BUSINESS_ID OR d.ORDER_ID = dod.ORDER_ID OR e.BUSINESS_ID=d.ORDER_ID)
+		LEFT JOIN door_order_detail dd ON dd.ORDER_ID = c.BUSINESS_ID AND dd.TICKERTAPE = c.TICKERTAPE
+		LEFT JOIN clear_plan_info cpi ON cpi.PLAN_ID=d.ORDER_ID AND cpi.STATUS='1'
+		LEFT JOIN equipment_info ei ON ei.ID=d.EQUIPMENT_ID
+		<!-- 关联清机加钞表 -->
+		LEFT JOIN (
+				SELECT max(cam.change_date) change_date, cam.equipment_id  from clear_add_money cam WHERE cam.type = '1' GROUP BY cam.equipment_id 
+				)cc on cc.equipment_id = d.EQUIPMENT_ID
+		LEFT JOIN (
+			SELECT
+				doa.DETAIL_ID,
+				SUM(
+					CASE
+					WHEN doa.TYPE_ID = ${door.saveMethod.paper} THEN
+						doa.COUNT_ZHANG
+					ELSE
+						0
+					END
+				) AS "count_zhang",
+				SUM(
+					CASE
+					WHEN doa.TYPE_ID = ${door.saveMethod.paper} THEN
+						doa.DETAIL_AMOUNT
+					ELSE
+						0
+					END
+				) AS "amount_zhang",
+				SUM(
+					CASE
+					WHEN doa.TYPE_ID = ${door.saveMethod.force} THEN
+						doa.DETAIL_AMOUNT
+					ELSE
+						0
+					END
+				) AS "amount_coin",
+				SUM(
+					CASE
+					WHEN doa.TYPE_ID = ${door.saveMethod.other} THEN
+						doa.DETAIL_AMOUNT
+					ELSE
+						0
+					END
+				) AS "amount_other"
+			FROM
+				door_order_amount doa
+			GROUP BY
+				doa.DETAIL_ID
+		) t1 ON t1.DETAIL_ID = dd.ID
+		<where>
+			m.ID IN 
+			<foreach collection="dayReportIds" item="dayReportIdTag" separator="," open="(" close=")" index="index">
+				#{dayReportIds[${index}]}
+			</foreach>
+			AND c.BUSINESS_TYPE IN
+			<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+				#{businessTypes[${index}]}
+			</foreach>
+		</where>
+		ORDER BY m.PAID_STATUS DESC,m.REPORT_DATE DESC,c.CLIENT_ID DESC,c.CREATE_DATE DESC,dd.DETAIL_ID ASC
+	</select>
+	
+	
+	<!-- 小程序获取门店日结汇总列表 ZXK begin 2019-11-27 -->
+	<select id="findDoorListByMerchan" resultType="DoorCenterAccountsMain">
+		SELECT
+		t2.clientId AS "doorId",
+		o.name AS "doorName",
+		t2.errorAmount AS "errorAmount",
+		t2.errorCount AS "errorCount",
+		t2.totalAmount AS "totalAmount",
+		t2.createDate AS "startDate",
+		t2.updateDate AS "endDate",
+		t2.reportId AS "reportId",
+		<if test="dbName == 'mysql'">
+			date_format(t2.reportDate, '%Y-%m-%d %H:%i') AS "reportDate",
+		</if>
+		<if test="dbName == 'oracle'">
+			to_char(t2.reportDate,'yyyy-mm-dd hh24:mi') AS "reportDate",
+		</if>
+		t2.status AS "status",
+		t2.settlementType AS "settlementType"
+		FROM
+		(SELECT
+		<if test="dbName=='oracle'">
+			SUM(NVL(t1.inAmount,0)-NVL(t1.outAmount,0)) AS "totalAmount",
+			SUM(CASE WHEN t1.businessType=#{businessType} <!-- AND t1.businessStatus='1' --> THEN
+			(NVL(t1.inAmount, 0)-NVL(t1.outAmount, 0)) else 0 END) AS
+			"errorAmount",
+		</if>
+		<if test="dbName=='mysql'">
+			SUM(IFNULL(t1.inAmount,0)-IFNULL(t1.outAmount,0)) AS "totalAmount",
+			SUM(CASE WHEN t1.businessType=#{businessType} <!-- AND t1.businessStatus='1' --> THEN
+			(IFNULL(t1.inAmount, 0)-IFNULL(t1.outAmount, 0)) ELSE 0 END) AS
+			"errorAmount",
+		</if>
+		COUNT(CASE WHEN t1.businessType=#{businessType} AND
+		t1.businessStatus='1' THEN '1' ELSE NULL END) AS "errorCount",
+		t1.clientId AS "clientId",
+		MIN(t1.createDate) AS "createDate",
+		MAX(t1.createDate) AS "updateDate",
+		t1.reportId,
+		t1.status1 AS status,
+		t1.reportDate,
+		t1.settlementType
+		FROM
+		(
+		SELECT
+		<include refid="centerAccountsMainColumns" />
+		,
+		d.PAID_STATUS as status1,
+		d.REPORT_DATE AS reportDate,
+		 d.SETTLEMENT_TYPE AS settlementType
+		FROM
+		center_accounts_door_main a
+		<include refid="centerAccountsMainJoins" />
+		LEFT JOIN day_report_door_merchan d ON d.OFFICE_ID = a.CLIENT_ID AND
+		d.REPORT_ID = a.REPORT_ID
+		<where>
+			q.parent_id = #{merchantOfficeId}
+			AND a.REPORT_ID IS NOT NULL
+			<if test="paidStatusList != null and paidStatusList.size != 0">
+				AND (d.paid_status in
+				<foreach collection="paidStatusList" item="paidStatus"
+					separator="," open="(" close=")" index="index">
+					#{paidStatusList[${index}]}
+				</foreach>
+				OR
+				<if test="dbName == 'oracle'">
+					TO_CHAR(d.report_date,'yyyy-mm-dd')= TO_CHAR(SYSDATE,'yyyy-mm-dd')
+				</if>
+				<if test="dbName == 'mysql'">
+					DATE_FORMAT(d.report_date, '%Y-%m-%d')= DATE_FORMAT(now(), '%Y-%m-%d')
+				</if>
+				<!-- 显示已处理 -->
+				<!--  OR(d.paid_status = '0' AND d.SETTLEMENT_TYPE = '02') -->
+				)
+			</if>
+			<!-- 创建时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				AND
+				<if test="dbName == 'oracle'">TO_CHAR(d.report_date, 'yyyy-mm-dd hh24:mi:ss')
+					>='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(d.report_date, '%Y-%m-%d %H:%i:%s')
+					>='${searchDateStart}'</if>
+			</if>
+			<!-- 创建时间(结束) -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND
+				<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(d.report_date,'yyyy-mm-dd
+					hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(d.report_date,
+					'%Y-%m-%d %H:%i:%s')</if>
+			</if>
+			<!-- AND a.REPORT_ID = #{reportId} -->
+			AND a.business_type in
+			<foreach collection="businessTypes" item="businessTypeTag"
+				separator="," open="(" close=")" index="index">
+				#{businessTypes[${index}]}
+			</foreach>
+		</where>
+		) t1
+		GROUP BY t1.clientId,t1.reportId
+		)t2
+		LEFT JOIN sys_office o ON t2.clientId = o.id AND o.DEL_FLAG = ${delFlag.valid}
+		<where>
+			<if test="clientId !=null and clientId !=''">
+				AND t2.clientId=#{clientId}
+			</if>
+
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			    ORDER BY
+					  t2.status DESC,
+					  t2.reportDate DESC,
+					  t2.clientId
+					<!--   t2.settlementType DESC, -->
+			</otherwise>
+		</choose>
+	</select>
+	<!-- 小程序获取门店日结汇总列表 ZXK end 2019-11-27 -->
+	
+	<!-- 根据reportId和clientid获取某个门店结算过的差错记录 WQJ start 2019-12-4 -->
+	<select id="getErrorByReportId" resultType="DoorCenterAccountsMain">
+		SELECT 
+			*
+		FROM center_accounts_door_main a
+		WHERE a.report_id = #{reportId} AND a.business_type = '79'
+		AND a.CLIENT_ID= #{clientId}
+	</select>
+	
+	<!-- 获取未代付的传统存款记录列表  wqj start -->
+	<select id="findNopaidTraditionalSave" resultType="DoorCenterAccountsMain">
+		SELECT
+			<include refid="centerAccountsMainColumns" />
+		FROM
+			CENTER_ACCOUNTS_DOOR_MAIN A
+			<include refid="centerAccountsMainJoins"/>
+		WHERE
+			a.del_flag = #{DEL_FLAG_NORMAL} 
+			AND A .BUSINESS_TYPE = #{businessType}
+			AND A .ROFFICE_ID = #{rofficeId}
+			AND A .STATUS = #{status}
+			AND A.BUSINESS_STATUS != 2
+			<!-- 创建时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				AND
+				<if test="dbName == 'oracle'">TO_CHAR(A.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(A.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+			</if>
+			<!-- 创建时间(结束) -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND
+				<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(A.create_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(A.create_date, '%Y-%m-%d %H:%i:%s')</if>
+			</if>
+			<!-- 判断点选时间之前是否存在记录 -->
+			<if test="saveMoneyDate != null and saveMoneyDate != ''">
+				AND
+				<if test="dbName == 'oracle'">'${saveMoneyDate}' > TO_CHAR(A.create_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${saveMoneyDate}' > DATE_FORMAT(A.create_date, '%Y-%m-%d %H:%i:%s')</if>
+			</if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY A.create_date
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 获取未代付的电子线下存款记录列表  wqj start -->
+	<select id="offlineSave" resultType="DoorCenterAccountsMain">
+	SELECT
+	<include refid="centerAccountsMainColumns" />
+	FROM
+	CENTER_ACCOUNTS_DOOR_MAIN A
+	<include refid="centerAccountsMainJoins"/>
+	WHERE
+	a.del_flag = #{DEL_FLAG_NORMAL} AND
+	A .BUSINESS_TYPE = #{businessType}
+	AND A .ROFFICE_ID = #{rofficeId}
+	AND A .STATUS = #{status}
+	</select>
+
+	<!-- 获取结算区间的存款总额，并按机具号汇总  wqj start -->
+	<select id="getTotalAmountEquipId"
+			resultType="com.coffer.businesses.modules.doorOrder.v01.entity.DoorCenterAccountsMain">
+		SELECT
+		IFNULL(sum(b.amount + b.other_amount), 0) AS guestTotalAmount,
+		c.EQUIPMENT_ID AS equipmentId,
+		count(1) AS inCount
+		FROM
+		center_accounts_door_main a
+		LEFT JOIN door_order_detail b ON a.TICKERTAPE = b.TICKERTAPE
+		LEFT JOIN door_order_info c ON b.ORDER_ID=c.ORDER_ID
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<!-- 中心机构 -->
+			<if test=" rofficeId != null and rofficeId != ''">
+				AND a.roffice_id = #{rofficeId}
+			</if>
+			<!-- 业务类型 -->
+			<if test="businessTypes != null and businessTypes.size != 0">
+				AND a.business_type in
+				<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="">
+					#{businessTypeTag}
+				</foreach>
+			</if>
+			<!-- 创建时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				AND
+				<if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+			</if>
+			<!-- 创建时间(结束) -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND
+				<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+			</if>
+			<!-- 机具号 -->
+			<if test="equipmentId != null and equipmentId!= ''">
+				AND c.EQUIPMENT_ID=#{equipmentId}
+			</if>
+		</where>
+		GROUP BY c.EQUIPMENT_ID
+	</select>
+	
+	<!-- 根据日结id查询日结存款明细  add by lihe 2020-05-25 start -->
+	<select id="getDetailByReportId" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.DoorCenterAccountsMain">
+		SELECT 
+			a.accounts_id AS "accountsId",
+			a.client_id AS "clientId",
+			q.name AS "clientName",
+			a.business_type AS "businessType",
+			a.business_id AS "businessId",
+			a.in_amount AS "inAmount",
+			a.out_amount AS "outAmount",
+			a.business_status AS "businessStatus",
+			a.create_by AS "createBy.id",
+			a.create_name AS "createBy.name",
+			a.create_date AS "createDate",
+			a.tickertape AS "tickertape",
+			a.status AS "status",
+			a.is_take_up AS "isTakeUp",
+			a.report_id AS "reportId",
+			a.seven_code AS "sevenCode",
+			SUM(IF (amount.TYPE_ID= '01' AND amount.DENOMINATION IN(15,16,17,18,19,20,21,22,23,24,25,26,27),amount.COUNT_ZHANG,0)) AS 'paperMoneyCount',
+			SUM(IF (amount.TYPE_ID= '01' AND amount.DENOMINATION IN(28,29,30,31,32,33),amount.COUNT_ZHANG,0)) AS 'coinMoneyCount',
+			SUM(IF (amount.TYPE_ID= '01' AND amount.DENOMINATION IN(15,16,17,18,19,20,21,22,23,24,25,26,27),amount.COUNT_ZHANG,0))+
+			SUM(IF (amount.TYPE_ID= '01' AND amount.DENOMINATION IN(28,29,30,31,32,33),amount.COUNT_ZHANG,0)) AS 'saveTotal',
+			SUM(IF (amount.TYPE_ID= '01' AND amount.DENOMINATION IN(28,29,30,31,32,33),amount.DETAIL_AMOUNT,0)) AS 'coinMoneyTotal',
+			SUM(IF(amount.TYPE_ID = '01' AND amount.DENOMINATION IN(15,16,17,18,19,20,21,22,23,24,25,26,27),amount.DETAIL_AMOUNT, 0)) AS 'paperMoneyTotal',
+			SUM(IF(amount.TYPE_ID = '01',amount.DETAIL_AMOUNT, 0)) AS 'cash',
+			SUM(IF(amount.TYPE_ID = '02', amount.DETAIL_AMOUNT, 0)) AS 'pack',
+			SUM(IF(amount.TYPE_ID = '03', amount.DETAIL_AMOUNT, 0)) AS 'other',
+			user.login_name as 'createBy.loginName',
+			doi.id AS infoId,
+			detail.rfid AS 'rfid',
+			detail.id AS 'detailId',
+			detail.remarks AS 'doorOrderDetail.remarks',
+			checkCash.codeNo AS codeNo,
+			checkCash.packNum AS packNum 
+		FROM center_accounts_door_main a 
+		LEFT JOIN sys_office o ON a.roffice_id = o.id 
+		AND o.del_flag = 0
+		LEFT JOIN door_order_info p ON p.order_id = A.BUSINESS_ID
+		LEFT JOIN sys_office q ON a.client_id = q.id 
+		AND q.del_flag = 0
+		LEFT JOIN (
+		SELECT de.ORDER_ID as businessId , dod.ORDER_ID as codeNo , dod.RFID as packNum FROM deposit_error de 
+		LEFT JOIN door_order_detail dod ON dod.TICKERTAPE = de.ORDER_ID
+		UNION ALL
+		SELECT dei.ERROR_NO as businessId,ccm.OUT_NO as codeNo,ccm.RFID as packNum from door_error_info dei
+		LEFT JOIN check_cash_main ccm ON dei.BUSINESS_ID = ccm.OUT_NO
+		) checkCash on checkCash.businessId = a.BUSINESS_ID	
+		LEFT JOIN door_order_info doi ON doi.order_id=checkCash.codeNo
+		left join door_order_detail detail on detail.tickertape = a.tickertape
+		left join sys_user user on a.create_by = user.id
+		LEFT JOIN door_order_amount amount ON detail.id = amount.detail_id
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		<!-- 业务类型集合 -->
+		<if test="businessTypes != null and businessTypes.size != 0">
+			AND a.business_type in 
+			<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="index">
+			 	#{businessTypes[${index}]}
+			</foreach>
+		</if>
+		<!-- 业务类型 -->
+		<if test="businessType != null and businessType != ''">
+			AND a.business_type = '${businessType}'
+		</if>
+		<!-- 机构ID -->
+		<if test="clientId != null and clientId != ''">
+			AND a.client_id = '${clientId}'
+		</if>
+		<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.create_date, '%Y-%m-%d %H:%i:%s')</if>
+		</if>	
+		<!-- 客户列表 -->
+		<if test="clientIdList != null and clientIdList.size != 0">
+			AND a.client_id in 
+			<foreach collection="clientIdList" item="clientIdTag" separator="," open="(" close=")" index="">
+			 	#{clientIdTag}
+			</foreach>
+		</if>
+		
+		<if test=" rofficeId != null and rofficeId != ''">
+			AND (a.roffice_id = #{rofficeId}${sqlMap.dsf})
+		</if>
+		<!-- 门店父机构 -->
+		<if test=" merchantOfficeId != null and merchantOfficeId != ''">
+			AND  q.parent_id = #{merchantOfficeId}
+		</if>
+		<!-- 日结ID -->
+		<if test=" reportId != null and reportId != ''">
+			AND  a.report_id = #{reportId}
+		</if>
+		<!-- 存款人姓名 -->
+		<if test=" createName != null and createName != ''">
+			AND  a.create_name like 
+				<if test="dbName == 'oracle'">'%,' || #{createName} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{createName}, '%')</if>
+		</if>
+		<!-- 七位码 -->
+		<if test=" sevenCode != null and sevenCode != ''">
+			AND  a.seven_code = #{sevenCode}
+		</if>
+		
+		</where>
+		GROUP BY
+			A.ACCOUNTS_ID
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.create_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	<!-- 根据日结id查询日结存款明细  add by lihe 2020-05-25 end -->
+	
+	<!-- 获取中心总账tab金额（门店存款、汇款、存款差错、差错处理）add by lihe 2020-04-08 start-->
+	<select id="getAmountByBusinessType" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.DoorCenterAccountsMain">
+		SELECT D.VALUE AS "businessType",
+			   AA.totalAmount AS "totalAmount",
+			   AA.traditionalAmount AS "traditionalAmount",
+			   AA.electricAmount AS "electricAmount",
+			   AA.outAmount AS "outAmount",
+			   AA.errorAmount AS "errorAmount",
+			   AA.errorDealAmount AS "errorDealAmount"
+	    FROM
+	    	SYS_DICT D
+    	LEFT JOIN(
+			SELECT
+				A.business_type AS "businessType",
+				<if test="dbName == 'oracle'">
+				   	<!-- 最终存款金额 = 存款总额-冲正金额  门店存款-->
+					NVL(SUM(CASE WHEN A.business_type = ${centerAccounts.businessType.deposit} AND A.business_status = ${centerAccounts.businessStatus.register} THEN A.in_amount ELSE 0 END ), 0 ) 
+					- NVL(SUM(CASE WHEN A.business_type = ${centerAccounts.businessType.deposit} AND A.business_status = ${centerAccounts.businessStatus.cancel} THEN A.out_amount ELSE 0 END ),0 ) AS "totalAmount",
+					<!-- 最终存款金额 = 存款总额-冲正金额  传统存款-->
+					NVL(SUM(CASE WHEN A.business_type = ${centerAccounts.businessType.tradition} AND A.business_status = ${centerAccounts.businessStatus.register} THEN A.in_amount ELSE 0 END ), 0 ) 
+					- NVL(SUM(CASE WHEN A.business_type = ${centerAccounts.businessType.tradition} AND A.business_status = ${centerAccounts.businessStatus.cancel} THEN A.out_amount ELSE 0 END ),0 ) AS "traditionalAmount",
+					<!-- 最终存款金额 = 存款总额-冲正金额 电子线下-->
+					NVL(SUM(CASE WHEN A.business_type = ${centerAccounts.businessType.electric} AND A.business_status = ${centerAccounts.businessStatus.register} THEN A.in_amount ELSE 0 END ), 0 ) 
+					- NVL(SUM(CASE WHEN A.business_type = ${centerAccounts.businessType.electric} AND A.business_status = ${centerAccounts.businessStatus.cancel} THEN A.out_amount ELSE 0 END ),0 ) AS "electricAmount",
+					<!-- 汇款金额 -->
+					NVL(SUM(CASE WHEN A.business_type = ${centerAccounts.businessType.remit} THEN A.out_amount ELSE 0 END ), 0 ) AS "outAmount",
+					<!-- 差错金额 -->
+					NVL(SUM(CASE WHEN A.business_type = ${centerAccounts.businessType.error} THEN A.in_amount ELSE 0 END ), 0 ) 
+					- NVL(SUM(CASE WHEN A.business_type = ${centerAccounts.businessType.error} THEN A.out_amount ELSE 0 END ),0 ) AS "errorAmount", 
+					<!-- 差错处理金额 -->
+					NVL(SUM(CASE WHEN A.business_type = ${centerAccounts.businessType.errorSettle} THEN A.in_amount ELSE 0 END ), 0 )
+					+ NVL(SUM(CASE WHEN A.business_type = ${centerAccounts.businessType.errorSettle} THEN A.out_amount ELSE 0 END ), 0 ) AS "errorDealAmount"
+				</if>
+				<if test="dbName=='mysql'">
+					<!-- 最终存款金额 = 存款总额-冲正金额  门店存款-->
+					COALESCE(SUM(CASE WHEN A.business_type = ${centerAccounts.businessType.deposit} AND A.business_status = ${centerAccounts.businessStatus.register} THEN A.in_amount ELSE 0 END ), 0 ) 
+					- COALESCE(SUM(CASE WHEN A.business_type = ${centerAccounts.businessType.deposit} AND A.business_status = ${centerAccounts.businessStatus.cancel} THEN A.out_amount ELSE 0 END ),0 ) AS "totalAmount",
+					<!-- 最终存款金额 = 存款总额-冲正金额  传统存款-->
+					COALESCE(SUM(CASE WHEN A.business_type = ${centerAccounts.businessType.tradition} AND A.business_status = ${centerAccounts.businessStatus.register} THEN A.in_amount ELSE 0 END ), 0 ) 
+					- COALESCE(SUM(CASE WHEN A.business_type = ${centerAccounts.businessType.tradition} AND A.business_status = ${centerAccounts.businessStatus.cancel} THEN A.out_amount ELSE 0 END ),0 ) AS "traditionalAmount",
+					<!-- 最终存款金额 = 存款总额-冲正金额 电子线下-->
+					COALESCE(SUM(CASE WHEN A.business_type = ${centerAccounts.businessType.electric} AND A.business_status = ${centerAccounts.businessStatus.register} THEN A.in_amount ELSE 0 END ), 0 ) 
+					- COALESCE(SUM(CASE WHEN A.business_type = ${centerAccounts.businessType.electric} AND A.business_status = ${centerAccounts.businessStatus.cancel} THEN A.out_amount ELSE 0 END ),0 ) AS "electricAmount",
+					<!-- 汇款金额 -->
+					COALESCE(SUM(CASE WHEN A.business_type = ${centerAccounts.businessType.remit} THEN A.out_amount ELSE 0 END ), 0 ) AS "outAmount",
+					<!-- 差错金额 -->
+					COALESCE(SUM(CASE WHEN A.business_type = ${centerAccounts.businessType.error} THEN A.in_amount ELSE 0 END ), 0 ) 
+					- COALESCE(SUM(CASE WHEN A.business_type = ${centerAccounts.businessType.error} THEN A.out_amount ELSE 0 END ),0 ) AS "errorAmount", 
+					<!-- 差错处理金额 -->
+					COALESCE(SUM(CASE WHEN A.business_type = ${centerAccounts.businessType.errorSettle} THEN A.in_amount ELSE 0 END ), 0 )
+					+ COALESCE(SUM(CASE WHEN A.business_type = ${centerAccounts.businessType.errorSettle} THEN A.out_amount ELSE 0 END ), 0 ) AS "errorDealAmount"
+				</if>
+			FROM center_accounts_door_main A 
+			LEFT JOIN SYS_OFFICE o ON o.ID = A.roffice_id AND o.DEL_FLAG = ${delFlag.valid}
+			LEFT JOIN SYS_OFFICE q ON q.ID = A.client_id AND o.DEL_FLAG = ${delFlag.valid}
+			<where>
+				A.del_flag = '0'
+				<!-- 机构ID -->
+				<if test="doorId != null and doorId != ''">
+					AND (A.client_id = #{doorId} or
+						q.PARENT_IDS like  
+						<if test="dbName == 'oracle'">'%,' || #{doorId} || ',%'</if>
+						<if test="dbName == 'mysql'">CONCAT('%', #{doorId}, '%')</if>
+					)
+				</if>
+				<if test=" rofficeId != null and rofficeId != ''">
+					AND (A.roffice_id = #{rofficeId}${sqlMap.dsf})
+				</if>
+				<!-- 业务类型 -->
+				<if test="businessTypes != null and businessTypes.size != 0">
+					AND A.business_Type in 
+					<foreach collection="businessTypes" item="businessTypeTag" separator="," open="(" close=")" index="">
+					 	#{businessTypeTag}
+					</foreach>
+				</if>
+				<!-- 业务类型 -->
+				<if test="businessType != null and businessType != ''">
+					AND A.business_type = '${businessType}'
+				</if>
+				<!-- 机构ID -->
+				<if test="clientId != null and clientId != ''">
+					AND A.client_id = '${clientId}'
+				</if>
+				<!-- 创建时间(开始) -->
+				<if test="searchDateStart != null and searchDateStart != ''">
+					AND 
+					<if test="dbName == 'oracle'">TO_CHAR(A.create_date, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+					<if test="dbName=='mysql'">DATE_FORMAT(A.create_date, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+				</if>
+				<!-- 创建时间(结束) -->
+				<if test="searchDateEnd != null and searchDateEnd != ''">
+					AND 
+					<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(A.create_date,'yyyy-mm-dd hh24:mi:ss')</if>
+					<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(A.create_date, '%Y-%m-%d %H:%i:%s')</if>
+				</if>	
+				<!-- 客户列表 -->
+				<if test="clientIdList != null and clientIdList.size != 0">
+					AND A.client_id in 
+					<foreach collection="clientIdList" item="clientIdTag" separator="," open="(" close=")" index="">
+					 	#{clientIdTag}
+					</foreach>
+				</if>
+				<!-- 机构ID -->
+				<if test="clientId != null and clientId != ''">
+					AND A.client_id = '${clientId}'
+				</if>
+				<!-- 存款人姓名 -->
+				<if test=" createName != null and createName != ''">
+					AND  A.create_name like 
+					<if test="dbName == 'oracle'">'%,' || #{createName} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{createName}, '%')</if>
+				</if>
+				<!-- 日结ID -->
+				<if test=" reportId != null and reportId != ''">
+					AND A.report_id = #{reportId}
+				</if>
+				<!-- 存款人姓名 -->
+				<if test=" createName != null and createName != ''">
+					AND A.create_name like 
+					<if test="dbName == 'oracle'">'%,' || #{createName} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{createName}, '%')</if>
+				</if>
+				<!-- 七位码 -->
+				<if test=" sevenCode != null and sevenCode != ''">
+					AND A.seven_code = #{sevenCode}
+				</if>
+			</where>
+			GROUP BY
+				A.business_type
+		) AA ON AA.businessType = D.VALUE
+		WHERE 
+			D.TYPE = 'door_businesstype' AND D.DEL_FLAG = ${delFlag.valid}
+		order by D.sort
+	</select>
+	<!-- 获取中心总账tab金额（门店存款、汇款、存款差错、差错处理）add by lihe 2020-04-08 end-->
+	
+	<!-- 根据凭条获取冲正记录 add by lihe 2020-06-17 start -->
+	<select id="getReverseList" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.DoorCenterAccountsMain">
+		select 
+			a.accounts_id AS "accountsId",
+			a.client_id AS "clientId",
+			a.business_type AS "businessType",
+			a.business_id AS "businessId",
+			a.roffice_id AS "rofficeId",
+			a.aoffice_id AS "aofficeId",
+			a.in_amount AS "inAmount",
+			a.out_amount AS "outAmount",
+			a.total_amount AS "totalAmount",
+			a.guest_totalAmount AS "guestTotalAmount",
+			a.business_status AS "businessStatus",
+			a.create_by AS "createBy.id",
+			a.create_name AS "createName",
+			a.create_date AS "createDate",
+			a.del_flag AS "delFlag",
+			a.tickertape AS "tickertape",
+			a.status AS "status",
+			a.is_take_up AS "isTakeUp",
+			a.report_id AS "reportId",
+			a.seven_code AS "sevenCode"
+		FROM center_accounts_door_main a
+		<where>
+			<!-- 业务状态：1-登记；2-冲正 -->
+			a.BUSINESS_STATUS = ${centerAccounts.businessStatus.cancel}
+			<!-- 传统存款未结算列表 --> 
+			<if test="traditionalSaveList != null and traditionalSaveList.size != 0">
+			AND a.TICKERTAPE in
+				<foreach collection="traditionalSaveList" item="item" separator="," open="(" close=")" index="index">
+					<!-- 凭条号 -->
+				 	<if test="item.tickertape != null and item.tickertape != ''">
+				 	 #{item.tickertape}
+				 	</if>
+				</foreach>
+			</if>
+		</where>
+	</select>
+	<!-- 根据凭条获取冲正记录 add by lihe 2020-06-17 end -->
+	
+	
+	<!-- 获取存款差错未处理记录 add by ZXK 2020-07-1 start -->
+	<select id="checkDepositErrorAccount" resultType="com.coffer.businesses.modules.doorOrder.v01.entity.DoorCenterAccountsMain">
+		SELECT
+			a.accounts_id AS "accountsId",
+			a.client_id AS "clientId",
+			a.business_type AS "businessType",
+			a.business_id AS "businessId",
+			a.in_amount AS "inAmount",
+			a.out_amount AS "outAmount",
+			a.business_status AS "businessStatus",
+			a.create_by AS "createBy.id",
+			a.create_name AS "createBy.name",
+			a.create_date AS "createDate",
+			a.tickertape AS "tickertape",
+			a. STATUS AS "status",
+			a.is_take_up AS "isTakeUp",
+			a.report_id AS "reportId",
+			checkCash.codeNo AS codeNo,
+			checkCash.packNum AS packNum
+		FROM
+			center_accounts_door_main a
+		LEFT JOIN (
+			SELECT
+				de.ORDER_ID AS businessId,
+				dod.ORDER_ID AS codeNo,
+				dod.RFID AS packNum
+			FROM
+				deposit_error de
+			LEFT JOIN door_order_detail dod ON dod.TICKERTAPE = de.ORDER_ID
+			UNION ALL
+				SELECT
+					dei.ERROR_NO AS businessId,
+					ccm.OUT_NO AS codeNo,
+					ccm.RFID AS packNum
+				FROM
+					door_error_info dei
+				LEFT JOIN check_cash_main ccm ON dei.BUSINESS_ID = ccm.OUT_NO
+		) checkCash ON checkCash.businessId = a.BUSINESS_ID
+		
+		<where>
+			a.del_flag = 0
+			<!-- 处理状态 '已处理' 或 '已结算' -->
+			AND a.is_take_up IN
+			(${door.isTakeUp.takeup},${door.isTakeUp.settlement})
+			<!-- 业务类型为 '存款差错' -->
+			AND a.business_type = #{businessType}
+			<!-- 业务状态 -->
+			<if test="businessStatus != null and businessStatus != ''">
+				AND a.business_status = #{businessStatus}
+			</if>
+			<!-- 凭条号 -->
+			<if test="businessId != null and businessId != ''">
+				AND a.business_Id = #{businessId}
+			</if>
+			<!-- 拆箱单号 -->
+			<if test="codeNo != null and codeNo != ''">
+				AND checkCash.codeNo = #{codeNo}
+			</if>
+		</where>
+		  ORDER BY CREATE_DATE DESC 
+	</select>
+	<!-- 根据凭条获取存款差错结算记录 add by ZXK 2020-07-1 end -->
+	
+	<!-- 根据预约单号查询是否进行过日结 add by HZY 2020-07-17 start -->
+	<select id="getReportId" resultType="DoorCenterAccountsMain">
+		SELECT
+			BUSINESS_ID,
+			REPORT_ID
+		FROM
+			center_accounts_door_main a
+		WHERE
+		a.del_flag = '0'
+		And a.BUSINESS_ID =#{businessId}
+		LIMIT 1
+	</select>
+		<!-- 根据预约单号查询是否进行过日结 add by HZY 2020-07-17 start -->
+</mapper>

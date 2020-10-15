@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="act" default="welcome">
+
+	<!-- properties from key value -->
+	<property name="designs" value="designs" />
+	<property name="deployments" value="deployments" />
+
+	<!-- 显示欢迎信息以及操作提示 -->
+	<target name="welcome">
+		<echo>Activiti打包程序，请输入命令后操作！</echo>
+	</target>
+
+	<target name="allocation.pbocHandin">
+		<echo>打包流程定义：申请上缴</echo>
+		<copy file="${designs}/allocation/pbocHandin/pbocHandin.bpmn"
+			tofile="${designs}/allocation/pbocHandin/pbocHandin.bpmn20.xml" />
+		<zip destfile="${deployments}/allocation/pbocHandin/pbocHandin.bar"
+			basedir="${designs}/allocation/pbocHandin" update="true" includes="*.xml,*.png" />
+		<delete file="${designs}/allocation/pbocHandin/pbocHandin.bpmn20.xml" />
+	</target>
+
+</project>

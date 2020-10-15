@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoreCoOfficeAssocationDao">
+    
+	<resultMap type="com.coffer.businesses.modules.store.v01.entity.StoreCoOfficeAssocation" id="StoreCoOfficeAssocationResult">
+		<id column="ID" property="id" />
+		<result column="STORE_ID" property="storeId" />
+		<result column="OFFICE_ID" property="office.id" />
+		<result column="OFFICE_NAME" property="office.name" />
+	</resultMap>
+
+	<sql id="Base_Column_List">
+		ID,
+		STORE_ID,
+		OFFICE_ID,
+		OFFICE_NAME
+	</sql>
+	
+	<select id="getByStoreId" resultMap="StoreCoOfficeAssocationResult">
+		SELECT 
+			<include refid="Base_Column_List"></include>
+		FROM STORE_CO_OFFICE_ASSOCATION
+		WHERE STORE_ID=#{storeId}
+	</select>
+	
+	<insert id="insert" >
+		INSERT INTO STORE_CO_OFFICE_ASSOCATION(
+			ID,
+			STORE_ID,
+			OFFICE_ID,
+			OFFICE_NAME
+		) VALUES (
+			#{id},
+			#{storeId},
+			#{office.id},
+			#{office.name}
+		)
+	</insert>
+	
+	<update id="deleteByStoreId">
+		DELETE FROM STORE_CO_OFFICE_ASSOCATION
+		WHERE STORE_ID=#{storeId}
+	</update>
+
+</mapper>

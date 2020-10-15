@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.collection.v03.dao.CustWorkYearDao">
+	
+	<!-- 一览页面数据取得 -->
+ 	<select id="findList" resultType="CustWorkYear">
+ 		SELECT 
+			<if test="dbName == 'oracle'">TO_CHAR(a.reg_date, 'yyyy') AS "clearDate",</if>
+			<if test="dbName == 'mysql'">DATE_FORMAT(a.reg_date, '%Y') AS "clearDate",</if>
+ 			a.cust_no AS "custNo",
+ 			max(a.cust_name) AS "custName",
+ 			max(a.create_by) AS "clearManId",
+			count(distinct a.out_no) AS "sumBillCount",
+			sum(t.count_zhang) AS "sumNumCount",
+			sum(t.detail_amount) AS "sumAmount"
+		FROM  check_cash_main a
+		INNER JOIN check_cash_detail t ON a.out_no = t.out_no AND t.del_flag = #{DEL_FLAG_NORMAL} 
+		LEFT JOIN sys_user c ON c.id = a.create_by AND c.del_flag = #{DEL_FLAG_NORMAL}
+		<where>
+			1=1
+			<if test="searchCustNo != null and searchCustNo != ''">
+				AND a.cust_no = #{searchCustNo}
+			</if>
+			<if test="searchYear != null and searchYear != ''">
+				<if test="dbName == 'oracle'">AND TO_CHAR(a.reg_date, 'yyyy') = #{searchYear}</if>
+				<if test="dbName == 'mysql'">AND DATE_FORMAT(a.reg_date, '%Y') = #{searchYear}</if>
+			</if>
+			
+	   	</where>
+		<if test="dbName == 'oracle'">
+			 GROUP BY TO_CHAR(a.reg_date, 'yyyy'),a.cust_no
+			 ORDER BY TO_CHAR(a.reg_date, 'yyyy'),a.cust_no
+		</if>
+		<if test="dbName == 'mysql'">
+			 GROUP BY DATE_FORMAT(a.reg_date, '%Y'),a.cust_no
+			 ORDER BY DATE_FORMAT(a.reg_date, '%Y'),a.cust_no
+		</if>
+	</select>
+	
+	<!-- 明细行对应面值数据取得 -->
+ 	<select id="findDetailParList" resultType="CustWorkYear">
+		SELECT
+ 			max(a.label) AS "rowPayValue",
+			sum(case when y.count_zhang is null then 0 else y.count_zhang end) AS "rowCount",
+			sum(case when y.detail_amount is null then 0 else y.detail_amount end) AS "rowAmount"
+		FROM sto_dict a
+		LEFT JOIN 
+			(
+			select 
+			     t.denomination,
+			     t.count_zhang,
+			     t.detail_amount
+			from check_cash_main c,check_cash_detail t
+			where c.out_no = t.out_no 
+			  AND c.del_flag = #{DEL_FLAG_NORMAL} 
+			  AND t.del_flag = #{DEL_FLAG_NORMAL} 
+			  <if test="dbName == 'oracle'">and TO_CHAR(c.reg_date, 'yyyy') = #{clearDate}</if>
+			  <if test="dbName == 'mysql'">and DATE_FORMAT(c.reg_date, '%Y') = #{clearDate}</if>
+			  AND c.cust_no = #{custNo}
+			) y ON a.value = y.denomination               
+		<where>
+			1 = 1
+			and a.type = #{type}
+			and a.del_flag = '0'
+		</where>
+		    GROUP BY  a.value
+			ORDER BY  max(a.sort)
+		 
+	</select>
+	
+	<!-- 明细行对应人员数据取得 -->
+ 	<select id="findDetailManList" resultType="CustWorkYear">
+		select 
+		     max(d.name) AS "rowManName",
+		     count(distinct t.id) AS "rowManCount",
+		     sum(t.check_amount) AS "rowManAmount"
+		from check_cash_main c
+		INNER JOIN check_cash_amount t ON c.out_no = t.out_no AND t.del_flag = #{DEL_FLAG_NORMAL} AND t.enabled_flag = '1'    
+		LEFT JOIN sys_user d ON d.id = c.create_by AND d.del_flag = #{DEL_FLAG_NORMAL}  
+		<where>
+			1 = 1
+			AND c.del_flag = #{DEL_FLAG_NORMAL} 
+			<if test="dbName == 'oracle'">and TO_CHAR(c.reg_date, 'yyyy') = #{clearDate}</if>
+			<if test="dbName == 'mysql'">and DATE_FORMAT(c.reg_date, '%Y') = #{clearDate}</if>
+			AND c.cust_no = #{custNo}  
+		</where>
+		    GROUP BY  c.create_by
+			ORDER BY  c.create_by
+	</select>
+	
+	<!-- Excel导出数据取得 -->
+ 	<select id="findExcelList" resultType="CustWorkYear">
+ 		SELECT 
+ 			<if test="dbName == 'oracle'">TO_CHAR(a.reg_date, 'yyyy') AS "clearDate",</if>
+			<if test="dbName == 'mysql'">DATE_FORMAT(a.reg_date, '%Y') AS "clearDate",</if>
+ 			a.cust_no AS "custNo",
+ 			max(a.cust_name) AS "custName",
+			count(distinct a.out_no) AS "sumBillCount",
+			sum(t.count_zhang) AS "sumNumCount",
+			sum(t.detail_amount) AS "sumAmount",
+			sum(case when t.denomination = '01' then t.count_zhang else 0 end) AS "count100",
+			sum(case when t.denomination = '01' then t.detail_amount else 0 end) AS "amount100",
+			sum(case when t.denomination = '02' then t.count_zhang else 0 end) AS "count50",
+			sum(case when t.denomination = '02' then t.detail_amount else 0 end) AS "amount50",
+			sum(case when t.denomination = '03' then t.count_zhang else 0 end) AS "count20",
+			sum(case when t.denomination = '03' then t.detail_amount else 0 end) AS "amount20",
+			sum(case when t.denomination = '04' then t.count_zhang else 0 end) AS "count10",
+			sum(case when t.denomination = '04' then t.detail_amount else 0 end) AS "amount10",
+			sum(case when t.denomination = '05' then t.count_zhang else 0 end) AS "count5",
+			sum(case when t.denomination = '05' then t.detail_amount else 0 end) AS "amount5",
+			sum(case when t.denomination = '06' then t.count_zhang else 0 end) AS "count2",
+			sum(case when t.denomination = '06' then t.detail_amount else 0 end) AS "amount2",
+			sum(case when t.denomination = '07' then t.count_zhang else 0 end) AS "count1",
+			sum(case when t.denomination = '07' then t.detail_amount else 0 end) AS "amount1",
+			sum(case when t.denomination = '08' then t.count_zhang else 0 end) AS "count05",
+			sum(case when t.denomination = '08' then t.detail_amount else 0 end) AS "amount05",
+			sum(case when t.denomination = '09' then t.count_zhang else 0 end) AS "count02",
+			sum(case when t.denomination = '09' then t.detail_amount else 0 end) AS "amount02",
+			sum(case when t.denomination = '10' then t.count_zhang else 0 end) AS "count01",
+			sum(case when t.denomination = '10' then t.detail_amount else 0 end) AS "amount01"
+		FROM  check_cash_main a
+		INNER JOIN check_cash_detail t ON a.out_no = t.out_no AND t.del_flag = #{DEL_FLAG_NORMAL} 
+		<where>
+			1=1
+			<if test="searchCustNo != null and searchCustNo != ''">
+				AND a.cust_no = #{searchCustNo}
+			</if>
+			<if test="searchYear != null and searchYear != ''">
+				<if test="dbName == 'oracle'">AND TO_CHAR(a.reg_date, 'yyyy') = #{searchYear}</if>
+				<if test="dbName == 'mysql'">AND DATE_FORMAT(a.reg_date, '%Y') = #{searchYear}</if>
+			</if>
+	   	</where>
+		 
+		<if test="dbName == 'oracle'">
+			 GROUP BY TO_CHAR(a.reg_date, 'yyyy'),a.cust_no
+			 ORDER BY TO_CHAR(a.reg_date, 'yyyy'),a.cust_no
+		</if>
+		<if test="dbName == 'mysql'">
+			 GROUP BY DATE_FORMAT(a.reg_date, '%Y'),a.cust_no
+			 ORDER BY DATE_FORMAT(a.reg_date, '%Y'),a.cust_no
+		</if>
+		 
+	</select>
+
+	<!-- 年度下拉列表数据取得 -->
+	<select id="findYearList" resultType="string">
+		SELECT DISTINCT
+ 			<if test="dbName == 'oracle'">TO_CHAR(a.reg_date, 'yyyy') id</if>
+			<if test="dbName == 'mysql'">DATE_FORMAT(a.reg_date, '%Y') id</if>
+		FROM check_cash_main a
+		WHERE a.del_flag = '0'
+		ORDER BY id
+	</select>
+
+
+</mapper>

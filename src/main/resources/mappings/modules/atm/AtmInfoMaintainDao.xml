@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.atm.v01.dao.AtmInfoMaintainDao">
+
+	<sql id="atmInfoMaintainColumns">
+		a.id AS "id",
+		a.atm_id AS "atmId",
+		a.teller_id AS "tellerId",
+		a.vinoffice_id AS "vinofficeId",
+		a.vinoffice_name AS "vinofficeName",
+		a.aoffice_id AS "aofficeId",
+		a.aoffice_name AS "aofficeName",
+		a.toffice_id AS "tofficeId",
+		a.toffice_name AS "tofficeName",
+		a.atm_brands_no AS "atmBrandsNo",
+		a.atm_brands_name AS "atmBrandsName",
+		a.atm_type_no AS "atmTypeNo",
+		a.atm_type_name AS "atmTypeName",
+		a.rfid AS "rfid",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createName",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_name AS "updateName",
+		a.update_date AS "updateDate",
+		a.longitude AS "longitude",
+		a.latitude AS "latitude",
+		a.address AS "address",
+		a.del_flag AS "delFlag"
+	</sql>
+
+	<sql id="atmInfoMaintainJoins">
+		<!-- 追加关联表 修改人:sg 修改日期:2017-11-09 begin -->
+		LEFT JOIN sys_office o5 ON o5.id = a.toffice_id
+		<!-- end -->
+	</sql>
+
+	<select id="get" resultType="AtmInfoMaintain">
+		SELECT
+		<include refid="atmInfoMaintainColumns" />
+		FROM atm_info a
+		<include refid="atmInfoMaintainJoins" />
+		WHERE a.id = #{id}
+	</select>
+	
+	<!-- 根据品牌编号(或者型号编号)获取品牌名称(或者型号名称)  author:wxz-->
+	<select id="getAtmName" resultType="AtmInfoMaintain">
+		SELECT 
+			a.atm_brands_name AS "atmBrandsName",
+			a.atm_type_name AS "atmTypeName"
+		FROM atm_brands_info a
+		<where>
+		    <choose>
+			   <when test="delFlag !=null and delFlag != ''">
+				    a.del_flag = #{delFlag}
+			   </when>
+			   <otherwise>
+				    a.del_flag = #{DEL_FLAG_NORMAL}
+			   </otherwise>
+		    </choose>
+		    
+		    <if test="atmBrandsNo != null and atmBrandsNo != ''">
+				and a.atm_brands_no = #{atmBrandsNo}
+			</if>
+			<if test="atmTypeNo != null and atmTypeNo != ''">
+				and a.atm_type_no = #{atmTypeNo}
+			</if>
+		</where>
+	</select>
+
+	<select id="findList" resultType="AtmInfoMaintain">
+		SELECT
+		<include refid="atmInfoMaintainColumns" />
+		FROM atm_info a
+		<include refid="atmInfoMaintainJoins" />
+		<where>
+		    <choose>
+			   <when test="delFlag !=null and delFlag != ''">
+				    a.del_flag = #{delFlag}
+			   </when>
+			   <otherwise>
+				    a.del_flag = #{DEL_FLAG_NORMAL}
+			   </otherwise>
+		    </choose>
+		    
+		    <if test="atmBrandsNo != null and atmBrandsNo != ''">
+				and a.atm_brands_no = #{atmBrandsNo}
+			</if>
+			<if test="atmTypeNo != null and atmTypeNo != ''">
+				and a.atm_type_no = #{atmTypeNo}
+			</if>
+			<if test="atmId != null and atmId != ''">
+				<if test="dbName == 'oracle'">and a.atm_id like '%' || #{atmId} || '%'</if>
+				<if test="dbName == 'mysql'">and a.atm_id LIKE CONCAT('%', #{atmId}, '%') </if>
+			</if>
+			<if test="tellerId != null and tellerId != ''">
+				and a.teller_id = #{tellerId}
+			</if>
+			<!-- 追加根据rfid和归属机构查询  修改人：sg 修改日期：2017-11-07 begin -->
+			<if test="rfid != null and rfid != ''">
+				<if test="dbName == 'oracle'">and a.rfid like '%' || #{rfid} || '%'</if>
+				<if test="dbName == 'mysql'">and a.rfid LIKE CONCAT('%', #{rfid}, '%') </if>
+			</if>
+			<if test="aofficeId !=null and aofficeId != '' ">
+				and (a.aoffice_id = #{aofficeId}
+				or o5.parent_ids like 
+				<!-- '%'|| #{office.id} ||'%' -->
+				<if test="dbName == 'oracle'">'%'|| #{aofficeId} ||'%'</if>
+				<if test="dbName == 'mysql'"> CONCAT('%', #{aofficeId}, '%')</if>
+				)
+			</if>
+			
+			<if test="tofficeId !=null and tofficeId != '' ">
+				and (a.toffice_id = #{tofficeId}
+				or o5.parent_ids like 
+				<!-- '%'|| #{office.id} ||'%' -->
+				<if test="dbName == 'oracle'">'%'|| #{tofficeId} ||'%'</if>
+				<if test="dbName == 'mysql'"> CONCAT('%', #{tofficeId}, '%')</if>
+				)
+			</if>
+			<!-- end -->
+			<!-- 数据范围过滤    修改人：wxz 2017-11-22 begin-->
+			${sqlMap.dsf}
+			<!-- end -->
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="findAllList" resultType="AtmInfoMaintain">
+		SELECT
+		<include refid="atmInfoMaintainColumns" />
+		FROM atm_info a
+		<include refid="atmInfoMaintainJoins" />
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findDistinctAtmTypeList" resultType="AtmInfoMaintain">
+		SELECT
+		    a.atm_type_no AS "atmTypeNo",
+		    a.atm_type_name AS "atmTypeName",
+		    a.atm_brands_no AS "atmBrandsNo",
+		    a.atm_brands_name AS "atmBrandsName"
+		FROM atm_info a
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>
+	</select>
+	
+	<!-- 根据atmId(ATM机编号),获取ATM机信息	author:wxz -->
+	<select id="findByAtmId" resultType="AtmInfoMaintain">
+		SELECT
+		<include refid="atmInfoMaintainColumns" />
+		FROM
+			atm_info a
+			<include refid="atmInfoMaintainJoins" />
+		<where>
+			<choose>
+			   <when test="delFlag !=null and delFlag != ''">
+				    a.del_flag = #{delFlag}
+			   </when>
+			   <otherwise>
+				    a.del_flag = #{DEL_FLAG_NORMAL}
+			   </otherwise>
+		    </choose>
+		    <if test="atmId != null and atmId != ''">
+		    	and a.atm_id = #{atmId}
+		    </if>
+		    <if test="rfid != null and rfid != ''">
+		    	and a.rfid = #{rfid}
+		    </if>
+		    <!-- 数据范围过滤    修改人：xl 2017-12-14 begin-->
+			${sqlMap.dsf}
+			<!-- end -->
+		</where>
+	</select>
+
+	<insert id="insert">
+		INSERT INTO atm_info(
+		id,
+		atm_id,
+		teller_id,
+		vinoffice_id,
+		vinoffice_name,
+		aoffice_id,
+		aoffice_name,
+		toffice_id,
+		toffice_name,
+		atm_brands_no,
+		atm_brands_name,
+		atm_type_no,
+		atm_type_name,
+		rfid,
+		create_by,
+		create_name,
+		create_date,
+		update_by,
+		update_name,
+		update_date,
+		del_flag,
+		longitude,
+		latitude,
+		address
+		) VALUES (
+		#{id},
+		#{atmId},
+		#{tellerId},
+		#{vinofficeId},
+		#{vinofficeName},
+		#{aofficeId},
+		#{aofficeName},
+		#{tofficeId},
+		#{tofficeName},
+		#{atmBrandsNo},
+		#{atmBrandsName},
+		#{atmTypeNo},
+		#{atmTypeName},
+		#{rfid},
+		#{createBy.id},
+		#{createName},
+		#{createDate},
+		#{updateBy.id},
+		#{updateName},
+		#{updateDate},
+		#{delFlag},
+		#{longitude},
+		#{latitude},
+		#{address}
+		)
+	</insert>
+
+	<update id="update">
+		UPDATE atm_info SET
+		id = #{id},
+		atm_id = #{atmId},
+		teller_id = #{tellerId},
+		vinoffice_id = #{vinofficeId},
+		vinoffice_name = #{vinofficeName},
+		aoffice_id = #{aofficeId},
+		aoffice_name = #{aofficeName},
+		toffice_id = #{tofficeId},
+		toffice_name = #{tofficeName},
+		atm_brands_no = #{atmBrandsNo},
+		atm_brands_name = #{atmBrandsName},
+		atm_type_no = #{atmTypeNo},
+		atm_type_name = #{atmTypeName},
+		rfid = #{rfid},
+		create_name = #{createName},
+		update_by = #{updateBy.id},
+		update_name = #{updateName},
+		update_date = #{updateDate},
+		longitude=#{longitude},
+		latitude=#{latitude},
+		address=#{address}
+		<if test="delFlag !=null and delFlag != ''">
+			,del_flag = #{delFlag}
+		</if>
+		WHERE id = #{id}
+	</update>
+
+	<update id="delete">
+		UPDATE atm_info SET
+		del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 根据ATM机编号和柜员编号，获取ATM型号信息列表  author:xl-->
+	<select id="findByAtmNoAndTellerId" resultType="AtmInfoMaintain">
+		SELECT
+			<include refid="atmInfoMaintainColumns" />
+		FROM atm_info a
+			<include refid="atmInfoMaintainJoins" />
+		<where>
+			<if test="atmId != null and atmId != ''">
+				AND a.atm_id=#{atmId}
+			</if>
+			<if test="tellerId != null and tellerId != ''">
+				AND a.teller_id = #{tellerId}
+			</if>
+		</where>
+	</select>
+	
+	<!-- 品牌型号删除判断(查询要删除的品牌型号是否已创建ATM机) author:wxz 2018-01-04 -->
+	<select id="findByNo" resultType="AtmInfoMaintain">
+		SELECT
+			<include refid="atmInfoMaintainColumns" />
+		  FROM ATM_INFO A
+		  LEFT JOIN ATM_BRANDS_INFO B
+		    ON A.ATM_BRANDS_NO = B.ATM_BRANDS_NO
+		<where>   
+			B.DEL_FLAG = #{DEL_FLAG_NORMAL}
+			<if test="atmBrandsNo != null and atmBrandsNo != ''">
+				AND A.ATM_BRANDS_NO = #{atmBrandsNo}
+			</if>
+			<if test="atmTypeNo != null and atmTypeNo != ''">
+				AND A.ATM_TYPE_NO = #{atmTypeNo}
+			</if>
+		</where>
+	</select>
+
+</mapper>

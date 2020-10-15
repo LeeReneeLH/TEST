@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.clear.v03.dao.ClAtmMainDao">
+
+	<sql id="clAtmColumns">
+		a.out_no AS "outNo",
+		a.cust_no AS "custNo",
+		a.cust_name AS "custName",
+		a.input_amount AS "inputAmount",
+		a.check_amount AS "checkAmount",
+		a.diff_amount AS "diffAmount",
+		a.box_count AS "boxCount",
+		a.cash_plan_id AS "cashPlanId",
+		a.remarks AS "remarks",
+		a.reg_date AS "regDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.update_cnt AS "updateCnt",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.del_flag AS "delFlag",
+		a.update_name AS "updateBy.name",
+		a.create_name AS "createBy.name"
+	</sql>
+
+	
+	<sql id="clAtmJoins">
+		LEFT JOIN STO_ESCORT_INFO f ON f.USER_ID = a.create_by AND f.del_flag = #{DEL_FLAG_NORMAL}
+		left join sys_office o1 on a.CUST_NO=o1.id
+	</sql>
+    
+	<select id="get" resultType="ClAtmMain">
+		SELECT 
+			<include refid="clAtmColumns"/>
+		FROM cl_atm_main a
+		WHERE a.out_no = #{id}
+	</select>
+	
+	
+	<select id="findList" resultType="ClAtmMain">
+		SELECT 
+			<include refid="clAtmColumns"/>
+		FROM cl_atm_main a
+		<include refid="clAtmJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+
+			<if test="searchCustNo != null and searchCustNo != ''">
+				AND a.cust_no = #{searchCustNo}
+			</if>
+	        <!-- 主表：登记时间(开始) -->
+	        <if test="searchRegDateStart != null and searchRegDateStart != ''">
+				<if test="dbName == 'oracle'">AND TO_CHAR(A.reg_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchRegDateStart}'</if>
+				<if test="dbName == 'mysql'">AND DATE_FORMAT(A.reg_date, '%Y-%m-%d %H:%i:%S') >= '${searchRegDateStart}'</if>
+	        </if>
+	        <!-- 主表：登记时间(结束) -->
+	        <if test="searchRegDateEnd != null and searchRegDateEnd != ''">
+				<if test="dbName == 'oracle'">AND '${searchRegDateEnd}' >= TO_CHAR(A.reg_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName == 'mysql'">AND '${searchRegDateEnd}' >= DATE_FORMAT(A.reg_date, '%Y-%m-%d %H:%i:%S')</if>
+	        </if>
+			<!-- 数据范围过滤 -->
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.out_no DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	
+	<insert id="insert">
+		INSERT INTO cl_atm_main(
+		   out_no,
+		   cust_no,
+		   cust_name,
+		   status,
+		   input_amount,
+		   check_amount,
+		   diff_amount,
+		   box_count,
+		   cash_plan_id,
+		   reg_date,
+		   create_by,
+		   create_name,
+		   create_date,
+		   update_by,
+		   update_name,
+		   update_date,
+		   update_cnt,
+		   del_flag,
+		   remarks
+		) VALUES (
+			#{outNo},
+			#{custNo},
+			#{custName},
+			#{status},
+			#{inputAmount},
+			#{checkAmount},
+			#{diffAmount},
+			#{boxCount},
+			#{cashPlanId},
+			#{regDate},
+			#{createBy.id},
+			#{createBy.name},
+			#{createDate},
+			#{updateBy.id},
+			#{updateBy.name},
+			#{updateDate},
+			0,
+			#{delFlag},
+			#{remarks}
+		)
+	</insert>
+
+	<update id="update">
+		UPDATE cl_atm_main SET 
+			cust_no = #{custNo}, 
+			cust_name = #{custName}, 
+			input_amount = #{inputAmount}, 
+			check_amount = #{checkAmount}, 
+			diff_amount = #{diffAmount}, 
+			box_count = #{boxCount}, 
+			cash_plan_id = #{cashPlanId}, 
+			remarks = #{remarks},
+			update_by = #{updateBy.id}, 
+			update_date = #{updateDate}, 
+			update_name = #{updateBy.name},
+			update_cnt = update_cnt + 1
+		WHERE out_no = #{outNo}
+	</update>
+
+	
+	<!-- 删除款箱拆箱表数据(逻辑删除) -->
+	<update id="logicDelete">
+		UPDATE cl_atm_main SET
+		del_flag = #{DEL_FLAG_DELETE},
+		update_by = #{updateBy.id}, 
+		update_date = #{updateDate}, 
+		update_name = #{updateBy.name},
+		update_cnt = update_cnt + 1
+		WHERE out_no = #{outNo}
+		  and del_flag = #{DEL_FLAG_NORMAL}
+	</update>
+	
+	
+	
+	
+	
+</mapper>

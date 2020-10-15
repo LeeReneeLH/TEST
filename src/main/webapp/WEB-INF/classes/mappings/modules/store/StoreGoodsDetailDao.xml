@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoreGoodsDetailDao">
+    
+	<resultMap type="com.coffer.businesses.modules.store.v01.entity.StoreGoodsDetail" id="StoreGoodsDetailResult">
+		<id column="ID" property="id" />
+		<result column="STORE_GOODS_ID" property="storeGoodsId" />
+		<result column="GOODS_ID" property="goodsId" />
+		<result column="GOODS_NUM" property="goodsNum" />
+		<result column="AMOUNT" property="amount" />
+	</resultMap>
+
+	<sql id="Base_Column_List">
+		ID,
+		STORE_GOODS_ID,
+		GOODS_ID,
+		GOODS_NUM,
+		AMOUNT
+	</sql>
+	
+	<select id="getByStoreGoodsId" resultMap="StoreGoodsDetailResult">
+		SELECT 
+			<include refid="Base_Column_List"></include>
+		FROM STORE_GOODS_DETAIL_INFO
+		WHERE STORE_GOODS_ID=#{storeGoodsId}
+	</select>
+	
+	<insert id="insert" >
+		INSERT INTO STORE_GOODS_DETAIL_INFO(
+			ID,
+			STORE_GOODS_ID,
+			GOODS_ID,
+			GOODS_NUM,
+			AMOUNT
+		) VALUES (
+			#{id},
+			#{storeGoodsId},
+			#{goodsId},
+			#{goodsNum},
+			#{amount}
+		)
+	</insert>
+	
+	<update id="deleteByStoreId">
+		DELETE FROM STORE_GOODS_DETAIL_INFO
+		WHERE STORE_GOODS_ID=#{storeGoodsId}
+	</update>
+
+</mapper>

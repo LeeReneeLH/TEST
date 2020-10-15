@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.report.v01.dao.ManageReportDao">
+	<!-- 上门收钞情况  author：WQJ 2020-1-6 -->
+	<select id="collectSituation" resultType="com.coffer.businesses.modules.report.v01.entity.ManageReport">
+	SELECT 
+    c.`NAME` AS doorName,
+    sum( CASE MONTH ( a.UPDATE_DATE ) WHEN '1' THEN 1 ELSE 0 END ) AS January,
+    sum( CASE MONTH ( a.UPDATE_DATE ) WHEN '2' THEN 1 ELSE 0 END ) AS February,
+    sum( CASE MONTH ( a.UPDATE_DATE ) WHEN '3' THEN 1 ELSE 0 END ) AS March,
+    sum( CASE MONTH ( a.UPDATE_DATE ) WHEN '4' THEN 1 ELSE 0 END ) AS April,
+    sum( CASE MONTH ( a.UPDATE_DATE ) WHEN '5' THEN 1 ELSE 0 END ) AS May,
+    sum( CASE MONTH ( a.UPDATE_DATE ) WHEN '6' THEN 1 ELSE 0 END ) AS June,
+    sum( CASE MONTH ( a.UPDATE_DATE ) WHEN '7' THEN 1 ELSE 0 END ) AS July,
+    sum( CASE MONTH ( a.UPDATE_DATE ) WHEN '8' THEN 1 ELSE 0 END ) AS August,
+    sum( CASE MONTH ( a.UPDATE_DATE ) WHEN '9' THEN 1 ELSE 0 END ) AS Septemper,
+    sum( CASE MONTH ( a.UPDATE_DATE ) WHEN '10' THEN 1 ELSE 0 END ) AS October,
+    sum( CASE MONTH ( a.UPDATE_DATE ) WHEN '11' THEN 1 ELSE 0 END ) AS November,
+    sum( CASE MONTH ( a.UPDATE_DATE ) WHEN '12' THEN 1 ELSE 0 END ) AS December
+     FROM
+	clear_plan_info a
+    LEFT JOIN door_order_info b ON a.PLAN_ID=b.ORDER_ID
+    LEFT JOIN sys_office c ON b.DOOR_ID=c.ID
+    LEFT JOIN sys_office o2 ON o2.id = c.ID and o2.del_flag = ${delFlag.valid}
+	<where>
+	a.DEL_FLAG='0' AND
+	a.STATUS = '1'
+	<!-- 创建时间(开始) -->
+	<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.UPDATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.UPDATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	</if>
+	<!-- 创建时间(结束) -->
+	<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.UPDATE_DATE,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.UPDATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+	</if>	
+	<!-- 机构ID -->
+	<!-- <if test="doorId != null and doorId != ''">
+			AND c.ID= #{doorId}
+	</if> -->
+	<if test="doorId != null and doorId != ''">
+			AND (b.DOOR_ID = #{doorId} or 
+				c.PARENT_IDS like  
+			<if test="dbName == 'oracle'">'%,' || #{doorId} || ',%'</if>
+			<if test="dbName == 'mysql'">CONCAT('%', #{doorId}, '%')</if>
+				)
+	</if>
+	<!-- 数据过滤 -->
+	${sqlMap.dsf}
+	</where>
+	GROUP BY c.ID 
+	<choose>
+		<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+			ORDER BY ${page.orderBy}
+		</when>
+		<otherwise>
+		</otherwise>
+	</choose>	
+	</select>
+	
+	<!-- 卡钞情况  author：WQJ 2020-1-6 -->
+	<select id="stuckCollectSituation" resultType="com.coffer.businesses.modules.report.v01.entity.ManageReport">
+	SELECT
+	d.`NAME` AS doorName,
+	sum(
+	CASE a.type_id
+	WHEN '03' THEN
+	1
+	ELSE
+	0
+	END
+	) AS stuckCount
+	FROM
+	door_order_amount a
+	LEFT JOIN door_order_detail b ON a.DETAIL_ID = b.ID
+	LEFT JOIN door_order_info c ON b.ORDER_ID = c.ORDER_ID
+	LEFT JOIN sys_office d ON c.DOOR_ID = d.id
+	LEFT JOIN sys_office o2 ON o2.id = d.ID and o2.del_flag = ${delFlag.valid}
+	<where>
+	a.TYPE_ID = '03'
+	<!-- 创建时间(开始) -->
+	<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(b.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(b.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	</if>
+	<!-- 创建时间(结束) -->
+	<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(b.CREATE_DATE,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(b.CREATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+	</if>	
+	<!-- 机构ID -->
+	<!-- <if test="doorId != null and doorId != ''">
+			AND d.ID= #{doorId}
+	</if> -->
+	<if test="doorId != null and doorId != ''">
+			AND (d.id = #{doorId} or 
+				d.PARENT_IDS like  
+			<if test="dbName == 'oracle'">'%,' || #{doorId} || ',%'</if>
+			<if test="dbName == 'mysql'">CONCAT('%', #{doorId}, '%')</if>
+				)
+	</if>
+	<!-- 数据过滤 -->
+	${sqlMap.dsf}
+	</where>
+	GROUP BY
+	d.ID
+	<choose>
+		<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+			ORDER BY ${page.orderBy}
+		</when>
+		<otherwise>
+		</otherwise>
+	</choose>
+	</select>
+	
+	
+	<!-- 差错情况  author：WQJ 2020-1-6 -->
+	<select id="errorCollectSituation" resultType="com.coffer.businesses.modules.report.v01.entity.ManageReport">
+     SELECT
+	tot.longMoney - tot.shortMoney AS totalMoney,
+	tot.*
+FROM
+	(
+		SELECT
+			SUM(
+				CASE a.ERROR_TYPE
+				WHEN '2' THEN
+					a.DIFF_AMOUNT
+				ELSE
+					0
+				END
+			) AS longMoney,
+			SUM(
+				CASE a.ERROR_TYPE
+				WHEN '3' THEN
+					a.DIFF_AMOUNT
+				ELSE
+					0
+				END
+			) AS shortMoney,
+			aa.saveCount,
+			o2.`NAME` AS doorName,
+			o2.Id AS doorId
+		FROM
+			door_error_info a
+		LEFT JOIN (
+			SELECT
+				COUNT(*) AS saveCount,
+				d.door_id AS doorId
+			FROM
+				door_order_info d
+			LEFT JOIN door_order_detail e ON d.order_id = e.order_id
+			GROUP BY
+				d.door_id
+		) aa ON aa.doorId = a.CUST_NO
+		LEFT JOIN sys_office o2 ON a.CUST_NO = o2.ID
+		<where>
+	a.`STATUS` = '0'
+	<!-- 创建时间(开始) -->
+	<if test="searchDateStart != null and searchDateStart != ''">
+			AND 
+			<if test="dbName == 'oracle'">TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+			<if test="dbName=='mysql'">DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	</if>
+	<!-- 创建时间(结束) -->
+	<if test="searchDateEnd != null and searchDateEnd != ''">
+			AND 
+			<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.CREATE_DATE,'yyyy-mm-dd hh24:mi:ss')</if>
+			<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+	</if>	
+	<!-- 机构ID -->
+	<!-- <if test="doorId != null and doorId != ''">
+			AND a.cust_no= #{doorId}
+	</if> -->
+	<if test="doorId != null and doorId != ''">
+			AND ( a.cust_no = #{doorId} or 
+				o2.PARENT_IDS like  
+			<if test="dbName == 'oracle'">'%,' || #{doorId} || ',%'</if>
+			<if test="dbName == 'mysql'">CONCAT('%', #{doorId}, '%')</if>
+				)
+	</if>
+	<!-- 数据过滤 -->
+	${sqlMap.dsf}
+	</where>
+	GROUP BY
+	a.CUST_NO
+	) AS tot
+	<choose>
+		<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+			ORDER BY ${page.orderBy}
+		</when>
+		<otherwise>
+		</otherwise>
+	</choose>
+	</select>
+	
+	<!-- 差错情况总计  author：ZXK 2020-5-27 -->
+	<select id="errorCollectSituationTotal" resultType="com.coffer.businesses.modules.report.v01.entity.ManageReport">
+	SELECT
+		<if test="dbName == 'oracle'">
+		    NVL(SUM(tot.longMoney),0) AS longMoney,
+			NVL(SUM(tot.shortMoney),0) AS shortMoney,
+			NVL(SUM(tot.saveCount),0) AS saveCount
+		</if>
+		<if test="dbName == 'mysql'">
+		    IFNULL(SUM(tot.longMoney),0) AS longMoney,
+			IFNULL(SUM(tot.shortMoney),0) AS shortMoney,
+			IFNULL(SUM(tot.saveCount),0) AS saveCount
+		</if>
+		
+		FROM
+			(
+				SELECT
+					SUM(
+						CASE a.ERROR_TYPE
+						WHEN '2' THEN
+							a.DIFF_AMOUNT
+						ELSE
+							0
+						END
+					) AS longMoney,
+					SUM(
+						CASE a.ERROR_TYPE
+						WHEN '3' THEN
+							a.DIFF_AMOUNT
+						ELSE
+							0
+						END
+					) AS shortMoney,
+					aa.saveCount,
+					o2.`NAME` AS doorName,
+					o2.Id AS doorId
+				FROM
+					door_error_info a
+				LEFT JOIN (
+					SELECT
+						COUNT(*) AS saveCount,
+						d.door_id AS doorId
+					FROM
+						door_order_info d
+					LEFT JOIN door_order_detail e ON d.order_id = e.order_id
+					GROUP BY
+						d.door_id
+				) aa ON aa.doorId = a.CUST_NO
+				LEFT JOIN sys_office o2 ON a.CUST_NO = o2.ID
+				<where>
+			a.`STATUS` = '0'
+			<!-- 创建时间(开始) -->
+		<if test="searchDateStart != null and searchDateStart != ''">
+				AND 
+				<if test="dbName == 'oracle'">TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+		</if>
+		<!-- 创建时间(结束) -->
+		<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND 
+				<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.CREATE_DATE,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+		</if>	
+		<!-- 机构ID -->
+		<!-- <if test="doorId != null and doorId != ''">
+				AND a.cust_no= #{doorId}
+		</if> -->
+		<if test="doorId != null and doorId != ''">
+				AND ( a.cust_no = #{doorId} or 
+					o2.PARENT_IDS like  
+				<if test="dbName == 'oracle'">'%,' || #{doorId} || ',%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{doorId}, '%')</if>
+					)
+		</if>
+	<!-- 数据过滤 -->
+	${sqlMap.dsf}
+	</where>
+	GROUP BY
+	a.CUST_NO
+	) AS tot
+	<choose>
+		<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+			ORDER BY ${page.orderBy}
+		</when>
+		<otherwise>
+		</otherwise>
+	</choose>
+	</select>
+</mapper>

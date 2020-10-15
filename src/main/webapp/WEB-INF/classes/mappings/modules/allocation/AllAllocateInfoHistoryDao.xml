@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.allocation.v01.dao.AllAllocateInfoHistoryDao">
+
+	<!-- 修改人：xp begin -->
+	<resultMap type="com.coffer.businesses.modules.allocation.v01.entity.AllAllocateInfo" id="WorkFlowInfo">
+		<id column="all_id"                property="allId" />
+	    <result column="status"           property="status"/>
+	    <result column="update_by"         property="updateBy.id"/>
+	    <result column="update_name"       property="updateName"/>
+	    <result column="update_date"       property="updateDate"/>
+	    <result column="store_handover_id"  property="storeHandoverId"/>
+	    <result column="point_handover_id"  property="pointHandoverId"/>
+	    <result column="cancel_reason"  property="cancelReason"/>
+	    <result column="cancel_user_name"  property="cancelUserName"/>
+	    <result column="cancel_date"  property="cancelDate"/>
+	    <!--  库房交接表信息 -->
+	    <association column="store_handover_id" property="storeHandover" javaType="com.coffer.businesses.modules.allocation.v01.entity.AllHandoverInfo" select="com.coffer.businesses.modules.allocation.v01.dao.AllHandoverInfoDao.get" fetchType="lazy" />
+	    <!--  网点交接表信息 -->
+	    <association column="point_handover_id" property="pointHandover" javaType="com.coffer.businesses.modules.allocation.v01.entity.AllHandoverInfo" select="com.coffer.businesses.modules.allocation.v01.dao.AllHandoverInfoDao.get" fetchType="lazy" />
+	    <!--  调缴详细信息 -->
+	    <collection column="all_id" property="allDetailList" javaType="ArrayList" select="com.coffer.businesses.modules.allocation.v01.dao.AllAllocateDetailDao.getByAllId" fetchType="lazy" />
+	    <!--  调拨物品表 -->
+ 	    <collection column="all_id" property="allAllocateItemList" javaType="ArrayList" select="com.coffer.businesses.modules.allocation.v01.dao.AllAllocateItemDao.findItemsList" fetchType="lazy" />
+	</resultMap>
+	<!-- end -->
+	
+	<!-- 修改人：xp begin -->
+	<sql id="allAllocateInfoColumns">
+	  		all_id,
+			status,
+			update_by,
+			update_name,
+			update_date,
+			scan_date,
+	  		store_handover_id,
+	  		point_handover_id,
+			cancel_reason,
+			cancel_user_name,
+			cancel_date,
+			car_no,
+			temp_flag
+	</sql>
+	<!-- end -->
+	
+	<select id="showOperateHistory" resultMap="WorkFlowInfo">
+		SELECT 
+            <include refid="allAllocateInfoColumns"/>
+		FROM ALL_ALLOCATE_INFO_HISTORY a
+		<where>
+			<if test="allId != null and allId != ''">
+				a.ALL_ID =#{allId}
+			</if>
+			<if test="status != null and status != ''">
+				and a.STATUS =#{status}
+			</if>
+		</where>
+		ORDER BY a.UPDATE_DATE DESC
+	</select>	
+	
+	<!-- 修改人：xp begin-->
+		<!-- 查询流水信息 -->
+    <select id= "findStatus" resultType = "AllAllocateInfo">
+    	SELECT 
+    		   DISTINCT STATUS,
+    		   ALL_ID,
+    		   UPDATE_DATE,
+    		   UPDATE_NAME,
+    		   TEMP_FLAG
+    	FROM ALL_ALLOCATE_INFO_HISTORY
+    	<where>
+			<if test="allId != null and allId != ''">
+			    ALL_ID = #{allId}
+			</if>
+			<if test="businessType != null and businessType != ''">
+    		    AND BUSINESS_TYPE = #{businessType}
+    		</if>
+    	</where>
+    	ORDER BY UPDATE_DATE
+    </select>
+    
+    <!-- 查询流水明细 -->
+    <select id= "findDetail" resultMap="WorkFlowInfo">
+    	SELECT 
+    		<include refid="allAllocateInfoColumns"/>
+    	FROM(
+    		SELECT 
+    		<if test="dbName == 'oracle'">
+    			ROWNUM AS RNUM,
+    		</if>
+    		<include refid="allAllocateInfoColumns"/>
+	    	FROM ALL_ALLOCATE_INFO_HISTORY 
+	    	<where>
+				<if test="allId != null and allId != ''">
+				    ALL_ID = #{allId}
+				</if>
+				<if test="businessType != null and businessType != ''">
+	    		    AND BUSINESS_TYPE = #{businessType}
+	    		</if>
+	    		<if test="status != null and status != ''">
+				    AND STATUS =#{status}
+				</if>
+			</where>
+				ORDER BY UPDATE_DATE DESC
+    		) B
+		<if test="dbName == 'oracle'">
+		WHERE B.RNUM = 1
+		</if>
+		<if test="dbName == 'mysql'">
+		LIMIT 1
+		</if>
+    </select>
+	<!-- end -->
+</mapper>

@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://java.sun.com/xml/ns/javaee" xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+	version="3.0">
+	
+	<display-name>coffer</display-name>
+
+	<!-- Context ConfigLocation -->
+	<context-param>
+		<param-name>contextConfigLocation</param-name>
+		<param-value>classpath*:/spring-context*.xml</param-value>
+	</context-param>
+	<listener>
+		<listener-class>com.coffer.core.modules.sys.listener.WebContextListener</listener-class>
+	</listener>
+	<listener>
+        <listener-class>org.springframework.web.context.request.RequestContextListener</listener-class>  
+	</listener>
+	<!-- 编码过滤 -->
+	<filter>
+		<filter-name>encodingFilter</filter-name>
+		<filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+		<async-supported>true</async-supported>
+		<init-param>
+			<param-name>encoding</param-name>
+			<param-value>UTF-8</param-value>
+		</init-param>
+		<init-param>
+			<param-name>forceEncoding</param-name>
+			<param-value>true</param-value>
+		</init-param>
+	</filter>
+	<filter-mapping>
+		<filter-name>encodingFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+	<!-- Apache Shiro -->
+	<filter>
+		<filter-name>shiroFilter</filter-name>
+		<filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+		<async-supported>true</async-supported>
+		<init-param>
+			<param-name>targetFilterLifecycle</param-name>
+			<param-value>true</param-value>
+		</init-param>
+	</filter>
+	<filter-mapping>
+		<filter-name>shiroFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+	<!-- PageCache, cache .html suffix.
+	<filter>
+		<filter-name>PageCacheFilter</filter-name>
+		<filter-class>com.coffer.core.common.filter.PageCachingFilter</filter-class>
+	</filter>
+	<filter-mapping>
+		<filter-name>PageCacheFilter</filter-name>
+		<url-pattern>/</url-pattern>
+	</filter-mapping>
+	<filter-mapping>
+		<filter-name>PageCacheFilter</filter-name>
+		<url-pattern>*.html</url-pattern>
+	</filter-mapping>-->
+
+	<!-- SiteMesh -->
+	<filter>
+		<filter-name>sitemeshFilter</filter-name>
+		<filter-class>com.opensymphony.sitemesh.webapp.SiteMeshFilter</filter-class>
+		<async-supported>true</async-supported>
+	</filter>
+	<filter-mapping>
+		<filter-name>sitemeshFilter</filter-name>
+		<url-pattern>/main/*</url-pattern>
+	</filter-mapping>
+	<filter-mapping>
+		<filter-name>sitemeshFilter</filter-name>
+		<url-pattern>/f/*</url-pattern>
+	</filter-mapping>
+
+	<!-- 阿里云健康检测URL -->
+	<servlet>
+		<servlet-name>healthCheckServlet</servlet-name>
+		<servlet-class>com.coffer.businesses.modules.doorOrder.v01.servlet.HealthCheckServlet</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>healthCheckServlet</servlet-name>
+		<url-pattern>/main/AliOperation/healthCheck</url-pattern>
+	</servlet-mapping>
+
+	<!-- MVC Servlet -->
+	<servlet>
+		<servlet-name>springServlet</servlet-name>
+		<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+		<init-param>
+			<param-name>contextConfigLocation</param-name>
+			<param-value>classpath*:/spring-mvc*.xml</param-value>
+		</init-param>
+		<load-on-startup>1</load-on-startup>
+		<async-supported>true</async-supported>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>springServlet</servlet-name>
+		<url-pattern>/</url-pattern>
+	</servlet-mapping>
+
+	<!-- DruidWebStatFilter -->
+	
+	<filter>
+		<filter-name>DruidWebStatFilter</filter-name>
+		<filter-class>com.alibaba.druid.support.http.WebStatFilter</filter-class>
+		<async-supported>true</async-supported>
+		<init-param>
+			<param-name>exclusions</param-name>
+			<param-value>*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*</param-value>
+		</init-param>
+	</filter>
+	<filter-mapping>
+		<filter-name>DruidWebStatFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+	 
+	<!-- DruidStatView -->
+	<servlet>
+		<servlet-name>DruidStatView</servlet-name>
+		<servlet-class>com.alibaba.druid.support.http.StatViewServlet</servlet-class>
+		<init-param>
+			<param-name>allow</param-name>
+			<param-value>127.0.0.1</param-value>
+		</init-param>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>DruidStatView</servlet-name>
+		<url-pattern>/druid/*</url-pattern>
+	</servlet-mapping>
+	
+	<!-- Validate code -->
+	<servlet>
+		<servlet-name>ValidateCodeServlet</servlet-name>
+		<servlet-class>com.coffer.core.common.servlet.ValidateCodeServlet</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>ValidateCodeServlet</servlet-name>
+		<url-pattern>/servlet/validateCodeServlet</url-pattern>
+	</servlet-mapping>
+	<!-- Hessian（servlet-name保持与spring-context-hessian.xml中一致） -->
+	<!-- 硬件的Hessian服务 -->
+	<servlet>    
+    <servlet-name>hessianService</servlet-name>    
+    <servlet-class>org.springframework.web.context.support.HttpRequestHandlerServlet</servlet-class>    
+    </servlet>    
+    <servlet-mapping>    
+        <servlet-name>hessianService</servlet-name>    
+        <url-pattern>/hardwareService</url-pattern>    
+    </servlet-mapping>
+	<!-- 信息化提供给自动化的Hessian服务 -->
+	<!-- 方式一：使用 DispatcherServlet -->
+	<servlet>    
+	    <servlet-name>InfoToAutoHessianServerServlet</servlet-name>
+	    <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+	    <init-param>
+			<param-name>contextConfigLocation</param-name>
+			<param-value>classpath*:/spring-context-hessian-server*.xml</param-value>
+		</init-param>
+    </servlet>    
+    <servlet-mapping>    
+        <servlet-name>InfoToAutoHessianServerServlet</servlet-name>    
+        <url-pattern>/infoToAutoHessianServer</url-pattern>    
+    </servlet-mapping>
+     <!-- 初始化加载任务调度器 -->
+    <servlet>
+		<servlet-name>server-start</servlet-name>
+		<servlet-class>com.coffer.core.common.servlet.ServerStartServlet</servlet-class>
+		<load-on-startup>1</load-on-startup>
+	</servlet> 
+    <!-- 方式二 -->
+	<!-- <servlet>    
+	    <servlet-name>InfoToAutoHessianServerServlet</servlet-name>
+	    <servlet-class>org.springframework.web.context.support.HttpRequestHandlerServlet</servlet-class>
+    </servlet>    
+    <servlet-mapping>    
+        <servlet-name>InfoToAutoHessianServerServlet</servlet-name>    
+        <url-pattern>/infoToAutoHessianServer</url-pattern>    
+    </servlet-mapping> -->
+    
+	<!-- [INSERT FRAGMENT HERE] -->
+
+	<!-- Session configure, to "application.properties" file "session.sessionTimeout" parameter.
+	<session-config>
+		<session-timeout>30</session-timeout>
+	</session-config>-->
+
+	<!-- Error page -->
+	<!-- <error-page>
+		<exception-type>java.lang.Throwable</exception-type>
+		<location>/WEB-INF/views/error/500.jsp</location>
+	</error-page> -->
+	<error-page>
+		<error-code>500</error-code>
+		<location>/WEB-INF/views/error/500.jsp</location>
+	</error-page>
+	<error-page>
+		<error-code>404</error-code>
+		<location>/WEB-INF/views/error/404.jsp</location>
+	</error-page>
+
+</web-app>

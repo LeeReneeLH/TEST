@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.coffer.businesses.modules.quartz.dao.QuartzDao" >
+  <resultMap id="BaseResultMap" type="com.coffer.businesses.modules.quartz.entity.Quartz" >
+    <result column="task_name" property="taskName" jdbcType="VARCHAR" />
+    <result column="trigger_name" property="triggerName" jdbcType="VARCHAR" />
+    <result column="trigger_group" property="triggerGroup" jdbcType="VARCHAR" />
+    <result column="job_name" property="jobName" jdbcType="VARCHAR" />
+    <result column="job_group" property="jobGroup" jdbcType="VARCHAR" />
+    <result column="cron" property="cron" jdbcType="VARCHAR" />
+    <result column="cron_describe" property="cronDescribe" jdbcType="VARCHAR" />
+    <result column="execution_class" property="executionClass" jdbcType="VARCHAR" />
+    <result column="status" property="status" jdbcType="INTEGER" />
+    <result column="del_flag" property="delFlag" jdbcType="INTEGER" />
+    <result column="describe" property="describe" jdbcType="VARCHAR" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="office_id" property="officeId" jdbcType="VARCHAR" />
+     <result column="center_office_id" property="centerOfficeId" jdbcType="VARCHAR" />
+  </resultMap>
+  <sql id="Base_Column_List" >
+    id, task_name, trigger_name, trigger_group, job_name, job_group, cron,cron_describe,execution_class, 
+    `status`, del_flag, `describe`, create_time,office_id,center_office_id
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.String" >
+    select 
+    <include refid="Base_Column_List" />
+    from quartz WHERE  del_flag = 0
+    and id = #{id,jdbcType=VARCHAR}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.String" >
+    delete from quartz
+    where id = #{id,jdbcType=VARCHAR}
+  </delete>
+  <insert id="insert" parameterType="com.coffer.businesses.modules.quartz.entity.Quartz" >
+    insert into quartz (id, task_name, trigger_name, 
+      trigger_group, job_name, job_group, 
+      cron,cron_describe,execution_class, `status`, 
+      del_flag, `describe`, create_time,office_id,center_office_id
+      )
+    values (      <if test="id != null" >#{id,jdbcType=VARCHAR},</if>
+      <if test="id == null" >UUID(),</if> #{taskName,jdbcType=VARCHAR}, #{triggerName,jdbcType=VARCHAR}, 
+      #{triggerGroup,jdbcType=VARCHAR}, #{jobName,jdbcType=VARCHAR}, #{jobGroup,jdbcType=VARCHAR}, 
+      #{cron,jdbcType=VARCHAR},#{cronDescribe,jdbcType=VARCHAR}, #{executionClass,jdbcType=VARCHAR}, #{status,jdbcType=INTEGER}, 
+      #{delFlag,jdbcType=INTEGER}, #{describe,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP},#{officeId,jdbcType=VARCHAR},
+      #{centerOfficeId,jdbcType=VARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.coffer.businesses.modules.quartz.entity.Quartz" >
+    insert into quartz
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        id,
+      </if>
+      <if test="taskName != null" >
+        task_name,
+      </if>
+      <if test="triggerName != null" >
+        trigger_name,
+      </if>
+      <if test="triggerGroup != null" >
+        trigger_group,
+      </if>
+      <if test="jobName != null" >
+        job_name,
+      </if>
+      <if test="jobGroup != null" >
+        job_group,
+      </if>
+      <if test="cron != null" >
+        cron,
+      </if>
+      <if test="cronDescribe != null" >
+        cron_describe,
+      </if>
+      <if test="executionClass != null" >
+        execution_class,
+      </if>
+      <if test="status != null" >
+        `status`,
+      </if>
+      <if test="delFlag != null" >
+        del_flag,
+      </if>
+      <if test="describe != null" >
+        `describe`,
+      </if>
+      <if test="createTime != null" >
+        create_time,
+      </if>
+      <if test="officeId != null" >
+        office_id
+      </if>
+       <if test="centerOfficeId != null" >
+        center_office_id
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        #{id,jdbcType=VARCHAR},
+      </if>
+      <if test="taskName != null" >
+        #{taskName,jdbcType=VARCHAR},
+      </if>
+      <if test="triggerName != null" >
+        #{triggerName,jdbcType=VARCHAR},
+      </if>
+      <if test="triggerGroup != null" >
+        #{triggerGroup,jdbcType=VARCHAR},
+      </if>
+      <if test="jobName != null" >
+        #{jobName,jdbcType=VARCHAR},
+      </if>
+      <if test="jobGroup != null" >
+        #{jobGroup,jdbcType=VARCHAR},
+      </if>
+      <if test="cron != null" >
+        #{cron,jdbcType=VARCHAR},
+      </if>
+      <if test="cronDescribe != null" >
+        #{cronDescribe,jdbcType=VARCHAR},
+      </if>
+      <if test="executionClass != null" >
+        #{executionClass,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null" >
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="delFlag != null" >
+        #{delFlag,jdbcType=INTEGER},
+      </if>
+      <if test="describe != null" >
+        #{describe,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null" >
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="officeId != null" >
+        #{officeId,jdbcType=VARCHAR},
+      </if>
+      <if test="centerOfficeId != null" >
+         #{center_office_id,jdbcType=VARCHAR}
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.coffer.businesses.modules.quartz.entity.Quartz" >
+    update quartz
+    <set >
+      <if test="taskName != null" >
+        task_name = #{taskName,jdbcType=VARCHAR},
+      </if>
+      <if test="triggerName != null" >
+        trigger_name = #{triggerName,jdbcType=VARCHAR},
+      </if>
+      <if test="triggerGroup != null" >
+        trigger_group = #{triggerGroup,jdbcType=VARCHAR},
+      </if>
+      <if test="jobName != null" >
+        job_name = #{jobName,jdbcType=VARCHAR},
+      </if>
+      <if test="jobGroup != null" >
+        job_group = #{jobGroup,jdbcType=VARCHAR},
+      </if>
+      <if test="cron != null" >
+        cron = #{cron,jdbcType=VARCHAR},
+      </if>
+      <if test="cronDescribe != null" >
+        cron_describe = #{cronDescribe,jdbcType=VARCHAR},
+      </if>
+      <if test="executionClass != null" >
+        execution_class = #{executionClass,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null" >
+        `status` = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="delFlag != null" >
+        del_flag = #{delFlag,jdbcType=INTEGER},
+      </if>
+      <if test="describe != null" >
+        `describe` = #{describe,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null" >
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="officeId != null" >
+        office_id = #{officeId,jdbcType=VARCHAR},
+      </if>
+      <if test="centerOfficeId != null" >
+        center_office_id = #{centerOfficeId,jdbcType=VARCHAR}
+      </if>
+    </set>
+    where id = #{id,jdbcType=VARCHAR}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.coffer.businesses.modules.quartz.entity.Quartz" >
+    update quartz
+    set task_name = #{taskName,jdbcType=VARCHAR},
+      trigger_name = #{triggerName,jdbcType=VARCHAR},
+      trigger_group = #{triggerGroup,jdbcType=VARCHAR},
+      job_name = #{jobName,jdbcType=VARCHAR},
+      job_group = #{jobGroup,jdbcType=VARCHAR},
+      cron = #{cron,jdbcType=VARCHAR},
+      cron_describe = #{cronDescribe,jdbcType=VARCHAR},
+      execution_class = #{executionClass,jdbcType=VARCHAR},
+      `status` = #{status,jdbcType=INTEGER},
+      del_flag = #{delFlag,jdbcType=INTEGER},
+      `describe` = #{describe,jdbcType=VARCHAR},
+      create_time = #{createTime,jdbcType=TIMESTAMP},
+      office_id = #{officeId,jdbcType=VARCHAR},
+      center_office_id = #{centerOfficeId,jdbcType=VARCHAR}      
+    where id = #{id,jdbcType=VARCHAR}
+  </update>
+ <select id="selectAll" resultMap="BaseResultMap">
+ SELECT 
+ <include refid="Base_Column_List" />
+  FROM quartz WHERE  del_flag = 0
+    and `status` = 1
+  </select>
+  
+ <select id="findAllList" resultMap="BaseResultMap">
+ SELECT 
+ <include refid="Base_Column_List" />
+  FROM quartz WHERE  del_flag = 0
+  ORDER BY create_time DESC
+  </select>
+  <select id="selectForSearch" resultMap="BaseResultMap">
+ SELECT 
+ <include refid="Base_Column_List" />
+  FROM quartz WHERE  del_flag = 0
+  <if test="taskName != null and taskName !=''">
+  and task_name like CONCAT('%',#{taskName},'%' )
+  </if>
+  <if test="officeId != null and officeId !=''">
+  and ( office_id like CONCAT('%',#{officeId},'%' ) or center_office_id like CONCAT('%',#{officeId},'%'))
+  </if>
+  <if test="status != null and status !=''">
+  and status = #{status}
+  </if>
+  ORDER BY create_time DESC
+  </select>
+  <select id="getJob" resultMap="BaseResultMap">
+ SELECT 
+ <include refid="Base_Column_List" />
+  FROM quartz WHERE  del_flag = 0
+  and job_name = #{jobName,jdbcType=VARCHAR}
+  
+  </select>
+    <select id="findByTaskName" resultMap="BaseResultMap">
+ SELECT 
+ <include refid="Base_Column_List" />
+  FROM quartz WHERE  del_flag = 0
+  and task_name = #{taskName,jdbcType=VARCHAR}
+  
+  </select>
+  
+   <select id="checkName" resultType="java.lang.Integer" parameterType="java.lang.String" >
+    select 
+    	count(id)
+    from quartz
+    where del_flag = 0
+    <if test="flag==0">
+    	and task_name = #{name,jdbcType=VARCHAR}
+    </if>
+    <if test="flag==1">
+   		 and trigger_name = #{name,jdbcType=VARCHAR}
+    </if>
+   	<if test="id != null" >
+    	and id &lt;&gt; #{id,jdbcType=VARCHAR}
+    </if>
+    limit 0,1
+  </select>
+  <update id="pauseJob" parameterType="com.coffer.businesses.modules.quartz.entity.Quartz">
+  UPDATE quartz SET `status` = "0" WHERE job_name = #{jobName,jdbcType=VARCHAR}
+  </update>
+  <update id="resumeJob" parameterType="com.coffer.businesses.modules.quartz.entity.Quartz">
+  UPDATE quartz SET `status` = "1" WHERE job_name = #{jobName,jdbcType=VARCHAR}
+  </update>
+   <update id="removeJob" parameterType="java.lang.String">
+  UPDATE quartz SET del_flag = "1" WHERE job_name = #{jobName,jdbcType=VARCHAR}
+  </update>
+  
+ <select id="selectByClass" resultMap="BaseResultMap">
+ SELECT 
+ <include refid="Base_Column_List" />
+  FROM quartz WHERE  del_flag = 0
+  and execution_class = #{executionClass,jdbcType=VARCHAR}
+  </select>
+</mapper>

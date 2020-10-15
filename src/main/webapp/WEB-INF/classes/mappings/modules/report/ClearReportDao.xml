@@ -1,0 +1,411 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.report.v01.dao.ClearReportDao">
+	<!-- 根据登录用户所属机构类型显示对应的出入库金额  author：xp 2017-11-16 -->
+	<select id="findInOrOutAmount" resultType="com.coffer.businesses.modules.report.v01.entity.ClearReportAmount">
+		SELECT
+			table6.dates,
+			table6.bus_type,
+			<if test="dbName == 'oracle'">
+				NVL(table7.amount, '0') AS amount
+			</if>
+			<if test="dbName == 'mysql'">
+				IFNULL(table7.amount, '0') AS amount
+			</if>
+		FROM
+			(
+				SELECT
+					table3.dates,
+					table4.bus_type
+				FROM
+					(
+						SELECT
+							table1.dates
+						FROM
+							(
+								(
+									SELECT DISTINCT
+										<if test="dbName == 'oracle'">
+											TO_CHAR(update_date, '${filterCondition}') AS dates
+										</if>
+										<if test="dbName == 'mysql'">
+											DATE_FORMAT(update_date, '${filterCondition}') AS dates
+										</if>
+									FROM
+										cl_in_main
+									<where>
+										<!--  主表：查询时间(开始) -->
+										<if test="searchDateStart != null and searchDateStart != ''">
+											<if test="dbName == 'oracle'">
+												AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+											</if>
+											<if test="dbName == 'mysql'">
+												AND DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+											</if>
+										</if>
+										<!-- 主表：查询时间(结束) -->
+										<if test="searchDateEnd != null and searchDateEnd != ''">
+											<if test="dbName == 'oracle'">
+												AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+											</if>
+											<if test="dbName == 'mysql'">
+												AND '${searchDateEnd}' >= DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s')
+											</if>
+										</if>
+										<!-- 主表：查询机构 -->
+										<if test="rOfficeList != null and rOfficeList.size != 0">
+											AND office_id IN
+												<foreach collection="rOfficeList" item="rOfficeTag" separator="," open="(" close=")" index="">
+				 	          						'${rOfficeTag.id}'
+				          						</foreach>
+										</if>
+										<!-- 将OR修改成AND 修改人:sg 修改日期:2017-12-06 begin -->
+										<if test="officeList != null and officeList.size != 0">
+											AND CUST_NO IN
+												<foreach collection="officeList" item="officeTag" separator="," open="(" close=")" index="">
+				 	          						'${officeTag.id}'
+				          						</foreach>
+										</if>
+										<!-- end -->
+										<!-- 客户编号 -->
+										<if test="custNo != null and custNo != ''">
+											AND CUST_NO = '${custNo}'
+										</if>
+										AND DEL_FLAG = #{delFlag}
+										AND STATUS = #{status}
+									</where>
+								)
+								UNION
+									(
+										SELECT DISTINCT
+											<if test="dbName == 'oracle'">
+												TO_CHAR(update_date, '${filterCondition}') AS dates
+											</if>
+											<if test="dbName == 'mysql'">
+												DATE_FORMAT(update_date, '${filterCondition}') AS dates
+											</if>
+										FROM
+											cl_out_main
+										<where>
+											<!--  主表：查询时间(开始) -->
+											<if test="searchDateStart != null and searchDateStart != ''">
+												<if test="dbName == 'oracle'">
+													AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+												</if>
+												<if test="dbName == 'mysql'">
+													AND DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+												</if>
+											</if>
+											<!-- 主表：查询时间(结束) -->
+											<if test="searchDateEnd != null and searchDateEnd != ''">
+												<if test="dbName == 'oracle'">
+													AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+												</if>
+												<if test="dbName == 'mysql'">
+													AND '${searchDateEnd}' >= DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s')
+												</if>
+											</if>
+											<!-- 主表：查询机构 -->
+											<!-- 主表：查询机构 -->
+											<if test="rOfficeList != null and rOfficeList.size != 0">
+												AND office_id IN
+													<foreach collection="rOfficeList" item="rOfficeTag" separator="," open="(" close=")" index="">
+					 	          						'${rOfficeTag.id}'
+					          						</foreach>
+											</if>
+											<!-- 将OR修改成AND 修改人:sg 修改日期:2017-12-06 begin -->
+											<if test="officeList != null and officeList.size != 0">
+												AND CUST_NO IN
+													<foreach collection="officeList" item="officeTag" separator="," open="(" close=")" index="">
+					 	          						'${officeTag.id}'
+					          						</foreach>
+											</if>
+											<!-- end -->
+											<if test="custNo != null and custNo != ''">
+												AND CUST_NO = '${custNo}'
+											</if>
+											AND DEL_FLAG = #{delFlag}
+											AND STATUS = #{status}
+										</where>
+									)
+							) table1
+					) table3,
+					(
+						SELECT
+							table2.bus_type
+						FROM
+							(
+								(
+									SELECT DISTINCT
+										bus_type
+									FROM
+										cl_in_main
+									<where>
+										<if test="inStatuses != null and inStatuses.size != 0">
+				          					AND BUS_TYPE IN 
+				          						<foreach collection="inStatuses" item="inStatusTag" separator="," open="(" close=")" index="">
+				 	          						'${inStatusTag}'
+				          						</foreach>
+			          					</if>
+			          					<!--  主表：查询时间(开始) -->
+										<if test="searchDateStart != null and searchDateStart != ''">
+											<if test="dbName == 'oracle'">
+												AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+											</if>
+											<if test="dbName == 'mysql'">
+												AND DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+											</if>
+										</if>
+										<!-- 主表：查询时间(结束) -->
+										<if test="searchDateEnd != null and searchDateEnd != ''">
+											<if test="dbName == 'oracle'">
+												AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+											</if>
+											<if test="dbName == 'mysql'">
+												AND '${searchDateEnd}' >= DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s')
+											</if>
+										</if>
+										<!-- 主表：查询机构 -->
+										<if test="rOfficeList != null and rOfficeList.size != 0">
+												AND office_id IN
+													<foreach collection="rOfficeList" item="rOfficeTag" separator="," open="(" close=")" index="">
+					 	          						'${rOfficeTag.id}'
+					          						</foreach>
+										</if>
+										<!-- 将OR修改成AND 修改人:sg 修改日期:2017-12-06 begin -->
+										<if test="officeList != null and officeList.size != 0">
+											AND CUST_NO IN
+												<foreach collection="officeList" item="officeTag" separator="," open="(" close=")" index="">
+				 	          						'${officeTag.id}'
+				          						</foreach>
+										</if>
+										<!-- end -->
+										<if test="custNo != null and custNo != ''">
+												AND CUST_NO = '${custNo}'
+										</if>
+			          					AND DEL_FLAG = #{delFlag}
+			          					AND STATUS = #{status}
+		          					</where>
+								)
+								UNION
+									(
+										SELECT DISTINCT
+											bus_type
+										FROM
+											cl_out_main
+										<where>
+											<if test="outStatuses != null and outStatuses.size != 0">
+					          					AND BUS_TYPE IN 
+					          						<foreach collection="outStatuses" item="outStatusTag" separator="," open="(" close=")" index="">
+					 	          						'${outStatusTag}'
+					          						</foreach>
+				          					</if>
+				          					<!--  主表：查询时间(开始) -->
+											<if test="searchDateStart != null and searchDateStart != ''">
+												<if test="dbName == 'oracle'">
+													AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+												</if>
+												<if test="dbName == 'mysql'">
+													AND DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+												</if>
+											</if>
+											<!-- 主表：查询时间(结束) -->
+											<if test="searchDateEnd != null and searchDateEnd != ''">
+												<if test="dbName == 'oracle'">
+													AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+												</if>
+												<if test="dbName == 'mysql'">
+													AND '${searchDateEnd}' >= DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s')
+												</if>
+											</if>
+											<!-- 主表：查询机构 -->
+											<if test="rOfficeList != null and rOfficeList.size != 0">
+												AND office_id IN
+													<foreach collection="rOfficeList" item="rOfficeTag" separator="," open="(" close=")" index="">
+					 	          						'${rOfficeTag.id}'
+					          						</foreach>
+											</if>
+											<!-- 将OR修改成AND 修改人:sg 修改日期:2017-12-06 begin -->
+											<if test="officeList != null and officeList.size != 0">
+												AND CUST_NO IN
+													<foreach collection="officeList" item="officeTag" separator="," open="(" close=")" index="">
+					 	          						'${officeTag.id}'
+					          						</foreach>
+											</if>
+											<!-- end -->
+											<if test="custNo != null and custNo != ''">
+												AND CUST_NO = '${custNo}'
+											</if>
+				          					AND DEL_FLAG = #{delFlag}
+				          					AND STATUS = #{status}
+		          						</where>
+									)
+							) table2
+					) table4
+			) table6
+			LEFT JOIN (
+				SELECT
+					table5.dates,
+					table5.bus_type,
+					table5.amount
+				FROM
+					(
+						(
+							SELECT
+								<if test="dbName == 'oracle'">
+									TO_CHAR(update_date, '${filterCondition}') AS dates,
+								</if>
+								<if test="dbName == 'mysql'">
+									DATE_FORMAT(update_date, '${filterCondition}') AS dates,
+								</if>
+								bus_type,
+								<if test="dbName == 'oracle'">
+									SUM(NVL(out_amount, '0')) AS amount
+								</if>
+								<if test="dbName == 'mysql'">
+									SUM(IFNULL(out_amount, '0')) AS amount
+								</if>
+							FROM
+								cl_out_main
+							<where>
+								<if test="outStatuses != null and outStatuses.size != 0">
+		          					AND BUS_TYPE IN 
+		          						<foreach collection="outStatuses" item="outStatusTag" separator="," open="(" close=")" index="">
+		 	          						'${outStatusTag}'
+		          						</foreach>
+	          					</if>
+	          					<!--  主表：查询时间(开始) -->
+								<if test="searchDateStart != null and searchDateStart != ''">
+									<if test="dbName == 'oracle'">
+										AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+									</if>
+									<if test="dbName == 'mysql'">
+										AND DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+									</if>
+								</if>
+								<!-- 主表：查询时间(结束) -->
+								<if test="searchDateEnd != null and searchDateEnd != ''">
+									<if test="dbName == 'oracle'">
+										AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+									</if>
+									<if test="dbName == 'mysql'">
+										AND '${searchDateEnd}' >= DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s')
+									</if>
+								</if>
+								<!-- 主表：查询机构 -->
+								<if test="rOfficeList != null and rOfficeList.size != 0">
+										AND office_id IN
+											<foreach collection="rOfficeList" item="rOfficeTag" separator="," open="(" close=")" index="">
+			 	          						'${rOfficeTag.id}'
+			          						</foreach>
+								</if>
+								<!-- 将OR修改成AND 修改人:sg 修改日期:2017-12-06 begin -->
+								<if test="officeList != null and officeList.size != 0">
+									AND CUST_NO IN
+										<foreach collection="officeList" item="officeTag" separator="," open="(" close=")" index="">
+		 	          						'${officeTag.id}'
+		          						</foreach>
+								</if>
+								<!-- end -->
+								<if test="custNo != null and custNo != ''">
+									AND CUST_NO = '${custNo}'
+								</if>
+	          					AND DEL_FLAG = #{delFlag}
+	          					AND STATUS = #{status}
+          					</where>
+							GROUP BY
+							<!-- 修改分组 wzj 2017-12-12 begin -->
+							<if test="dbName == 'oracle'">
+									TO_CHAR(update_date, '${filterCondition}'),
+								</if>
+								<if test="dbName == 'mysql'">
+									DATE_FORMAT(update_date, '${filterCondition}'),
+								</if>
+								<!-- dates, -->
+							<!-- end -->
+								bus_type
+						)
+						UNION ALL
+							(
+								SELECT
+									<if test="dbName == 'oracle'">
+									TO_CHAR(update_date, '${filterCondition}') AS dates,
+								</if>
+								<if test="dbName == 'mysql'">
+									DATE_FORMAT(update_date, '${filterCondition}') AS dates,
+								</if>
+								bus_type,
+								<if test="dbName == 'oracle'">
+									SUM(NVL(in_amount, '0')) AS amount
+								</if>
+								<if test="dbName == 'mysql'">
+									SUM(IFNULL(in_amount, '0')) AS amount
+								</if>
+								FROM
+									cl_in_main
+								<where>
+									<if test="inStatuses != null and inStatuses.size != 0">
+			          					AND BUS_TYPE IN 
+			          						<foreach collection="inStatuses" item="inStatusTag" separator="," open="(" close=")" index="">
+			 	          						'${inStatusTag}'
+			          						</foreach>
+		          					</if>
+		          					<!--  主表：查询时间(开始) -->
+									<if test="searchDateStart != null and searchDateStart != ''">
+										<if test="dbName == 'oracle'">
+											AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'
+										</if>
+										<if test="dbName == 'mysql'">
+											AND DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'
+										</if>
+									</if>
+									<!-- 主表：查询时间(结束) -->
+									<if test="searchDateEnd != null and searchDateEnd != ''">
+										<if test="dbName == 'oracle'">
+											AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')
+										</if>
+										<if test="dbName == 'mysql'">
+											AND '${searchDateEnd}' >= DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s')
+										</if>
+									</if>
+									<!-- 主表：查询机构 -->
+									<if test="rOfficeList != null and rOfficeList.size != 0">
+											AND office_id IN
+												<foreach collection="rOfficeList" item="rOfficeTag" separator="," open="(" close=")" index="">
+				 	          						'${rOfficeTag.id}'
+				          						</foreach>
+									</if>
+									<!-- 将OR修改成AND 修改人:sg 修改日期:2017-12-06 begin -->
+									<if test="officeList != null and officeList.size != 0">
+										AND CUST_NO IN
+											<foreach collection="officeList" item="officeTag" separator="," open="(" close=")" index="">
+			 	          						'${officeTag.id}'
+			          						</foreach>
+									</if>
+									<!-- end -->
+									<if test="custNo != null and custNo != ''">
+										AND CUST_NO = '${custNo}'
+									</if>
+		          					AND DEL_FLAG = #{delFlag}
+		          					AND STATUS = #{status}	
+	          					</where>
+								GROUP BY
+								<!--  修改分组 wzj 2017-12-12 begin -->
+								<if test="dbName == 'oracle'">
+									TO_CHAR(update_date, '${filterCondition}'),
+								</if>
+								<if test="dbName == 'mysql'">
+									DATE_FORMAT(update_date, '${filterCondition}'),
+								</if>
+									<!-- dates, -->
+									<!-- end -->
+									bus_type
+							)
+					) table5
+			) table7 ON table6.bus_type = table7.bus_type
+			AND table6.dates = table7.dates
+			ORDER BY
+				table6.dates,
+				table6.bus_type
+	</select>
+</mapper>

@@ -1,0 +1,557 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoBoxInfoHistoryDao">
+    
+    <resultMap type="com.coffer.businesses.modules.store.v01.entity.StoBoxInfoHistory" id="StoBoxInfoHistoryResult">
+    	<result column="box_no" property ="stoBoxInfo.id"/>
+    	<result column="box_type" property ="stoBoxInfo.boxType"/>
+    	<result column="rfid" property ="stoBoxInfo.rfid"/>
+    	<result column="box_status" property ="stoBoxInfo.boxStatus"/>
+    	<result column="office_id" property ="stoBoxInfo.office.id"/>
+    	<result column="create_by" property ="stoBoxInfo.createBy.id"/>
+    	<result column="create_name" property ="stoBoxInfo.createName"/>
+    	<result column="create_date" property ="stoBoxInfo.createDate"/>
+    	<result column="update_by" property ="stoBoxInfo.updateBy.id"/>
+    	<result column="update_name" property ="stoBoxInfo.updateName"/>
+    	<result column="update_date" property ="stoBoxInfo.updateDate"/>
+    	<result column="authorize_by" property ="authorizeBy.id"/>
+    	<result column="authorizer" property ="authorizer"/>
+    	<result column="privileged_Time" property ="privilegedTime"/>
+    	<result column="update_box_Status" property ="updateBoxStatus"/>
+    </resultMap>
+    
+	<sql id="stoBoxInfoHistoryColumns">
+		a.box_no AS "boxNo",
+		a.box_type AS "boxType",
+		<!--a.box_use AS "boxUse",-->
+		a.mod_id AS "atmBoxMod.modId",
+		a.box_status AS "boxStatus",
+		a.office_id AS "office.id",
+		a.denomination AS "denomination",
+		a.piece_num AS "pieceNum",
+		a.box_amount AS "boxAmount",
+		a.rfid AS "rfid",
+		a.remarks AS "remarks",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.out_date AS "outDate",
+		a.del_flag AS "delFlag",
+		o5.name AS "office.name",
+		b.box_type_no AS "atmBoxMod.boxTypeNo",
+		b.box_type AS "atmBoxType",
+		a.authorize_by AS "authorizeBy.id",
+		a.authorizer AS "authorizer",
+		a.privileged_Time AS "privilegedTime",
+		a.update_box_Status AS "updateBoxStatus"
+	</sql>
+	
+	<sql id="stoBoxInfoHistoryJoins">
+		LEFT JOIN sys_office o5 ON o5.id = a.office_id
+		LEFT JOIN atm_box_mod b ON b.mod_id = a.mod_id
+	</sql>
+    
+	<select id="get" resultType="StoBoxInfoHistory">
+		SELECT 
+			<include refid="stoBoxInfoHistoryColumns"/>
+		FROM sto_box_info_history a
+		<include refid="stoBoxInfoHistoryJoins"/>
+		WHERE a.box_no = #{boxNo}
+	</select>
+	
+	<select id="findList" resultType="StoBoxInfoHistory">
+		SELECT 
+			<include refid="stoBoxInfoHistoryColumns"/>
+		FROM sto_box_info_history a
+		<include refid="stoBoxInfoHistoryJoins"/>
+		<where>
+			a.del_flag != #{DEL_FLAG_DELETE}
+			<!-- <if test="delFlag == null or delFlag == ''">
+				a.del_flag != #{DEL_FLAG_DELETE}
+			</if>
+			<if test="delFlag != null and delFlag != ''">
+				a.del_flag = #{delFlag}
+			</if> -->
+			<if test="boxNo != null and boxNo != '' ">
+				and a.box_no like 
+				<!-- '%' || #{boxNo} || '%' -->
+				<if test="dbName == 'oracle'">'%' || #{boxNo} || '%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{boxNo}, '%')</if>
+			</if>
+			<if test="boxType != null and boxType != '' ">
+				and a.box_type = #{boxType}
+			</if>
+			<if test="boxStatus != null and boxStatus != '' ">
+				and a.box_status = #{boxStatus}
+			</if>
+			<if test="office !=null and office.id != null and office.id != '' ">
+				and a.office_id = #{office.id}
+			</if>
+			<if test="modId != null and modId != '' ">
+				and a.mod_id = #{modId}
+			</if>
+			<if test="(modId == null or modId == '') and (boxType == null or boxType == '') ">
+				and a.box_type != '14'
+			</if>
+			<!-- 出库时间(开始) -->
+			<if test="outDateStart != null and outDateStart != ''">
+				<if test="dbName == 'oracle'">and TO_CHAR(a.out_date, 'yyyy-mm-dd hh24:mi:ss') >= '${outDateStart}'</if>
+				<if test="dbName == 'mysql'">and DATE_FORMAT(a.out_date, '%Y-%m-%d %H:%i:%S') >= '${outDateStart}'</if>
+			</if>
+			<!-- 出库时间(结束) -->
+			<if test="outDateEnd != null and outDateEnd != ''">
+				<if test="dbName == 'oracle'">and '${outDateEnd}' >= TO_CHAR(a.out_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName == 'mysql'">and '${outDateEnd}' >= DATE_FORMAT(a.out_date, '%Y-%m-%d %H:%i:%S')</if>
+			</if>
+			<!-- 授权人id -->
+			<if test="authorizeBy !=null and authorizeBy.id != null and authorizeBy.id != '' ">
+				and a.AuthorizeBy = #{authorizeBy.id}
+			</if>
+			<!-- 根据授权人查询 -->
+			<if test="authorizer != null and authorizer != '' ">
+				and a.authorizer = #{authorizer}
+			</if>
+			<!-- 更具授权时间查询 -->
+			<if test="privilegedTime != null and privilegedTime != '' ">
+				and a.privileged_time = #{privilegedTime}
+			</if>
+			<!-- 数据范围过滤 -->
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="StoBoxInfoHistory">
+		SELECT 
+			<include refid="stoBoxInfoHistoryColumns"/>
+		FROM sto_box_info_history a
+		<include refid="stoBoxInfoHistoryJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="getBoxInfoByIdOrRfid" resultType="StoBoxInfoHistory">
+		SELECT 
+			<include refid="stoBoxInfoHistoryColumns"/>
+		FROM sto_box_info_history a
+		<include refid="stoBoxInfoHistoryJoins"/>
+		WHERE (a.box_no = #{boxNo} or a.rfid = #{rfid})
+		   and a.del_flag = '0'
+	</select>
+	
+	<select id="findBoxList" resultType="StoBoxInfoHistory">
+		SELECT 
+			<include refid="stoBoxInfoHistoryColumns"/>
+		FROM sto_box_info_history a
+			 <include refid="stoBoxInfoHistoryJoins"/>
+		<where>
+			a.del_flag != #{DEL_FLAG_DELETE}
+			<!-- <if test="delFlag == null or delFlag == ''">
+				a.del_flag != #{DEL_FLAG_DELETE}
+			</if>
+			<if test="delFlag != null and delFlag != ''">
+				a.del_flag = #{delFlag}
+			</if> -->
+			<if test="boxNo != null and boxNo != '' ">
+				and a.box_no like 
+				<!-- '%' || #{boxNo} || '%' -->
+				<if test="dbName == 'oracle'">'%' || #{boxNo} || '%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{boxNo}, '%')</if>
+			</if>
+			<if test="boxType != null and boxType != '' ">
+				and a.box_type = #{boxType}
+			</if>
+			<if test="boxStatus != null and boxStatus != '' ">
+				and a.box_status = #{boxStatus}
+			</if>
+			<if test="office !=null and office.id != null and office.id != '' ">
+				and a.office_id = #{office.id}
+			</if>
+			<if test="modId != null and modId != '' ">
+				and a.mod_id = #{modId}
+			</if>
+			<if test="(modId == null or modId == '') and (boxType == null or boxType == '') ">
+				and a.box_type != '14'
+			</if>
+			<!-- 出库时间(开始) -->
+			<if test="outDateStart != null and outDateStart != ''">
+				<if test="dbName == 'oracle'">and TO_CHAR(a.out_date, 'yyyy-mm-dd hh24:mi:ss') >= '${outDateStart}'</if>
+				<if test="dbName == 'mysql'">and DATE_FORMAT(a.out_date, '%Y-%m-%d %H:%i:%S') >= '${outDateStart}'</if>
+			</if>
+			<!-- 出库时间(结束) -->
+			<if test="outDateEnd != null and outDateEnd != ''">
+				<if test="dbName == 'oracle'">and '${outDateEnd}' >= TO_CHAR(a.out_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName == 'mysql'">and '${outDateEnd}' >= DATE_FORMAT(a.out_date, '%Y-%m-%d %H:%i:%S')</if>
+			</if>
+			<!-- 变更状态查询 -->
+			<if test="updateBoxStatus != null and updateBoxStatus != '' ">
+				and a.update_box_status = #{updateBoxStatus}
+			</if>
+			<!-- 数据范围过滤 -->
+			${sqlMap.dsf}
+		</where>
+		ORDER BY o5.trade_flag, o5.name, a.box_no
+	</select>
+	
+	<!-- 追加创建人姓名、更新人姓名 修改人：xp 修改时间：2017-7-7 begin -->
+	<insert id="insert">
+		INSERT INTO sto_box_info_history(
+			box_no,
+			box_type,
+			<!--box_use,-->
+			mod_id,
+			box_status,
+			office_id,
+			denomination,
+			piece_num,
+			box_amount,
+			rfid,
+			remarks,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			del_flag,
+			create_name,
+			update_name,
+			authorize_by,
+			authorizer,
+			privileged_time,
+			update_box_status
+		) VALUES (
+			#{stoBoxInfo.boxNo},
+			#{stoBoxInfo.boxType},
+			<!--#{boxUse},-->
+			#{stoBoxInfo.atmBoxMod.modId},
+			#{stoBoxInfo.boxStatus},
+			#{stoBoxInfo.office.id},
+			#{stoBoxInfo.denomination},
+			#{stoBoxInfo.pieceNum},
+			#{stoBoxInfo.boxAmount},
+			#{stoBoxInfo.rfid},
+			#{stoBoxInfo.remarks},
+			#{stoBoxInfo.createBy.id},
+			#{stoBoxInfo.createDate},
+			#{stoBoxInfo.updateBy.id},
+			#{stoBoxInfo.updateDate},
+			#{stoBoxInfo.delFlag},
+			#{stoBoxInfo.createName},
+			#{stoBoxInfo.updateName},
+			#{authorizeBy.id},
+			#{authorizer},
+			#{privilegedTime},
+			#{updateBoxStatus}
+		)
+	</insert>
+	<!-- end -->
+	
+	<!-- 追加判断条件 修改人：xp 修改时间：2017-7-6 begin -->
+	<update id="update">
+	<trim suffix ="" suffixOverrides = ",">
+		UPDATE sto_box_info_history SET 	
+		<if test="boxNo != null and boxNo != '' ">
+			box_no = #{boxNo},
+			</if>
+			<if test="boxType != null and boxType != '' ">
+			box_type = #{boxType},
+			</if>
+			<!--box_use = #{boxUse},-->
+			<if test=" atmBoxMod != null and atmBoxMod.id != null and atmBoxMod.id != '' ">
+			mod_id = #{atmBoxMod.id},
+			</if>
+			<if test="office != null and office.id != null and office.id != '' ">
+			office_id = #{office.id},
+			</if>
+			<if test="denomination != null and denomination != '' ">
+			denomination = #{denomination},
+			</if>
+			<if test="pieceNum != null  ">
+			piece_num = #{pieceNum},
+			</if>
+			<if test="boxAmount != null  ">
+			box_amount = #{boxAmount},
+			</if>
+			<if test="rfid != null and rfid != '' ">
+			rfid = #{rfid},
+			</if>
+			<if test="outDate != null ">
+			out_date = #{outDate},
+			</if>
+			<if test="remarks != null and remarks != '' ">
+			remarks = #{remarks},
+			</if>
+			<if test="updateBy != null and updateBy.id != null and updateBy.id != '' ">
+			update_by = #{updateBy.id},
+			</if>
+			<if test="updateDate != null ">
+			update_date = #{updateDate},
+			</if>
+			<if test="authorizeBy != null and authorizeBy.id != null and authorizeBy.id != '' ">
+			authorize_by = #{authorizeBy.id},
+			</if>
+			<if test="authorizer != null and authorizer != '' ">
+			authorizer = #{authorizer},
+			</if>
+			<if test="privilegedTime != null ">
+			privileged_time = #{privilegedTime},
+			</if>
+			<if test="updateBoxStatus != null and updateBoxStatus != '' ">
+			update_box_status = #{updateBoxStatus},
+			</if>
+			<if test="updateName != null and updateName != '' ">
+			update_name = #{updateName}
+			</if>
+			</trim>
+		WHERE (box_no = #{boxNo} or rfid = #{rfid})
+		
+	</update>
+	<!-- end -->
+	
+	<update id="delete">
+		UPDATE sto_box_info_history SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE box_no = #{boxNo}
+	</update>
+	
+	<select id="getCurrentMaxBoxNo" resultType="String">
+		select 
+		<!-- nvl(max(box_no), '0') -->
+		<if test="dbName == 'oracle'">nvl(max(box_no), '0')</if>
+		<if test="dbName == 'mysql'"> ifnull(max(box_no),'0')</if>
+		  from sto_box_info_history
+		 where box_type = #{boxType}
+	</select>
+	
+	<select id="searchBoxInfoList" resultType="StoBoxInfoHistory">
+		SELECT 
+			<include refid="stoBoxInfoHistoryColumns"/>
+		FROM sto_box_info_history a
+		<include refid="stoBoxInfoHistoryJoins"/>
+		<where>
+			<if test="delFlag != null and delFlag != ''">
+				a.del_flag = #{delFlag}
+			</if>
+			<if test="delFlag == null or delFlag == ''">
+				a.del_flag != #{DEL_FLAG_DELETE}
+			</if>
+			
+			<if test="boxNo != null and boxNo != '' ">
+				and a.box_no like 
+				<!-- '%' || #{boxNo} || '%' -->
+				<if test="dbName == 'oracle'">'%'||#{boxNo}||'%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{boxNo}, '%')</if>
+			</if>
+			<if test="boxType != null and boxType != '' ">
+				and a.box_type = #{boxType}
+			</if>
+			<if test="office !=null and office.id != null and office.id != '' ">
+				and (a.office_id = #{office.id}
+				or o5.parent_ids like 
+				<!-- '%'|| #{office.id} ||'%' -->
+				<if test="dbName == 'oracle'">'%'|| #{office.id} ||'%'</if>
+				<if test="dbName == 'mysql'"> CONCAT('%', #{office.id}, '%')</if>)
+			</if>		
+			<if test="boxNos != null">
+				and a.box_no in 
+				<foreach collection="boxNos" item="boxNo" separator="," open="(" close=")" index="">
+				 	#{boxNo}
+				</foreach>
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.del_flag DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<update id="updateBoxDelflag">
+		UPDATE sto_box_info_history SET 
+			del_flag = #{DEL_FLAG_NORMAL}
+		WHERE box_no = #{boxNo}
+		and del_flag != #{DEL_FLAG_NORMAL}
+	</update>
+	
+	<select id="findListByRfidAndBoxNo" resultMap="StoBoxInfoHistoryResult">
+		SELECT 
+			  a.box_no,
+		      a.box_type,
+		      a.mod_id,
+		      a.box_status,
+		      a.office_id,
+		      a.denomination,
+		      a.piece_num,
+		      a.box_amount,
+		      a.rfid,
+		      a.remarks,
+		      a.create_by,
+		      a.create_date,
+		      a.create_name,
+		      a.update_by,
+		      a.update_name,
+		      a.update_date,
+		      a.out_date,
+		      a.del_flag,
+		      a.authorize_by,
+			  a.authorizer,
+			  a.privileged_time,
+			  a.update_box_status
+		FROM sto_box_info_history a
+		<where>
+		 	 a.box_no = #{stoBoxInfo.boxNo}
+		  	 AND a.rfid = #{stoBoxInfo.rfid}
+			 <!--  主表：登记时间(开始) -->
+			 <if test="searchDateStart != null and searchDateStart != ''">
+				<!-- AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}' -->
+				<if test="dbName == 'oracle'">AND TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName == 'mysql'">AND date_format(update_date,'%Y-%m-%d %H%i%S')>= '${searchDateStart}'</if>
+			 </if>
+			 <!-- 主表：登记时间(结束) -->
+			 <if test="searchDateEnd != null and searchDateEnd != ''">
+				<!-- AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss') -->
+				<if test="dbName == 'oracle'">AND '${searchDateEnd}' >= TO_CHAR(update_date, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName == 'mysql'">AND '${searchDateEnd}' >= date_format(update_date,'%Y-%m-%d %H%i%S')</if>
+			 </if>
+		</where>
+		ORDER BY a.update_date
+	</select>
+	
+	<!-- 根据箱袋编号物理删除箱袋信息  修改人:WQJ 2019-1-9 begin -->
+	<delete id="realDeleteHistory">
+	DELETE
+	FROM
+	sto_box_info_history
+	WHERE
+	box_no= #{boxNo}
+	</delete>
+	<!-- end -->
+	
+<!-- 	<update id="updateOutdateBatch">
+		UPDATE sto_box_info_history SET 
+			out_date = #{outDate}
+		WHERE box_no in 
+			<foreach collection="boxNos" item="boxNoTag" separator="," open="(" close=")" index="">
+			 	#{boxNoTag}
+			</foreach>
+	</update>
+	
+	<select id="findSqlBox" resultType="StoBoxInfoHistory">
+		SELECT 
+			<include refid="stoBoxInfoHistoryColumns"/>
+		FROM sto_box_info_history a
+		<include refid="stoBoxInfoHistoryJoins"/>
+		WHERE a.del_flag = '0'
+		and a.box_type != '14'
+	</select> -->
+	
+<!-- 	<select id="getStoreBoxDetailReport" resultType="StoBoxInfoHistory">
+		SELECT DISTINCT s.box_no      AS "boxNo",
+		                d.add_plan_id AS "addPlanId",
+		                d.atm_no      AS "atmNo",
+		                d.atm_address AS "atmAddress",
+		                d.atm_account AS "atmAccount",
+		                s.box_type    AS "boxType",
+		                s.box_status  AS "boxStatus",
+		                d.update_date AS "updateDate"
+		  FROM sto_box_info_history s
+		  LEFT JOIN (SELECT s.box_no, MAX(i.update_date) AS update_date
+		               FROM sto_box_info_history s, atm_binding_detail d, atm_binding_info i
+		              WHERE s.box_status = #{boxStatusUsed}
+		                AND d.box_no = s.box_no
+		                AND d.binding_id = i.binding_id
+		              GROUP BY s.box_no
+		              ORDER BY s.box_no) e ON s.box_no = e.box_no
+		  LEFT JOIN (SELECT DISTINCT p.add_plan_id,
+		                             p.atm_no,
+		                             p.atm_address,
+		                             p.atm_account,
+		                             i.update_date
+		               FROM atm_binding_info   i,
+		                    atm_binding_detail d,
+		                    atm_plan_info      p
+		              WHERE d.binding_id = i.binding_id
+		                AND p.add_plan_id = i.add_plan_id
+		                AND p.atm_no = i.atm_no) d ON e.update_date = d.update_date
+		 WHERE s.box_type NOT IN (#{boxType})
+		   AND s.del_flag = '0'
+			<if test="officeId != null and officeId != ''">
+				and s.office_id = #{officeId}
+			</if>
+		 ORDER BY CASE
+		            WHEN s.box_status = #{boxStatusUsed} THEN 0
+		            WHEN s.box_status = #{boxStatusOnload} THEN 2
+		            WHEN s.box_status = #{boxStatusClearOnload} THEN 3
+		            ELSE 4 END,
+		          s.box_type,
+		          d.add_plan_id,
+		          s.box_no
+	</select>
+	 -->
+<!-- 	<sql id="stoBoxRouteInfoColumns">
+		a.box_no         AS "boxNo",
+		a.box_type       AS "boxType",
+		a.mod_id         AS "atmBoxMod.modId",
+		a.box_status     AS "boxStatus",
+		a.office_id      AS "officeId",
+		a.denomination   AS "denomination",
+		a.piece_num      AS "pieceNum",
+		a.box_amount     AS "boxAmount",
+		a.rfid           AS "rfid",
+		a.remarks        AS "remarks",
+		a.create_by      AS "createBy.id",
+		a.create_date    AS "createDate",
+		a.update_by      AS "updateBy.id",
+		a.update_date    AS "updateDate",
+		a.del_flag       AS "delFlag",
+		a.out_date       AS "outDate",
+		o.name           AS "officeName",
+		r.route_id       AS "routeId",
+		r.route_name     AS "routeName"
+	</sql>
+	
+	<select id="findBoxAndRouteList" resultType="StoBoxInfoHistory">
+		SELECT 
+			<include refid="stoBoxRouteInfoColumns"/>
+		FROM sto_box_info_history a, 
+			 sys_office o,
+		     sto_route_detail d,
+		     sto_route_info r
+		<where>
+			a.office_id = o.id 
+			and o.del_flag = '0'
+			and a.office_id = d.office_id
+			and d.route_id = r.route_id
+			and r.del_flag = '0'
+			and a.del_flag = '0'
+		    <if test="boxNos != null">
+				and a.box_no in 
+				<foreach collection="boxNos" item="boxNo" separator="," open="(" close=")" index="">
+				 	#{boxNo}
+				</foreach>
+			</if>
+			数据范围过滤
+			${sqlMap.dsf}
+		</where>
+		ORDER BY a.box_no
+	</select> -->
+</mapper>

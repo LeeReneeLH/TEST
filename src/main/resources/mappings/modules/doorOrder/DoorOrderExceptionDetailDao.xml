@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.doorOrder.v01.dao.DoorOrderExceptionDetailDao">
+    
+	<sql id="doorOrderExceptionDetailColumns">
+		a.detail_id  AS "detailId ",
+		a.id AS "id",
+		a.type AS "type",
+		a.count AS "count",
+		a.denomination  AS "denomination",
+		a.amount  AS "amount",
+		a.row_no AS "rowNo",
+		a.currency AS "currency",
+		a.del_flag AS "delFlag"
+	</sql>
+	
+    
+	<select id="get" resultType="DoorOrderExceptionDetail">
+		SELECT 
+			<include refid="doorOrderExceptionDetailColumns"/>
+		FROM door_order_exception_detail a
+		WHERE a.detail_id = #{detailId}
+	</select>
+	
+	<!-- <select id="findList" resultType="DoorOrderException">
+		SELECT 
+			<include refid="doorOrderExceptionColumns"/>
+		FROM door_order_exception a
+		<include refid="doorOrderExceptionJoins"/>
+		<where>
+			
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select> -->
+	
+	
+	
+	<insert id="insert">
+		INSERT INTO door_order_exception_detail(
+			detail_id ,
+			id,
+			type ,
+			count ,
+			denomination ,
+			amount,
+			row_no,
+			currency,
+			del_flag
+		) VALUES (
+			#{detailId},
+			#{id},
+			#{type},
+			#{count},
+			#{denomination},
+			#{amount},
+			#{rowNo},
+			#{currency},
+			#{delFlag}
+			
+		)
+	</insert>
+	
+	<!-- <update id="update">
+		UPDATE door_order_exception SET 	
+			eqp_id = #{eqpId},
+			bag_no = #{bagNo},
+			ticker_tape = #{tickerTape},
+			total_amount = #{totalAmount},
+			status = #{status},
+			business_type = #{businessType},
+			currency = #{currency},
+			door_id = #{doorId},
+			door_name = #{doorName},
+			user_id = #{user.id},
+			user_name = #{userName},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate}
+		WHERE id = #{id}
+	</update> -->
+	
+	<update id="deleteById">
+		UPDATE  door_order_exception_detail SET
+		del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+</mapper>

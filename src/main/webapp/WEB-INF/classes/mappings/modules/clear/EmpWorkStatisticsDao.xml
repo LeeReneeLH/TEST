@@ -1,0 +1,470 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.clear.v03.dao.EmpWorkStatisticsDao">
+
+	<sql id="clTaskStatisticsColumns">
+		a.detail_id AS "detailId",
+		a.office_no AS "officeNo",
+		a.emp_no AS "empNo",
+		a.emp_name AS "empName",
+		a.total_count AS "totalCount",
+		a.total_amt AS "totalAmt",
+		a.m_id AS "mId",
+		a.working_position_type AS "workingPositionType"
+	</sql>
+	
+	<sql id="clTaskStatisticsJoins">
+	</sql>
+    
+	<select id="get" resultType="EmpWorkStatistics">
+		SELECT 
+			<include refid="clTaskStatisticsColumns"/>
+		FROM CL_TASK_DETAIL a
+		<include refid="clTaskStatisticsJoins"/>
+		WHERE a.detail_id = #{detailId}
+	</select>
+	
+	<select id="findListView" resultType="EmpWorkStatistics">
+		SELECT 
+			t.emp_no AS "empNo", 
+			a.denomination AS "denomination"
+	  	FROM CL_TASK_DETAIL t,CL_TASK_MAIN a
+		<where>
+			AND a.task_no = t.m_id
+			AND a.tran_status = #{tranStatus}
+			<if test="taskTypes != null and taskTypes.size != 0">
+	            AND a.task_type in
+	            <foreach collection="taskTypes" item="taskType" separator="," open="(" close=")" index="index">
+	            	#{taskTypes[${index}]}
+	            </foreach>
+	        </if>
+			<if test="busType != null and busType != ''">
+	            AND a.bus_type = #{busType}
+	        </if>
+	        <if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(a.OPERATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.OPERATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.OPERATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'"> '${searchDateEnd}'>=DATE_FORMAT(a.OPERATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	        
+	        <!-- add-start by QPH 2017-11-14 -->
+			<if test="office != null and office.id != null and office.id != ''">
+				AND a.OFFICE_ID = #{office.id}
+			</if>
+			<!-- end -->
+	        
+	   	</where>
+			GROUP BY t.emp_no, a.denomination
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY t.emp_no,a.denomination			
+			</otherwise>
+		</choose>
+	</select>
+ 	
+ 	<select id="findListData" resultType="EmpWorkStatistics">
+ 		SELECT 
+ 			t.emp_no AS "empNo",
+			a.denomination AS "denomination",
+			t.WORKING_POSITION_TYPE AS "workingPositionType",
+			a.PLAN_TYPE AS "planType",
+			a.BUS_TYPE AS "busType",
+			sum(t.total_count) AS "totalCount"
+		FROM CL_TASK_DETAIL t,CL_TASK_MAIN a
+		<where>
+			AND a.task_no = t.m_id
+			AND a.tran_status = #{tranStatus}
+			<if test="busType != null and busType != ''">
+	            AND a.bus_type = #{busType}
+	        </if>
+	        <if test="taskTypes != null and taskTypes.size != 0">
+	            AND a.task_type in
+	            <foreach collection="taskTypes" item="taskType" separator="," open="(" close=")" index="index">
+	            	#{taskTypes[${index}]}
+	            </foreach>
+	        </if>
+	        <if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(a.OPERATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.OPERATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a.OPERATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'"> '${searchDateEnd}'>=DATE_FORMAT(a.OPERATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	        
+	          <!-- add-start by QPH 2017-11-14 -->
+			<if test="office != null and office.id != null and office.id != ''">
+				AND a.OFFICE_ID = #{office.id}
+			</if>
+			<!-- end -->
+	   	</where>
+		 GROUP BY t.emp_no, a.denomination, t.WORKING_POSITION_TYPE, a.PLAN_TYPE,a.BUS_TYPE
+	</select>
+	
+	<select id="findWorkingType" resultType="EmpWorkStatistics">
+		SELECT
+			d.WORKING_POSITION_TYPE AS "workingPositionType",
+			SUM(d.TOTAL_COUNT) AS "totalCount"
+			<!-- <if test="dbName == 'oracle'">
+				TO_CHAR(c.operate_date, '${filterCondition}') AS handInDate
+			</if>
+			<if test="dbName == 'mysql'">
+				<if test="filterCondition == 'yyyy'">
+					DATE_FORMAT(c.operate_date, '%Y') AS handInDate
+				</if>
+				<if test="filterCondition == 'yyyy-mm'">
+					DATE_FORMAT(c.operate_date, '%Y-%m') AS handInDate
+				</if>
+				<if test="filterCondition == 'yyyy-Q'">
+					CONCAT(YEAR(c.operate_date),'-',quarter(c.operate_date)) AS handInDate
+				</if>
+				<if test="filterCondition == 'yyyy-IW'">
+					DATE_FORMAT(c.operate_date,'%Y-%u') AS handInDate
+				</if>
+				<if test="filterCondition == 'yyyy-mm-dd'">
+					DATE_FORMAT(c.operate_date,'%Y-%m-%d') AS handInDate
+				</if>
+			</if> -->
+		FROM
+			cl_task_main c
+		LEFT JOIN cl_task_detail d ON c.TASK_NO = d.M_ID
+		left join sys_office o on c.office_id=o.id
+		WHERE
+			c.TASK_TYPE IN (02, 03)
+			
+			 <!-- add-start by QPH 2017-11-14 -->
+			<if test="office != null and office.id != null and office.id != ''">
+				${sqlMap.dsf}
+			</if>
+			
+			<!--  主表：登记时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(c.OPERATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(c.OPERATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <!-- 主表：登记时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(c.OPERATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'"> '${searchDateEnd}'>=DATE_FORMAT(c.OPERATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+			<!-- <if test="dbName == 'oracle'">
+				 GROUP BY TO_CHAR(c.OPERATE_DATE, '${filterCondition}'),d.WORKING_POSITION_TYPE
+			</if>
+			<if test="dbName == 'mysql'">
+				<if test="filterCondition == 'yyyy'">
+					GROUP BY DATE_FORMAT(c.OPERATE_DATE, '%Y'),d.WORKING_POSITION_TYPE
+				</if>
+				<if test="filterCondition == 'yyyy-mm'">
+					GROUP BY DATE_FORMAT(c.OPERATE_DATE, '%Y-%m'),d.WORKING_POSITION_TYPE
+				</if>
+				<if test="filterCondition == 'yyyy-Q'">
+					GROUP BY CONCAT(YEAR(c.OPERATE_DATE),'-',quarter(c.OPERATE_DATE)),d.WORKING_POSITION_TYPE
+				</if>
+				<if test="filterCondition == 'yyyy-IW'">
+					GROUP BY DATE_FORMAT(c.OPERATE_DATE,'%Y-%u'),d.WORKING_POSITION_TYPE
+				</if>
+				<if test="filterCondition == 'yyyy-mm-dd'">
+					GROUP BY DATE_FORMAT(c.OPERATE_DATE,'%Y-%m-%d'),d.WORKING_POSITION_TYPE
+				</if>
+			</if> -->
+			GROUP BY d.WORKING_POSITION_TYPE
+			ORDER BY d.WORKING_POSITION_TYPE ASC
+	</select>
+	
+	<select id="findPeople" resultType="EmpWorkStatistics">
+		SELECT
+			d.EMP_NAME AS "empName",
+			SUM(d.TOTAL_COUNT) AS "totalCount",
+			d.WORKING_POSITION_TYPE AS "workingPositionType"
+			<!-- <if test="dbName == 'oracle'">
+				TO_CHAR(c.operate_date, '${filterCondition}') AS handInDate
+			</if>
+			<if test="dbName == 'mysql'">
+				<if test="filterCondition == 'yyyy'">
+					DATE_FORMAT(c.operate_date, '%Y') AS handInDate
+				</if>
+				<if test="filterCondition == 'yyyy-mm'">
+					DATE_FORMAT(c.operate_date, '%Y-%m') AS handInDate
+				</if>
+				<if test="filterCondition == 'yyyy-Q'">
+					CONCAT(YEAR(c.operate_date),'-',quarter(c.operate_date)) AS handInDate
+				</if>
+				<if test="filterCondition == 'yyyy-IW'">
+					DATE_FORMAT(c.operate_date,'%Y-%u') AS handInDate
+				</if>
+				<if test="filterCondition == 'yyyy-mm-dd'">
+					DATE_FORMAT(c.operate_date,'%Y-%m-%d') AS handInDate
+				</if>
+			</if> -->
+		FROM
+			cl_task_main c
+		LEFT JOIN cl_task_detail d ON c.TASK_NO = d.M_ID
+		left join sys_office o on c.office_id=o.id
+		WHERE
+			c.TASK_TYPE IN (02, 03)
+			
+			 <!-- add-start by QPH 2017-11-14 -->
+			<if test="office != null and office.id != null and office.id != ''">
+				${sqlMap.dsf}
+			</if>
+			
+			<!--  主表：登记时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(c.OPERATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(c.OPERATE_DATE, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'</if>
+	        </if>
+	        <!-- 主表：登记时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(c.OPERATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'"> '${searchDateEnd}' >= DATE_FORMAT(c.OPERATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+			<!-- <if test="dbName == 'oracle'">
+				 GROUP BY TO_CHAR(c.OPERATE_DATE, '${filterCondition}'),d.WORKING_POSITION_TYPE
+			</if>
+			<if test="dbName == 'mysql'">
+				<if test="filterCondition == 'yyyy'">
+					GROUP BY DATE_FORMAT(c.OPERATE_DATE, '%Y'),d.EMP_NAME
+				</if>
+				<if test="filterCondition == 'yyyy-mm'">
+					GROUP BY DATE_FORMAT(c.OPERATE_DATE, '%Y-%m'),d.EMP_NAME
+				</if>
+				<if test="filterCondition == 'yyyy-Q'">
+					GROUP BY CONCAT(YEAR(c.OPERATE_DATE),'-',quarter(c.OPERATE_DATE)),d.EMP_NAME
+				</if>
+				<if test="filterCondition == 'yyyy-IW'">
+					GROUP BY DATE_FORMAT(c.OPERATE_DATE,'%Y-%u'),d.EMP_NAME
+				</if>
+				<if test="filterCondition == 'yyyy-mm-dd'">
+					GROUP BY DATE_FORMAT(c.OPERATE_DATE,'%Y-%m-%d'),d.EMP_NAME
+				</if>
+			</if> -->
+			GROUP BY d.EMP_NAME,d.WORKING_POSITION_TYPE
+		ORDER BY d.EMP_NAME ASC
+	</select>
+		<!-- 按员工名称进行机械清分手工清分复点的面值数量显示 -->
+		<select id="findListAllEmp" resultType="EmpWorkStatistics">
+		SELECT empName, j1,j2,j3,j4,j5,j6,j7,j8,j9,j10,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,
+		f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,officeName 
+		
+		FROM
+		( SELECT 
+			d.EMP_NAME as empName, 
+	
+			SUM(CASE WHEN (m.DENOMINATION = '01'and d.WORKING_POSITION_TYPE = '01'	and m.BUS_TYPE=09)  THEN d.TOTAL_COUNT ELSE null END) as j1,
+			SUM(CASE WHEN (m.DENOMINATION = '02'and d.WORKING_POSITION_TYPE = '01'	and m.BUS_TYPE=09)  THEN d.TOTAL_COUNT ELSE null END) as j2,
+			SUM(CASE WHEN (m.DENOMINATION = '03'and d.WORKING_POSITION_TYPE = '01'	and m.BUS_TYPE=09)  THEN d.TOTAL_COUNT ELSE null END) as j3,
+			SUM(CASE WHEN (m.DENOMINATION = '04'and d.WORKING_POSITION_TYPE = '01'	and m.BUS_TYPE=09)  THEN d.TOTAL_COUNT ELSE null END) as j4,
+			SUM(CASE WHEN (m.DENOMINATION = '05'and d.WORKING_POSITION_TYPE = '01'	and m.BUS_TYPE=09)  THEN d.TOTAL_COUNT ELSE null END) as j5,
+			SUM(CASE WHEN (m.DENOMINATION = '06'and d.WORKING_POSITION_TYPE = '01'	and m.BUS_TYPE=09)  THEN d.TOTAL_COUNT ELSE null END) as j6,
+			SUM(CASE WHEN (m.DENOMINATION = '07'and d.WORKING_POSITION_TYPE = '01'	and m.BUS_TYPE=09)  THEN d.TOTAL_COUNT ELSE null END) as j7,
+			SUM(CASE WHEN (m.DENOMINATION = '08'and d.WORKING_POSITION_TYPE = '01'	and m.BUS_TYPE=09)  THEN d.TOTAL_COUNT ELSE null END) as j8,
+			SUM(CASE WHEN (m.DENOMINATION = '09'and d.WORKING_POSITION_TYPE = '01'	and m.BUS_TYPE=09)  THEN d.TOTAL_COUNT ELSE null END) as j9,
+			SUM(CASE WHEN (m.DENOMINATION = '10'and d.WORKING_POSITION_TYPE = '01'	and m.BUS_TYPE=09)  THEN d.TOTAL_COUNT ELSE null END) as j10,
+			
+			SUM(CASE WHEN (m.DENOMINATION = '01'and d.WORKING_POSITION_TYPE = '03'	and m.BUS_TYPE=09)  THEN d.TOTAL_COUNT ELSE null END) as s1,
+			SUM(CASE WHEN (m.DENOMINATION = '02'and d.WORKING_POSITION_TYPE = '03'	and m.BUS_TYPE=09)  THEN d.TOTAL_COUNT ELSE null END) as s2,
+			SUM(CASE WHEN (m.DENOMINATION = '03'and d.WORKING_POSITION_TYPE = '03'	and m.BUS_TYPE=09)  THEN d.TOTAL_COUNT ELSE null END) as s3,
+			SUM(CASE WHEN (m.DENOMINATION = '04'and d.WORKING_POSITION_TYPE = '03'	and m.BUS_TYPE=09)  THEN d.TOTAL_COUNT ELSE null END) as s4,
+			SUM(CASE WHEN (m.DENOMINATION = '05'and d.WORKING_POSITION_TYPE = '03'	and m.BUS_TYPE=09)  THEN d.TOTAL_COUNT ELSE null END) as s5,
+			SUM(CASE WHEN (m.DENOMINATION = '06'and d.WORKING_POSITION_TYPE = '03'	and m.BUS_TYPE=09)  THEN d.TOTAL_COUNT ELSE null END) as s6,
+			SUM(CASE WHEN (m.DENOMINATION = '07'and d.WORKING_POSITION_TYPE = '03'	and m.BUS_TYPE=09)  THEN d.TOTAL_COUNT ELSE null END) as s7,
+			SUM(CASE WHEN (m.DENOMINATION = '08'and d.WORKING_POSITION_TYPE = '03'	and m.BUS_TYPE=09)  THEN d.TOTAL_COUNT ELSE null END) as s8,
+			SUM(CASE WHEN (m.DENOMINATION = '09'and d.WORKING_POSITION_TYPE = '03'	and m.BUS_TYPE=09)  THEN d.TOTAL_COUNT ELSE null END) as s9,
+			SUM(CASE WHEN (m.DENOMINATION = '10'and d.WORKING_POSITION_TYPE = '03'	and m.BUS_TYPE=09)  THEN d.TOTAL_COUNT ELSE null END) as s10,
+			
+			SUM(CASE WHEN (m.DENOMINATION = '01'	and m.BUS_TYPE=08)  THEN d.TOTAL_COUNT ELSE null END) as f1,
+			SUM(CASE WHEN (m.DENOMINATION = '02'	and m.BUS_TYPE=08)  THEN d.TOTAL_COUNT ELSE null END) as f2,
+			SUM(CASE WHEN (m.DENOMINATION = '03'	and m.BUS_TYPE=08)  THEN d.TOTAL_COUNT ELSE null END) as f3,
+			SUM(CASE WHEN (m.DENOMINATION = '04'	and m.BUS_TYPE=08)  THEN d.TOTAL_COUNT ELSE null END) as f4,
+			SUM(CASE WHEN (m.DENOMINATION = '05'	and m.BUS_TYPE=08)  THEN d.TOTAL_COUNT ELSE null END) as f5,
+			SUM(CASE WHEN (m.DENOMINATION = '06'	and m.BUS_TYPE=08)  THEN d.TOTAL_COUNT ELSE null END) as f6,
+			SUM(CASE WHEN (m.DENOMINATION = '07'	and m.BUS_TYPE=08)  THEN d.TOTAL_COUNT ELSE null END) as f7,
+			SUM(CASE WHEN (m.DENOMINATION = '08'	and m.BUS_TYPE=08)  THEN d.TOTAL_COUNT ELSE null END) as f8,
+			SUM(CASE WHEN (m.DENOMINATION = '09'	and m.BUS_TYPE=08)  THEN d.TOTAL_COUNT ELSE null END) as f9,
+			SUM(CASE WHEN (m.DENOMINATION = '10'	and m.BUS_TYPE=08)  THEN d.TOTAL_COUNT ELSE null END) as f10,
+			m.OFFICE_NAME AS officeName
+	  	FROM CL_TASK_DETAIL d,CL_TASK_MAIN m left join sys_office o on m.office_id=o.id
+		<where>
+			m.task_no = d.m_id
+			<if test="taskTypes != null and taskTypes.size != 0">
+	            AND m.task_type in
+	            <foreach collection="taskTypes" item="taskType" separator="," open="(" close=")" index="index">
+	            	#{taskTypes[${index}]}
+	            </foreach>
+	        </if>
+			
+	        <if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(m.OPERATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(m.OPERATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(m.OPERATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'"> '${searchDateEnd}'>=DATE_FORMAT(m.OPERATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+	       
+			<if test="officeId != null  and officeId != ''">
+				AND m.OFFICE_ID = '${officeId}'
+			</if>
+	        <if test="empNo != null and empNo != ''">
+				AND d.emp_no = #{empNo}
+			</if>
+			${sqlMap.dsf}
+	   	</where>
+			GROUP BY d.EMP_NAME,m.OFFICE_NAME
+			) dates
+		<where>
+			<!-- 去除显示为空数据 -->
+			<if test="dbName == 'oracle'">(NVL(j1,0)+ NVL(j2,0)+ NVL(j3,0)+ NVL(j4,0)+ NVL(j5,0)+ 
+				NVL(j6,0)+ NVL(j7,0)+ NVL(j8,0)+ NVL(j9,0)+ NVL(j10,0) +
+				NVL(s1,0)+ NVL(s2,0)+ NVL(s3,0) + NVL(s4,0)+ NVL(s5,0)+ 
+				NVL(s6,0)+ NVL(s7,0)+ NVL(s8,0)+ NVL(s9,0)+ NVL(s10,0) +
+				NVL(f1,0)+ NVL(f2,0)+ NVL(f3,0)+ NVL(f4,0)+ NVL(f5,0)+ 
+				NVL(f6,0)+ NVL(f7,0)+ NVL(f8,0)+ NVL(f9,0)+ NVL(f10,0)) != 0</if>
+				
+			<if test="dbName=='mysql'">(IFNULL(j1,0)+ IFNULL(j2,0)+ IFNULL(j3,0)+ IFNULL(j4,0)+ IFNULL(j5,0)+ 
+				IFNULL(j6,0)+ IFNULL(j7,0)+ IFNULL(j8,0)+ IFNULL(j9,0)+ IFNULL(j10,0) +
+				IFNULL(s1,0)+ IFNULL(s2,0)+ IFNULL(s3,0) + IFNULL(s4,0)+ IFNULL(s5,0)+ 
+				IFNULL(s6,0)+ IFNULL(s7,0)+ IFNULL(s8,0)+ IFNULL(s9,0)+ IFNULL(s10,0) +
+				IFNULL(f1,0)+ IFNULL(f2,0)+ IFNULL(f3,0)+ IFNULL(f4,0)+ IFNULL(f5,0)+ 
+				IFNULL(f6,0)+ IFNULL(f7,0)+ IFNULL(f8,0)+ IFNULL(f9,0)+ IFNULL(f10,0)) != 0</if>
+				
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>			
+			</otherwise>
+		</choose>
+	</select>
+		<!--查询员工工作量统计图 -->
+	<select id="findPeopleList" resultType="EmpWorkStatistics">
+			SELECT 
+			d.EMP_NO  AS empNo,
+			d.EMP_NAME AS empName, 
+			SUM(CASE WHEN ( d.WORKING_POSITION_TYPE = '01'	and m.BUS_TYPE=09)  THEN d.TOTAL_COUNT ELSE null END) as j1,
+			SUM(CASE WHEN (d.WORKING_POSITION_TYPE = '03'	and m.BUS_TYPE=09)  THEN d.TOTAL_COUNT ELSE null END) as s1,
+			SUM(CASE WHEN (m.BUS_TYPE=08)  THEN d.TOTAL_COUNT ELSE null END) as f1,
+			m.OFFICE_NAME AS officeName
+	  	FROM CL_TASK_DETAIL d,CL_TASK_MAIN m left join sys_office o on m.office_id=o.id
+		WHERE
+			  m.task_no = d.m_id
+			<if test="taskTypes != null and taskTypes.size != 0">
+	            AND m.task_type in
+	            <foreach collection="taskTypes" item="taskType" separator="," open="(" close=")" index="index">
+	            	#{taskTypes[${index}]}
+	            </foreach>
+	        </if>
+			 <!-- add-start by QPH 2017-11-14 -->
+			 <if test="office != null and office.id != null and office.id != ''">
+				AND A.OFFICE_ID = '${office.id}'
+			</if> 
+			<!--   主表：登记时间(开始) -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(m.OPERATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(m.OPERATE_DATE, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'</if>
+	        </if>
+	  		<!--主表：登记时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(m.OPERATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'"> '${searchDateEnd}' >= DATE_FORMAT(m.OPERATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+	        </if> 
+			${sqlMap.dsf}
+			GROUP BY d.EMP_NAME,m.OFFICE_NAME,d.EMP_NO
+			ORDER BY d.EMP_NAME ASC
+	</select>
+		<!--查询工位类型清分统计图 -->
+	<select id="findWorkClearingList" resultType="EmpWorkStatistics">
+		SELECT 
+			d.WORKING_POSITION_TYPE AS workingPositionType,
+			SUM(d.TOTAL_COUNT) AS totalCount,
+			m.OFFICE_NAME AS officeName
+	  	FROM CL_TASK_DETAIL d,CL_TASK_MAIN m left join sys_office o on m.office_id=o.id
+		WHERE
+			 m.task_no = d.m_id
+			   
+			 <if test="taskTypes != null and taskTypes.size != 0">
+	            AND m.task_type in
+	            <foreach collection="taskTypes" item="taskType" separator="," open="(" close=")" index="index">
+	            	#{taskTypes[${index}]}
+	            </foreach>
+	        </if> 
+	        <if test="busType != null and busType != ''">
+	            AND m.bus_type = #{busType}
+	        </if>
+			 <!-- add-start by QPH 2017-11-14 -->
+			  <if test="office != null and office.id != null and office.id != ''">
+				AND m.OFFICE_ID = '${office.id}'
+			</if>  
+			<!-- 主表：登记时间(开始) -->
+			 <if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(m.OPERATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(m.OPERATE_DATE, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'</if>
+	        </if> 
+	  		<!--主表：登记时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(m.OPERATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'"> '${searchDateEnd}' >= DATE_FORMAT(m.OPERATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+	        </if> 
+		 	${sqlMap.dsf}  
+			GROUP BY d.WORKING_POSITION_TYPE,m.OFFICE_NAME
+			ORDER BY d.WORKING_POSITION_TYPE ASC
+	</select>
+		<!--查询工位类型复点统计图 -->
+	<select id="findWorkPointList" resultType="EmpWorkStatistics">
+		SELECT 
+			SUM(d.TOTAL_COUNT) as totalCount,	
+			m.OFFICE_NAME AS officeName
+	  	FROM CL_TASK_DETAIL d,CL_TASK_MAIN m left join sys_office o on m.office_id=o.id
+		WHERE
+			 m.task_no = d.m_id 
+			 <if test="taskTypes != null and taskTypes.size != 0">
+	            AND m.task_type in
+	            <foreach collection="taskTypes" item="taskType" separator="," open="(" close=")" index="index">
+	            	#{taskTypes[${index}]}
+	            </foreach>
+	        </if> 
+	         <if test="busType != null and busType != ''">
+	            AND m.bus_type = #{busType}
+	        </if>
+			 <!-- add-start by QPH 2017-11-14 -->
+			  <if test="office != null and office.id != null and office.id != ''">
+				AND m.OFFICE_ID = '${office.id}'
+			</if>  
+			<!--   主表：登记时间(开始) -->
+			 <if test="searchDateStart != null and searchDateStart != ''">
+	            AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(m.OPERATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(m.OPERATE_DATE, '%Y-%m-%d %H:%i:%s') >= '${searchDateStart}'</if>
+	        </if> 
+	  		<!--主表：登记时间(结束) -->
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	            <if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(m.OPERATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'"> '${searchDateEnd}' >= DATE_FORMAT(m.OPERATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>  
+			 ${sqlMap.dsf} 
+			GROUP BY m.OFFICE_NAME
+			ORDER BY m.OFFICE_NAME ASC
+	</select>
+</mapper>

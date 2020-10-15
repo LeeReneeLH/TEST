@@ -1,0 +1,27 @@
+{
+	"versionNo": "01",
+	"serviceNo": "0180",
+	"officeId": "28900230",
+	"goodsList": [
+		{
+			"goodsId": "101061101101",
+			"goodsNum": "9",
+			"goodsAmount": "900000"
+		},
+		{
+			"goodsId": "101061102101",
+			"goodsNum": "9",
+			"goodsAmount": "450000"
+		}
+	],
+	"rfid": "11111111",
+	"boxNo": "9999999999",
+	"boxType": "11",
+	"rfidAllAmount": "1350000",
+	"envelopeBy": "2692baf097954e32848a4397aed7a584",
+	"envelopeName": "仲雨灵",
+	"reviewingBy": "c0a1fb1184c445e1a9ecce55fbab95c4",
+	"reviewingName": "水世星",
+	"userId": "2692baf097954e32848a4397aed7a584",
+	"userName": "仲雨灵"
+}

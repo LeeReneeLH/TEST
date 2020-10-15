@@ -1,0 +1,433 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.core.modules.sys.dao.UserDao">
+
+    <sql id="userColumns">
+    	a.id,
+    	a.office_id AS "office.id",
+    	a.login_name,
+    	a.password,
+    	a.no,
+		a.name,
+		a.email,
+		a.phone,
+		a.mobile,
+		a.user_type,
+		a.login_ip,
+		a.login_date,
+		a.remarks,
+		a.create_by AS "createBy.id",
+		a.create_date,
+		a.update_by AS "updateBy.id",
+		a.update_date,
+		a.del_flag,
+		a.cs_permission AS "csPermission",
+    	o.name AS "office.name",
+    	o.parent_id AS "office.parent.id",
+    	o.parent_ids AS "office.parentIds",
+    	o.type AS "office.type",
+    	o.code AS "office.code",
+    	o.longitude AS "office.longitude",
+    	o.latitude AS "office.latitude",
+    	a.idcard_no AS "idcardNo",
+    	a.USER_FACE_ID AS "userFaceId",
+		a.VERSION as version
+    	<!-- ,
+        r.id AS "roleList.id",
+        r.office_id AS "roleList.office.id",
+        r.name AS "roleList.name",
+        r.enname AS "roleList.enname",
+        r.role_type AS "roleList.roleType",
+        r.data_scope AS "roleList.dataScope" -->
+    </sql>
+
+    <sql id="userJoins">
+		JOIN sys_office o ON o.id = a.office_id<!--
+		LEFT JOIN sys_user_role ur ON ur.user_id = a.id
+        LEFT JOIN sys_role r ON r.id = ur.role_id -->
+    </sql>
+
+	<!-- 根据编号获得用户 -->
+	<select id="get" resultType="User">
+		SELECT
+			<include refid="userColumns"/><!-- ,
+			ro.office_id AS "roleList.officeList.id" -->
+		FROM sys_user a
+		<include refid="userJoins"/><!--
+		LEFT JOIN sys_role_office ro ON ro.role_id = r.id -->
+		WHERE a.id = #{id}
+		AND a.del_flag = '0'
+	</select>
+
+	<!-- 根据身份证号查询用户  zxk start-->
+	<select id="selectUserByCard" resultType="User">
+	SELECT
+	id,
+	name
+	FROM sys_user
+	WHERE idcard_no = #{idcardNo}
+	AND del_flag = #{DEL_FLAG_NORMAL}
+	</select>
+	<!-- 根据身份证号查询用户  zxk end-->
+
+	<!-- 根据登录名查询用户 -->
+	<select id="getByLoginName" resultType="User" parameterType="User">
+		SELECT
+			<include refid="userColumns"/><!-- ,
+			ro.office_id AS "roleList.officeList.id" -->
+		FROM sys_user a
+		<include refid="userJoins"/><!--
+		LEFT JOIN sys_role_office ro ON ro.role_id = r.id -->
+		WHERE a.login_name = #{loginName} AND a.del_flag = #{DEL_FLAG_NORMAL}
+	</select>
+
+	<!-- 分页查询用户信息 -->
+	<select id="findList" resultType="User">
+		SELECT
+			case when sg.union_id is null then 0 else 1 end AS bindFlag,
+			<include refid="userColumns"/>
+		FROM sys_user a
+		<include refid="userJoins"/>
+		<if test="role != null and role.id != null and role.id != ''">
+			JOIN sys_user_role ur ON ur.user_id = a.id AND ur.role_id = #{role.id}
+		</if>
+		LEFT JOIN sys_guest sg ON a.id = sg.id
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		<!-- 如果不是超级管理员，则不显示超级管理员用户 -->
+		<!-- <if test="!currentUser.admin"> -->
+			AND a.id != '1'
+		<!-- </if> -->
+		<if test="office != null and office.id != null and office.id != ''">
+			AND o.id = #{office.id}
+<!-- 			AND (o.id = #{office.id} OR o.parent_ids LIKE
+					<if test="dbName == 'oracle'">'%,'||#{office.id}||',%')</if>
+					<if test="dbName == 'mysql'">CONCAT('%,', #{office.id}, ',%'))</if> -->
+		</if>
+		<!-- 追加用户类型查询条件  修改人：xl 修改时间：2017-8-22 begin  -->
+		<if test="userType != null and userType != ''">
+			AND a.user_type =#{userType}
+		</if>
+		<!-- end -->
+		<if test="loginName != null and loginName != ''">
+			AND a.login_name like
+					<if test="dbName == 'oracle'">'%'||#{loginName}||'%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{loginName}, '%')</if>
+		</if>
+		<if test="name != null and name != ''">
+			AND a.name like
+					<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{name}, '%')</if>
+		</if>
+		<!-- 数据范围过滤 -->
+		${sqlMap.dsf}
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY o.code, a.name
+			</otherwise>
+		</choose>
+	</select>
+
+	<!-- 根据OfficeId获取用户（树查询用户时用） -->
+	<select id="findUserByOfficeId" resultType="User" useCache="true">
+		SELECT
+			a.id,
+			a.name,
+			a.login_name,
+			a.password,
+			a.cs_permission
+		FROM sys_user a
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+			AND a.office_id = #{office.id}
+		ORDER BY a.name
+	</select>
+
+	<!-- 根据OfficeId获取用户（接口用） -->
+	<select id="findUserInfoByOfficeId" resultType="User" useCache="true">
+		SELECT
+			a.id, a.name, a.login_name, a.password, a.user_type,a.idcard_no,a.del_flag,a.office_id AS "office.id", a.USER_FACE_ID AS "userFaceId", a.update_date
+		FROM sys_user a
+		WHERE 1 = 1
+			AND a.office_id = #{user.office.id}
+			<if test="searchDate != null and searchDate != ''">
+
+				<if test="dbName == 'oracle'">AND TO_CHAR(a.update_date,'yyyyMMddhh24missff6')  &gt; #{searchDate}</if>
+				<if test="dbName == 'mysql'">AND date_format(a.update_date,'%Y%m%d%H%i%S%f') &gt; #{searchDate}</if>
+			</if>
+			<if test="userTypes != null">
+				AND a.user_type in
+				<foreach collection="userTypes" item="userType" separator="," open="(" close=")" index="">
+				 	#{userType}
+				</foreach>
+			</if>
+		ORDER BY a.update_date ASC
+	</select>
+
+	<!-- 根据OfficeId获取用户（接口用） -->
+	<select id="findUserInfoByUserType" resultType="User" useCache="true">
+		SELECT
+		<include refid="userColumns"/>
+		FROM sys_user a
+		<include refid="userJoins"/>
+		WHERE 1 = 1
+			<if test="userType != null">
+				AND a.user_type = #{userType}
+
+			</if>
+		ORDER BY a.update_date ASC
+	</select>
+
+
+	<!-- 根据OfficeId获取用户（接口用） -->
+	<select id="findUserInfoByOfficeIds" resultType="User" useCache="true">
+		SELECT
+			a.id, a.name, a.login_name, a.password, a.user_type,a.idcard_no,a.del_flag,a.office_id AS "office.id", a.USER_FACE_ID AS "userFaceId", a.update_date
+		FROM sys_user a
+		WHERE 1 = 1
+			<if test="lastSearchDate != null and lastSearchDate != ''">
+				<!-- and TO_CHAR(a.update_date,'yyyyMMddhh24missff3')  &gt; #{lastSearchDate} -->
+				<if test="dbName == 'oracle'">AND TO_CHAR(a.update_date,'yyyyMMddhh24missff6')  &gt; #{lastSearchDate}</if>
+				<if test="dbName == 'mysql'">AND date_format(a.update_date,'%Y%m%d%H%i%S%f') &gt; #{lastSearchDate}</if>
+			</if>
+			<if test="officeIds != null">
+				AND a.office_id in
+				<foreach collection="officeIds" item="tempId" separator="," open="(" close=")" index="">
+				 	#{tempId}
+				</foreach>
+			</if>
+		ORDER BY a.update_date ASC
+	</select>
+
+	<!-- 查询全部用户 -->
+	<select id="findAllList" resultType="User">
+		SELECT
+			<include refid="userColumns"/>
+		FROM sys_user a
+		<include refid="userJoins"/>
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		ORDER BY o.code, a.name
+	</select>
+
+	<!-- 查询全部用户数目 -->
+	<select id="findAllCount" resultType="long">
+		SELECT
+			COUNT(1)
+		FROM sys_user a
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+	</select>
+
+	<!-- 根据用户脸部识别ID查询用户 -->
+	<select id="getByUserFaceId" resultType="User">
+		SELECT
+			<include refid="userColumns"/>
+		FROM sys_user a
+		<include refid="userJoins"/>
+		WHERE a.USER_FACE_ID = #{userFaceId}
+		<if test="office != null and office.id != null and office.id !=''">
+			AND a.office_id = #{office.id}
+		</if>
+	</select>
+	<!-- 根据身份证号查询用户 -->
+	<select id="checkUserByIdCard" resultType="User">
+		SELECT
+			<include refid="userColumns"/>
+		FROM sys_user a
+		<include refid="userJoins"/>
+		<where>
+		<if test="idcardNo != null and idcardNo !=''">
+			AND a.idcard_no = #{idcardNo}
+		</if>
+		    AND a.del_flag != '1'
+		</where>
+	</select>
+	<!-- 根据机构ID查询人民银行、商业机构、清分中心设定脸部识别ID数量 -->
+	<select id="getPbocFaceIdCntByOfficeId" resultType="java.lang.Integer">
+		SELECT
+			COUNT(USER_FACE_ID)
+		FROM sys_user a
+		WHERE a.USER_FACE_ID IS NOT NULL
+		AND a.office_id in (select so.id from SYS_OFFICE so where so.id=#{officeId}
+									or so.parent_ids like
+									<!-- '%'||#{officeId}||'%'  -->
+									<if test="dbName == 'oracle'">'%'||#{officeId}||'%' </if>
+									<if test="dbName == 'mysql'">CONCAT('%',#{officeId},'%')</if>
+									and so.type in (1,3,6))
+	</select>
+
+	<select id="getMaxFaceId" resultType="java.lang.Long">
+		SELECT Max(USER_FACE_ID) FROM SYS_USER t WHERE USER_FACE_ID >= #{minId}  and USER_FACE_ID <![CDATA[<]]> #{maxId}
+	</select>
+
+	<!-- 插入用户 -->
+	<insert id="insert">
+		INSERT INTO sys_user(
+			id,
+			office_id,
+			login_name,
+			password,
+			no,
+			name,
+			email,
+			phone,
+			mobile,
+			user_type,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag,
+			idcard_no,
+			cs_permission,
+			USER_FACE_ID,
+		    VERSION
+		) VALUES (
+			#{id},
+			#{office.id},
+			#{loginName},
+			#{password},
+			#{no},
+			#{name},
+			#{email},
+			#{phone},
+			#{mobile},
+			#{userType},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag},
+			#{idcardNo},
+			#{csPermission},
+			#{userFaceId},
+			#{version}
+		)
+	</insert>
+
+	<!-- 更新用户 -->
+	<update id="update">
+		UPDATE sys_user SET
+			office_id = #{office.id},
+			login_name = #{loginName},
+			password = #{password},
+			no = #{no},
+			name = #{name},
+			email = #{email},
+			phone = #{phone},
+			mobile = #{mobile},
+			user_type = #{userType},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks},
+			idcard_no = #{idcardNo},
+			cs_permission = #{csPermission},
+			USER_FACE_ID=#{userFaceId},
+		    VERSION=#{version}
+		WHERE id = #{id}
+	</update>
+
+	<!-- 删除用户和角色关联表数据 -->
+	<delete id="deleteUserRole">
+		DELETE FROM sys_user_role WHERE user_id = #{id}
+	</delete>
+
+	<!-- 插入用户和角色关联表数据 -->
+	<insert id="insertUserRole">
+		INSERT INTO sys_user_role(user_id, role_id)
+		<foreach collection="roleList" item="role" separator=" union all ">
+			SELECT #{id}, #{role.id} FROM dual
+		</foreach>
+	</insert>
+
+	<!-- 更新用户信息  -->
+	<update id="updateUserInfo">
+		UPDATE sys_user SET
+			email = #{email},
+			phone = #{phone},
+			mobile = #{mobile},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks},
+		    version = #{version}
+		WHERE id = #{id}
+	</update>
+
+	<!-- 更新用户密码 -->
+	<update id="updatePasswordById">
+		UPDATE sys_user SET
+			password = #{password},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			version = version + 1
+		WHERE id = #{id}
+	</update>
+
+	<!-- 更新登录信息，如登录IP、登录时间 -->
+	<update id="updateLoginInfo">
+		UPDATE sys_user SET
+			login_ip = #{loginIp},
+			login_Date = #{loginDate}
+		WHERE id = #{id}
+	</update>
+
+	<!-- 逻辑删除用户 -->
+	<update id="delete">
+		UPDATE sys_user SET
+			del_flag = #{DEL_FLAG_DELETE},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate}
+		WHERE id = #{id}
+	</update>
+
+	<!-- 按照用户身份证号码更新用户 -->
+	<update id="updateByIdcardNo">
+		UPDATE sys_user SET
+			name = #{name},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			version = #{version}
+		WHERE idcard_no = #{idcardNo}
+			AND del_flag = #{DEL_FLAG_NORMAL}
+	</update>
+
+    <!-- 修改用户名和密码 -->
+    <update id="updateLoginNameAndPassword">
+        UPDATE sys_user su
+        SET PASSWORD    = #{password},
+            LOGIN_NAME  = #{loginName},
+            UPDATE_BY   = #{updateBy},
+            UPDATE_DATE = #{updateDate},
+			version = #{version}
+        WHERE su.ID = #{userId}
+    </update>
+    
+    <sql id="wxUserJoins">
+		LEFT JOIN sys_office o ON o.id = a.office_id
+		LEFT JOIN sys_guest sg ON a.id = sg.id
+    </sql>
+    
+    <!-- 通过unionId获取用户信息 -->
+    <select id="getUserByUnionId" parameterType="string" resultType="User">
+	    SELECT
+			<include refid="userColumns"/>
+		FROM
+			sys_user a
+		<include refid="wxUserJoins"/>
+		WHERE
+			sg.union_id = #{unionId}
+			AND a.del_flag = '0'
+			AND sg.del_flag = '0'
+	</select>
+	
+	<select id="getUserById" parameterType="string" resultType="User">
+		SELECT
+			<include refid="userColumns" />
+		FROM
+			sys_user a
+		<include refid="userJoins"/>
+		WHERE a.id = #{id}
+    </select>
+</mapper>

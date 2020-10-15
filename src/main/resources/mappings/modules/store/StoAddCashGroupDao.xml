@@ -1,0 +1,380 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoAddCashGroupDao">
+	<!-- Add_Cash_Group表列名SQL -->
+	<sql id="addCashGroupColumns">
+		acg.GROUP_ID AS "id",
+		acg.GROUP_NAME AS "groupName",
+		acg.CAR_ID AS "carId",
+		acg.CAR_NAME AS "carName",
+		acg.ESCORT_NO1 AS "escortNo1",
+		acg.ESCORT_NAME1 AS "escortName1",
+		acg.ESCORT_NO2 AS "escortNo2",
+		acg.ESCORT_NAME2 AS "escortName2",
+		acg.CREATE_BY AS "createBy",
+		acg.CREATE_NAME AS "createName",
+		acg.CREATE_DATE AS "createDate",
+		acg.UPDATE_BY AS "updateBy",
+		acg.UPDATE_NAME AS "updateName",
+		acg.UPDATE_DATE AS "updateDate",
+		acg.DEL_FLAG AS "delFlag"
+	</sql>
+	
+	<sql id="stoCarInfoColumns">
+		sci.CAR_ID AS "id",
+		sci.CAR_NO AS "carNo",
+		sci.BINDING_FLAG AS "bindingFlag",
+		sci.OFFICE_ID AS "officeId",
+		sci.REMARKS AS "remarks",
+		sci.CREATE_BY AS "createBy",
+		sci.CREATE_NAME AS "createName",
+		sci.CREATE_DATE AS "createDate",
+		sci.UPDATE_BY AS "updateBy",
+		sci.UPDATE_NAME AS "updateName",
+		sci.UPDATE_DATE AS "updateDate",
+		sci.DEL_FLAG AS "deleteFlag"
+	</sql>
+	
+	<sql id="stoEscortInfoColumns">
+		esi.escort_id AS "escortId",
+		esi.idcard_no AS "idcardNo",
+		esi.escort_name AS "escortName",
+		esi.phone AS "phone",
+		esi.address AS "address",
+		esi.identity_birth AS "identityBirth",
+		esi.identity_visa AS "identityVisa",
+		esi.identity_gender AS "identityGender",
+		esi.identity_national AS "identityNational",
+		esi.finger_no2 AS "fingerNo2",
+		esi.finger_no1 AS "fingerNo1",
+		esi.pda_finger_no1 AS "pdaFingerNo1",
+		esi.pda_finger_no2 AS "pdaFingerNo2",
+		esi.photo AS "photo",
+		esi.user_id AS "user.id",
+		esi.office_id AS "office.id",
+		esi.escort_type AS "escortType",
+		esi.create_by AS "createBy.id",
+		esi.create_date AS "createDate",
+		esi.update_by AS "updateBy.id",
+		esi.update_date AS "updateDate",
+		esi.del_flag AS "delFlag",
+		esi.binding_route AS "bindingRoute",
+		esi.create_name AS "createName",
+		esi.update_name AS "updateName",
+		esi.password as "password",
+		esi.rfid AS "rfid",
+		esi.binding_rfid as "bindingRfid",
+		esi.USER_STAMPER AS "userStamper",
+		esi.USER_FACE_ID AS "userFaceId",
+		esi.BINDING_FACE AS "bindingFace"
+	</sql>
+	
+	<!-- 条件查询加钞组信息 -->
+	<select id="getStoAddCashGroupList" resultType="StoAddCashGroup">
+		SELECT 
+			<include refid="addCashGroupColumns"/>
+		FROM add_cash_group acg  LEFT JOIN  sto_car_info sci on acg.car_id=sci.car_id
+		<trim prefix="WHERE"  prefixOverrides="AND|OR">
+			<!-- 添加机构筛选条件 修改人：xl 修改时间：2017-12-29 begin -->
+			<if test="stoAddCashGroup!=null and stoAddCashGroup.office!=null">
+				AND	sci.office_id=#{stoAddCashGroup.office.id}
+			</if>
+			<!-- end -->
+			<!-- 加钞组ID -->
+			<if test="stoAddCashGroup.id != '' and stoAddCashGroup.id != null">
+				AND acg.GROUP_ID = #{stoAddCashGroup.id}
+			</if>
+			<!-- 加钞组名称 -->
+			<if test="stoAddCashGroup.groupName != '' and stoAddCashGroup.groupName != null">
+				AND acg.GROUP_NAME = #{stoAddCashGroup.groupName} 
+				<!--(acg.GROUP_NAME like 
+				 '%' || #{boxNo} || '%' 
+				<if test="dbName == 'oracle'">'%' || #{stoAddCashGroup.groupName} || '%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{stoAddCashGroup.groupName}, '%')</if>
+				OR acg.GROUP_NAME = #{stoAddCashGroup.groupName}
+				)-->
+			</if>
+			<!-- 车辆ID -->
+			<if test="stoAddCashGroup.carId != '' and stoAddCashGroup.carId != null">
+			AND (acg.CAR_ID like 
+				<!-- '%' || #{boxNo} || '%' -->
+				<if test="dbName == 'oracle'">'%' || #{stoAddCashGroup.carId} || '%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{stoAddCashGroup.carId}, '%')</if>
+				OR acg.CAR_ID = #{stoAddCashGroup.carId}
+				)
+			</if>
+			<!-- 车辆名称 -->
+			<if test="stoAddCashGroup.carName != '' and stoAddCashGroup.carName != null">
+				AND (acg.CAR_NAME like 
+				<!-- '%' || #{boxNo} || '%' -->
+				<if test="dbName == 'oracle'">'%' || #{stoAddCashGroup.carName} || '%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{stoAddCashGroup.carName}, '%')</if>
+				OR acg.CAR_NAME = #{stoAddCashGroup.carName}
+				)
+			</if>
+			<!-- 人员1ID -->
+			<if test="stoAddCashGroup.escortNo1 != '' and stoAddCashGroup.escortNo1 != null">
+				AND (acg.ESCORT_NO1 like 
+				<!-- '%' || #{boxNo} || '%' -->
+				<if test="dbName == 'oracle'">'%' || #{stoAddCashGroup.escortNo1} || '%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{stoAddCashGroup.escortNo1}, '%')</if>
+				OR acg.ESCORT_NO1 = #{stoAddCashGroup.escortNo1}
+				)
+			</if>
+			<!-- 人员1名称 -->
+			<if test="stoAddCashGroup.escortName1 != '' and stoAddCashGroup.escortName1 != null">
+				AND (acg.ESCORT_NAME1 like 
+				<!-- '%' || #{boxNo} || '%' -->
+				<if test="dbName == 'oracle'">'%' || #{stoAddCashGroup.escortName1} || '%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{stoAddCashGroup.escortName1}, '%')</if>
+				OR acg.ESCORT_NAME1 = #{stoAddCashGroup.escortName1}
+				)
+			</if>
+			<!-- 人员2ID -->
+			<if test="stoAddCashGroup.escortNo2 != '' and stoAddCashGroup.escortNo2 != null">
+				AND (acg.ESCORT_NO2 like 
+				<!-- '%' || #{boxNo} || '%' -->
+				<if test="dbName == 'oracle'">'%' || #{stoAddCashGroup.escortNo2} || '%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{stoAddCashGroup.escortNo2}, '%')</if>
+				OR acg.ESCORT_NO2 = #{stoAddCashGroup.escortNo2}
+				)
+			</if>
+			<!-- 人员2名称 -->
+			<if test="stoAddCashGroup.escortName2 != '' and stoAddCashGroup.escortName2 != null">
+				AND (acg.ESCORT_NAME2 like 
+				<!-- '%' || #{boxNo} || '%' -->
+				<if test="dbName == 'oracle'">'%' || #{stoAddCashGroup.escortName2} || '%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{stoAddCashGroup.escortName2}, '%')</if>
+				OR acg.ESCORT_NAME2 = #{stoAddCashGroup.escortName2}
+				)
+			</if>
+			<!-- 有效标识 -->
+			<if test="stoAddCashGroup.delFlag != '' and stoAddCashGroup.delFlag != null">
+				AND acg.DEL_FLAG = #{stoAddCashGroup.delFlag}
+			</if>
+		</trim>
+		ORDER BY acg.UPDATE_DATE DESC
+	</select>
+	
+	<select id="get" resultType="StoAddCashGroup">
+		SELECT
+			<include refid="addCashGroupColumns"/>
+		FROM add_cash_group acg
+		<where>
+			acg.GROUP_ID = #{id}
+		</where>
+	</select>
+	
+	<select id="findList" resultType="StoAddCashGroup">
+		SELECT 
+			<include refid="addCashGroupColumns"/>
+		FROM add_cash_group acg LEFT JOIN  sto_car_info sci on acg.car_id=sci.car_id
+		<trim prefix="WHERE"  prefixOverrides="AND|OR">
+			<!-- 添加机构筛选条件 修改人：xl 修改时间：2017-12-29 begin -->
+			<if test="office!=null">
+				AND	sci.office_id=#{office.id}
+			</if>
+			<!-- end -->
+			<!-- 加钞组ID -->
+			<if test="id != '' and id != null">
+				AND acg.GROUP_ID = #{id}
+			</if>
+			<!-- 加钞组名称 -->
+			<if test="groupName != '' and groupName != null">
+				AND (acg.GROUP_NAME like 
+				<!-- '%' || #{boxNo} || '%' -->
+				<if test="dbName == 'oracle'">'%' || #{groupName} || '%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{groupName}, '%')</if>
+				OR acg.GROUP_NAME = #{groupName}
+				)
+			</if>
+			<!-- 车辆ID -->
+			<if test="carId != '' and carId != null">
+			AND (acg.CAR_ID like 
+				<!-- '%' || #{boxNo} || '%' -->
+				<if test="dbName == 'oracle'">'%' || #{carId} || '%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{carId}, '%')</if>
+				OR acg.CAR_ID = #{carId}
+				)
+			</if>
+			<!-- 车辆名称 -->
+			<if test="carName != '' and carName != null">
+				AND (acg.CAR_NAME like 
+				<!-- '%' || #{boxNo} || '%' -->
+				<if test="dbName == 'oracle'">'%' || #{carName} || '%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{carName}, '%')</if>
+				OR acg.CAR_NAME = #{carName}
+				)
+			</if>
+			<!-- 人员1ID -->
+			<if test="escortNo1 != '' and escortNo1 != null">
+				AND (acg.ESCORT_NO1 like 
+				<!-- '%' || #{boxNo} || '%' -->
+				<if test="dbName == 'oracle'">'%' || #{escortNo1} || '%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{escortNo1}, '%')</if>
+				OR acg.ESCORT_NO1 = #{escortNo1}
+				)
+			</if>
+			<!-- 人员1名称 -->
+			<if test="escortName1 != '' and escortName1 != null">
+				AND (acg.ESCORT_NAME1 like 
+				<!-- '%' || #{boxNo} || '%' -->
+				<if test="dbName == 'oracle'">'%' || #{escortName1} || '%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{escortName1}, '%')</if>
+				OR acg.ESCORT_NAME1 = #{escortName1}
+				)
+			</if>
+			<!-- 人员2ID -->
+			<if test="escortNo2 != '' and escortNo2 != null">
+				AND (acg.ESCORT_NO2 like 
+				<!-- '%' || #{boxNo} || '%' -->
+				<if test="dbName == 'oracle'">'%' || #{escortNo2} || '%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{escortNo2}, '%')</if>
+				OR acg.ESCORT_NO2 = #{escortNo2}
+				)
+			</if>
+			<!-- 人员2名称 -->
+			<if test="escortName2 != '' and escortName2 != null">
+				AND (acg.ESCORT_NAME2 like 
+				<!-- '%' || #{boxNo} || '%' -->
+				<if test="dbName == 'oracle'">'%' || #{escortName2} || '%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{escortName2}, '%')</if>
+				OR acg.ESCORT_NAME2 = #{escortName2}
+				)
+			</if>
+			<!-- 有效标识 -->
+			<if test="delFlag != '' and delFlag != null">
+				AND acg.DEL_FLAG = #{delFlag}
+			</if>
+			<choose>
+				<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+					ORDER BY ${page.orderBy}
+				</when>
+				<otherwise>
+					ORDER BY acg.UPDATE_DATE DESC
+				</otherwise>
+			</choose>
+		</trim>
+	</select>
+	
+	<!-- 通过GroupId获取单个加钞组信息 -->
+	<select id="getSingleStoAddCashGroupInfo" resultType="StoAddCashGroup">
+		SELECT 
+			<include refid="addCashGroupColumns"/>
+		FROM add_cash_group acg
+		<where>
+			acg.GROUP_ID = #{stoAddCashGroup.id}
+		</where> 
+	</select>
+	<!-- 通过GroupId获取单个未删除加钞组信息  修改人:sg 修改日期:2017-11-17 begin-->
+	<select id="getSingleStoAddCashGroupInfoNoDel" resultType="StoAddCashGroup">
+		SELECT 
+			<include refid="addCashGroupColumns"/>
+		FROM add_cash_group acg
+		<where>
+			acg.GROUP_ID = #{stoAddCashGroup.id}
+			and acg.DEL_FLAG = '0'
+		</where> 
+	</select>
+	<!-- end -->
+	<!-- 添加加钞组信息 -->
+	<insert id="insert">
+		INSERT INTO add_cash_group(
+			group_id,
+			group_name,
+			car_id,
+			car_name,
+			escort_no1,
+			escort_name1,
+			escort_no2,
+			escort_name2,
+			create_by,
+			create_name,
+			create_date,
+			update_by,
+			update_name,
+			update_date,
+			del_flag
+		) VALUES (
+			#{id},
+			#{groupName},
+			#{carId},
+			#{carName},
+			#{escortNo1},
+			#{escortName1},
+			#{escortNo2},
+			#{escortName2},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate},
+			#{delFlag}
+		)
+	</insert>
+	
+	<!-- 修改加钞组信息 -->
+	<update id="update">
+		UPDATE add_cash_group SET 	
+			group_id = #{id},
+			group_name = #{groupName},
+			car_id = #{carId},
+			car_name = #{carName},
+			escort_no1 = #{escortNo1},
+			escort_name1 = #{escortName1},
+			escort_no2 = #{escortNo2},
+			escort_name2 = #{escortName2},
+			<!-- create_name = #{createName}, -->
+			update_by = #{updateBy.id},
+			update_name = #{updateBy.name},
+			update_date = #{updateDate},
+			del_flag = #{delFlag}
+		WHERE group_id = #{id}
+	</update>
+	
+	<!-- 删除加钞组信息（逻辑删除） -->
+	<update id="delete">
+		UPDATE add_cash_group
+			SET DEL_FLAG = #{DEL_FLAG_DELETE}
+		WHERE group_id = #{id}
+	</update>
+	
+	<!-- 获取押运车辆信息，排除已分配押运人的押运车辆 -->
+	<select id="getUnSetCarInfo" parameterType="Map" resultType="StoCarInfo">
+		SELECT 
+			<include refid="stoCarInfoColumns"/>
+		FROM sto_car_info sci
+		<where> 
+			sci.DEL_FLAG = #{carDelFlag}
+			<!-- 添加机构查询条件 修改人：xl 修改日期：2017-12-27 begin -->
+ 			<if test="office != null and office != ''">
+				AND sci.OFFICE_ID = #{office.id}
+			</if>
+			<!-- end -->
+		 	AND sci.CAR_NO NOT IN (SELECT acg.CAR_NAME 
+				 					 FROM add_cash_group acg 
+				    				 WHERE acg.DEL_FLAG = #{addCashGroupDelFlag})
+		</where>
+	</select>
+	
+	<!-- 获取未分配车辆的押运员 -->
+	<select id="getUnCheeseEscortInfo" parameterType="Map" resultType="StoEscortInfo">
+		SELECT 
+			<include refid="stoEscortInfoColumns"/> 
+		FROM sto_escort_info esi
+		WHERE esi.DEL_FLAG = #{escortDelFlag}
+		<!-- 添加机构查询条件 修改人：wxz 修改日期：2017-12-29 begin -->
+ 			<if test="office != null and office != ''">
+				AND esi.OFFICE_ID = #{office.id}
+			</if>
+		AND esi.ESCORT_TYPE = #{escortType}
+		AND esi.ESCORT_ID NOT IN(SELECT acg.ESCORT_NO1
+			   					   FROM add_cash_group acg 
+			   					   WHERE acg.DEL_FLAG = #{addCashGroupDelFlag} 
+			   					   UNION ALL 
+			   					   SELECT acg.ESCORT_NO2
+			   					   FROM add_cash_group acg 
+			   					   WHERE acg.DEL_FLAG = #{addCashGroupDelFlag})
+	</select>
+</mapper>

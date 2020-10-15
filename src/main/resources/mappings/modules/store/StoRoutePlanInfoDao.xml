@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoRouteInfoDao">
+
+	<insert id="saveRoutePlan">
+		INSERT INTO sto_route_plan_info(
+			route_plan_id,
+			route_id,
+			route_lnglat,
+			route_plan_color,
+			car_track_color,
+			create_by,
+			create_date,
+			del_flag
+		) VALUES (
+			#{routePlanId},
+			#{routeId},
+			#{routeLnglat},
+			#{routePlanColor},
+			#{carTrackColor},
+			#{createBy.id},
+			#{createDate},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="presaveRoutePlan">
+		UPDATE sto_route_plan_info
+		SET DEL_FLAG = '1'
+		WHERE route_Id = #{routeId}
+	</update>
+	
+	<select id="getRoutePlan" resultType="com.coffer.businesses.modules.store.v01.entity.StoRouteInfo">
+		SELECT ROUTE_PLAN_ID,ROUTE_ID,ROUTE_LNGLAT,ROUTE_PLAN_COLOR,CAR_TRACK_COLOR
+		FROM sto_route_plan_info
+		<where>
+			<if test="routeId != null and routeId != '' ">
+				and route_Id = #{routeId}
+			</if>
+			<if test="delFlag != null and delFlag != '' ">
+				and del_Flag = #{delFlag}
+			</if>
+		</where>
+	</select>
+	
+	<insert id="saveCarLocation">
+		INSERT INTO sto_car_track_history(
+			route_plan_id,
+			car_no,
+			route_lnglat,
+			create_date,
+			car_speed,
+			task_flag
+		) VALUES (
+			#{routePlanId},
+			#{carNo},
+			#{routeLnglat},
+			#{createDate},
+			#{carSpeed},
+			#{taskFlag}
+		)
+	</insert>
+	
+</mapper>

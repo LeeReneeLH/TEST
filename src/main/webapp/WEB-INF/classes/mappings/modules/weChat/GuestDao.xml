@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.weChat.v03.dao.GuestDao">
+
+	<resultMap id="guestBean" type="com.coffer.businesses.modules.weChat.v03.entity.Guest">
+		<id column="id" property="id" />
+		<result column="gname" property="gname" />
+		<result column="gphone" property="gphone" />
+		<result column="gidcard" property="gidcardNo" />
+		<result column="open_id" property="openId" />
+		<result column="union_id" property="unionId" />
+		<result column="login_date" property="loginDate" />
+		<result column="goffice_id" property="gofficeId" />
+		<result column="goffice_name" property="gofficeName" />
+		<result column="grantstatus" property="grantstatus" />
+		<result column="method" property="method" />
+		<result column="grant_date" property="grantDate" />
+		<result column="guest_type" property="guestType" />
+		<result column="bus_type" property="busType" />
+		<result column="VERSION" property="version" />
+		<collection property="equipmentIdList" ofType="string">
+			<id column="equipmentId" property="equipmentId" />
+		</collection>
+	</resultMap>
+
+	<sql id="sysGuestColumns">
+		a.id AS "id",
+		a.gname AS "gname",
+		a.gphone AS "gphone",
+		a.gidcard_no AS "gidcardNo",
+		a.open_id AS "openId",
+        a.union_id AS "unionId",
+		a.login_date AS "loginDate",
+		a.goffice_id AS "gofficeId", 
+		a.goffice_name AS "gofficeName",
+		a.grantstatus AS "grantstatus",
+		a.method AS "method",
+		a.grant_date AS "grantDate",
+		a.guest_type AS "guestType",
+		<!-- 追加用户业务类型  修改人：XL 修改时间：2018-05-22 begin  --> 
+		a.bus_type AS "busType"
+		<!-- end  --> 
+	</sql>
+	
+	<sql id="sysGuestJoins">
+	</sql>
+    
+	<select id="get" resultType="Guest">
+		SELECT 
+		<include refid="sysGuestColumns"/>
+		,u.VERSION AS version
+		FROM sys_guest a left join sys_user u on a.ID = u.ID
+		<include refid="sysGuestJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="getByopenID" resultType="Guest">
+		SELECT 
+			<include refid="sysGuestColumns"/>
+		FROM sys_guest a
+		<include refid="sysGuestJoins"/>
+		WHERE a.open_id = #{openId}
+		  and a.del_flag = #{DEL_FLAG_NORMAL}
+	</select>
+
+    <select id="getByUnionID" resultMap="guestBean">
+        SELECT
+        <!-- <include refid="sysGuestColumns"/> -->
+        a.*
+        ,u.VERSION as version
+        ,ei.ID as equipmentId
+        FROM sys_guest a left join sys_user u on a.ID = u.ID
+        LEFT JOIN equipment_info ei on a.goffice_id = ei.AOFFICE_ID
+        <include refid="sysGuestJoins"/>
+        <where>
+			<if test="unionId != null and unionId != ''">
+				a.union_id = #{unionId}
+			</if>
+			<if test="id != null and id != ''">
+				AND a.ID = #{id}
+			</if>
+		</where>
+        and a.del_flag = #{DEL_FLAG_NORMAL}
+    </select>
+	
+	
+	<select id="findList" resultType="Guest">
+		SELECT 
+			<include refid="sysGuestColumns"/>
+		FROM sys_guest a
+		<include refid="sysGuestJoins"/>
+			<where>
+		        a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="grantstatus != null and grantstatus != ''">
+				AND a.grantstatus = #{grantstatus }
+			</if>
+			<if test="openId != null and openId != ''">
+				AND a.open_id = #{openId }
+			</if>
+			<if test="gofficeId != null and gofficeId != ''">
+				AND a.goffice_id = #{gofficeId }
+			</if>
+			<if test="gname != null and gname != ''">
+				AND a.gname like
+					<if test="dbName == 'oracle'">'%'||#{gname}||'%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{gname}, '%')</if>
+			</if>
+			<if test="busType != null and busType != ''">
+				AND a.bus_type = #{busType }
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+		<select id="findListByOpenId" resultType="Guest">
+		SELECT 
+			<include refid="sysGuestColumns"/>
+		FROM sys_guest a
+		<include refid="sysGuestJoins"/>
+			<where>
+			   a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="grantstatus != null and grantstatus != ''">
+				AND a.grantstatus = #{grantstatus }
+			</if>
+			<if test="openId != null and openId != ''">
+				AND a.open_id = #{openId }
+			</if>
+			
+		</where>
+		
+	</select>
+	
+	<select id="findAllList" resultType="Guest">
+		SELECT 
+			<include refid="sysGuestColumns"/>
+		FROM sys_guest a
+		<include refid="sysGuestJoins"/>
+		<where>
+			
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO sys_guest(
+			id,
+			gname,
+			gphone,
+			gidcard_no,
+			open_id,
+            union_id,
+			login_date,
+			goffice_id,
+			goffice_name,
+			grantstatus,
+			method,
+			grant_date,
+			guest_type,
+			del_flag,
+			bus_type
+		) VALUES (
+			#{id},
+			#{gname},
+			#{gphone},
+			#{gidcardNo},
+			#{openId},
+		    #{unionId},
+			#{loginDate},
+			#{gofficeId},
+			#{gofficeName},
+			#{grantstatus},
+			#{method},
+			#{grantDate},
+			#{guestType},
+			#{delFlag},
+			#{busType}
+		)
+	</insert>
+
+    <update id="update">
+        UPDATE sys_guest
+        SET gname        = #{gname},
+            gphone       = #{gphone},
+            gidcard_no   = #{gidcardNo},
+            open_id      = #{openId},
+            union_id     = #{unionId},
+            login_date   = #{loginDate},
+            goffice_id   = #{gofficeId},
+            goffice_name = #{gofficeName},
+            grantstatus  = #{grantstatus},
+            method       = #{method},
+            grant_date   = #{grantDate},
+            guest_type   = #{guestType},
+            bus_type     = #{busType}
+        WHERE id = #{id}
+    </update>
+	
+	<update id="delete">
+		UPDATE sys_guest SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+		
+	<update id="updategrantstatus">
+		UPDATE sys_guest SET 	
+			grantstatus = #{grantstatus}
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 微信端通过微信号修改 -->
+	<update id="updateByopenId">
+		UPDATE sys_guest SET 	
+			gname = #{gname},
+			gphone = #{gphone},
+			gidcard_no = #{gidcardNo},
+			open_id = #{openId},
+		    union_id = #{unionId},
+			login_date = #{loginDate},
+			goffice_id = #{gofficeId},
+			goffice_name = #{gofficeName},
+			grantstatus = #{grantstatus},
+			method = #{method},
+			grant_date = #{grantDate},
+			guest_type = #{guestType},
+			bus_type=#{busType}
+		WHERE open_id = #{openId}
+	</update>
+	
+</mapper>

@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.coffer.businesses.modules.doorOrder.v01.dao.HistoryChangeDao">
+
+   <!-- 机具历史更改记录  ZXK -->
+   <select id="findEquiHistoryChangeList" resultType="HistoryChange">	
+    SELECT
+		ei.SERIES_NUMBER AS "seriesNumber",
+		pr. NAME AS area,
+		a1.DOOR_ID AS doorId,
+		DO. NAME AS doorName,
+		a1.EQUIPMENT_ID AS equipmentId,
+		a5.CHANGE_DATE AS changeDate,
+		s. NAME AS payPeople,
+		a5.BAG_NO AS bagNo,
+		a3.lastBagNo,
+		COUNT(DISTINCT a1.ID) AS batchNo,
+		<!-- 速存金额(纸币+硬币) -->
+		(sum(IFNULL(a4.PAPER_AMOUNT, 0)) + sum(IFNULL(a4.COIN_AMOUNT, 0))) AS paperMoney,
+		<!-- 速存数量(纸币+硬币) -->
+		(sum(IFNULL(a4.PAPER_COUNT, 0)) + sum(IFNULL(a4.COIN_COUNT, 0))) AS paperMoneyCount,
+		<!-- 数量(纸币+硬币) -->
+		(sum(IFNULL(a4.PAPER_COUNT, 0)) + sum(IFNULL(a4.COIN_COUNT, 0))) AS count,
+		<!-- 强制金额 -->
+		sum(IFNULL(a4.FORCE_AMOUNT, 0)) AS comperMoney,
+		<!-- 其他金额 -->
+		sum(IFNULL(a4.OTHER_AMOUNT, 0)) AS otherMoney,
+		<!-- 金额 -->
+		sum(IFNULL(a4.AMOUNT, 0)) AS AMOUNT
+	FROM
+		clear_add_money a1
+	LEFT JOIN clear_plan_info cp ON cp.ID = a1.BUSINESS_ID
+	LEFT JOIN EQUIPMENT_INFO ei ON ei.ID = a1.EQUIPMENT_ID
+	LEFT JOIN (
+	<!-- 当前(最新)清机信息 -->
+		SELECT
+			aa.CHANGE_DATE,
+			aa.CHANGE_CODE,
+			d.RFID AS BAG_NO,
+			aa.BUSINESS_ID,
+			aa.EQUIPMENT_ID,
+			d.order_id,
+			aa.ID
+		FROM
+	        (SELECT   
+	    	          t.CHANGE_DATE,
+	                  t.CHANGE_CODE,
+					  t.EQUIPMENT_ID,
+				   	  t.BUSINESS_ID,
+					  t.ID
+			 FROM (SELECT
+					  a1.CHANGE_DATE,
+	                  a1.CHANGE_CODE,
+					  a1.EQUIPMENT_ID,
+				   	  a1.BUSINESS_ID,
+					  a1.ID
+						FROM
+							clear_add_money a1
+						WHERE
+							a1.TYPE = 1
+						AND a1.business_id != ''
+	                    GROUP BY a1.CHANGE_DATE  DESC
+	                ) t
+	        GROUP BY t.EQUIPMENT_ID
+			) aa
+		JOIN clear_plan_info c ON aa.BUSINESS_ID = c.ID
+		JOIN door_order_info d ON d.ORDER_ID = c.PLAN_ID
+	  ) a5 ON a5.EQUIPMENT_ID = a1.EQUIPMENT_ID
+	LEFT JOIN door_order_detail a4 ON a4.order_id = a5.ORDER_ID
+	 AND a4.order_id = cp.PLAN_ID
+	LEFT JOIN (
+		<!-- 前一钞袋号 -->
+		SELECT
+			aa.EQUIPMENT_ID,
+			d.RFID AS lastBagNo
+		FROM
+			(
+				SELECT
+					a.EQUIPMENT_ID,
+					a.BUSINESS_ID,
+					a.CHANGE_DATE
+				FROM
+					(
+						SELECT
+							EQUIPMENT_ID,
+							BUSINESS_ID,
+							CHANGE_DATE
+						FROM
+							clear_add_money 
+                        WHERE TYPE = '1'
+						AND business_id IS NOT NULL
+						AND business_id != ''
+					) a
+				 LEFT JOIN (
+						SELECT
+							a1.CHANGE_DATE,
+							a1.EQUIPMENT_ID
+						FROM
+							clear_add_money a1
+						WHERE
+							a1.TYPE = 1
+						AND a1.business_id != ''
+					)b ON a.EQUIPMENT_ID = b.EQUIPMENT_ID
+				WHERE
+					 a.CHANGE_DATE &lt;= b.CHANGE_DATE
+				GROUP BY
+					a.EQUIPMENT_ID,
+					a.CHANGE_DATE
+				HAVING
+					count(a.CHANGE_DATE) = 2
+			) aa
+		LEFT JOIN clear_plan_info c ON aa.BUSINESS_ID = c.ID
+		LEFT JOIN door_order_info d ON d.ORDER_ID = c.PLAN_ID
+	) a3 ON a3.EQUIPMENT_ID = a1.EQUIPMENT_ID
+	LEFT JOIN door_order_info d ON d.ORDER_ID = cp.PLAN_ID
+	AND d.RFID = a5.BAG_NO
+
+	LEFT JOIN (
+	SELECT
+	b.OFFICE_ID,
+	a.ID
+	from clear_plan_info a
+	LEFT JOIN door_order_info b
+	on a.PLAN_ID = b.ORDER_ID
+	)bb on bb.ID = a1.BUSINESS_ID
+			<!-- 机构及人员名称(机构过滤等) -->	
+			LEFT JOIN sys_user s ON a5.CHANGE_CODE = s.ID
+			LEFT JOIN sys_office o ON d.OFFICE_ID = o.id
+			LEFT JOIN sys_office DO ON DO.ID = a1.DOOR_ID
+			LEFT JOIN sys_office pr ON pr.ID = DO.PARENT_ID
+		<where>
+			a1.TYPE = '1'  AND a1.business_id &lt;&gt; '' AND a1.business_id IS NOT NULL 
+			<if test="null != aOffice and aOffice.id != null and aOffice.id != ''">
+				AND a1.DOOR_ID = #{aOffice.id}
+			</if>
+			 <if test="null != vinOffice and vinOffice.id != null and vinOffice.id != ''">
+				AND bb.OFFICE_ID = #{vinOffice.id}
+			</if> 
+			 <if test="doorId != null and doorId != ''">
+				AND a1.door_id = #{doorId}
+			</if>
+			<if test="equipmentId != null and equipmentId != ''">
+				AND a1.equipment_Id LIKE
+				<if test="dbName == 'oracle'">'%'||#{equipmentId}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{equipmentId}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{equipmentId},'%')</if>
+			</if>
+			<if test="seriesNumber != null and seriesNumber != ''">
+				AND ei.series_number LIKE
+				<if test="dbName == 'oracle'">'%'||#{seriesNumber}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{seriesNumber}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{seriesNumber},'%')</if>
+			</if>
+			<if test="bagNo != null and bagNo != ''">
+				AND a5.BAG_NO LIKE
+				<if test="dbName == 'oracle'">'%'||#{bagNo}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{bagNo}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{bagNo},'%')</if>
+			</if>
+		 <!--   开始时间 -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				AND 
+				<if test="dbName == 'oracle'">TO_CHAR(a5.CHANGE_DATE, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a5.CHANGE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+			</if>
+			<!-- 截止时间 -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND 
+				<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(a5.CHANGE_DATE,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(a5.CHANGE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+			</if>	
+			${sqlMap.dsf}
+		GROUP BY a1.EQUIPMENT_ID
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY changeDate DESC
+			</otherwise>
+		</choose> 
+		</where>
+	</select>
+	
+	<select id="getHistoryChangePageDetail" resultType="HistoryChange">
+	select 
+	   ei.SERIES_NUMBER AS "seriesNumber",
+	   pr.NAME AS area,
+       a.payPeople AS payPeople,
+       a.bagNo,
+       max(a.changeDate) AS changeDate,
+       a.batchNo,
+       
+       IFNULL(sum(doa.COUNT_ZHANG) ,0) as paperMoneyCount,
+       IFNULL(sum(case when doa.TYPE_ID = ${door.saveMethod.paper} then doa.DETAIL_AMOUNT end),0) as paperMoney,
+       IFNULL(sum(case when doa.TYPE_ID = ${door.saveMethod.force} then doa.DETAIL_AMOUNT end),0) as comperMoney,
+       IFNULL(sum(doa.COUNT_ZHANG) ,0) as count,
+       IFNULL(SUM(CASE WHEN doa.TYPE_ID = ${door.saveMethod.other} THEN doa.DETAIL_AMOUNT else 0 END),0) AS otherMoney,
+       IFNULL(sum(case when doa.TYPE_ID = ${door.saveMethod.paper} then doa.DETAIL_AMOUNT end),0) + IFNULL(sum(case when doa.TYPE_ID = ${door.saveMethod.force} then doa.DETAIL_AMOUNT end),0) as AMOUNT,
+       do.name as doorName  
+		from(select cam.EQUIPMENT_ID as equipmentId,
+		   cam.CHANGE_DATE as changeDate,
+		   doi.rfid as bagNo,
+		   cam.door_id,
+		   cam.UPDATE_NAME as payPeople,
+		   cam.count as count,
+		   cam.AMOUNT as AMOUNT,
+		   cam.DOOR_NAME as doorName,
+		   doi.ORDER_ID,
+           doi.UPDATE_DATE as updateDate,
+		   (select count(1) 
+		    from 
+		    	clear_add_money as d
+		    where d.equipment_id= #{equipmentId} and d.type=1 and d.business_id IS NOT NULL AND d.business_id &lt;&gt; ''
+		    and d.change_DATE &lt;= cam.change_date ) as batchNo
+		  from 
+		      clear_add_money as cam 
+		  inner join door_order_info as doi
+		  on cam.equipment_id=doi.equipment_id 
+		  LEFT JOIN clear_plan_info cpi ON cpi.ID=cam.BUSINESS_ID 
+		  and cam.equipment_id= #{equipmentId}
+		  where cam.type=1 AND cpi.PLAN_ID=doi.ORDER_ID
+         group by doi.ORDER_ID
+		) as a 
+			LEFT JOIN EQUIPMENT_INFO ei ON ei.ID = a.equipmentId
+			LEFT JOIN sys_office do ON do.ID = a.DOOR_ID
+  			LEFT JOIN sys_office pr ON pr.ID = do.PARENT_ID
+			inner join door_order_detail as dod on a.order_id=dod.order_id
+		    inner join door_order_amount as doa on dod.id=doa.detail_id
+		    <where>
+			1 = 1
+			<if test="payPeople != null and payPeople != ''">
+				AND a.payPeople LIKE
+				<if test="dbName == 'oracle'">'%'||#{payPeople}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{payPeople}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{payPeople},'%')</if>
+			</if>
+			<if test="bagNo != null and bagNo != ''">
+				AND a.bagNo LIKE
+				<if test="dbName == 'oracle'">'%'||#{bagNo}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{bagNo}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{bagNo},'%')</if>
+			</if>
+		 <!--   开始时间 -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				AND 
+				<if test="dbName == 'oracle'">TO_CHAR(changeDate, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(changeDate, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+			</if>
+			<!-- 截止时间 -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND 
+				<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(changeDate,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(changeDate, '%Y-%m-%d %H:%i:%s')</if>
+			</if>	
+			<!-- ${sqlMap.dsf} -->
+		GROUP BY  a.batchNo 
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY batchNo DESC
+			</otherwise>
+		</choose> 
+		</where>
+	</select>
+	
+</mapper>

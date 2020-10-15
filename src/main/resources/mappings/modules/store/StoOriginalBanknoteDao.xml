@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v02.dao.StoOriginalBanknoteDao">
+    
+	<sql id="stoOriginalBanknoteColumns">
+		a.box_no,
+		a.out_id,
+		a.IN_ID,
+		a.GOODS_ID,
+		a.GOODS_NAME,
+		a.sets,
+		a.original_translate,
+		a.denomination ,
+		a.amount,
+		a.coffice_id ,
+		a.out_by,
+		a.out_name ,
+		a.out_date,
+		a.hoffice_id, 
+		a.recover_by,
+		a.recover_name,
+		a.recover_date,
+		a.roffice_id,
+		a.create_by,
+		a.create_name,
+		a.create_date,
+		a.recover_status
+	</sql>
+	
+	<resultMap type="com.coffer.businesses.modules.store.v02.entity.StoOriginalBanknote" id="StoOriginalBanknoteResult">
+		<id column="box_no" property="boxNo" />
+		<result column="out_id" property="outId" />
+		<result column="IN_ID" property="inId" />
+		<result column="GOODS_ID" property="goodsId" />
+		<result column="GOODS_NAME" property="goodsName" />
+		<result column="sets" property="sets" />
+		<result column="original_translate" property="originalTranslate" />
+		<result column="denomination" property="denomination" />
+		<result column="amount" property="amount" />
+		<result column="out_by" property="outBy.id" />
+		<result column="out_name" property="outName" />
+		<result column="out_date" property="outDate" />
+		<result column="recover_by" property="recoverBy.id" />
+		<result column="recover_name" property="recoverName" />
+		<result column="recover_date" property="recoverDate" />
+		<result column="create_by" property="createBy.id" />
+		<result column="create_name" property="createName" />
+		<result column="create_date" property="createDate" />
+		<result column="recover_status" property="recoverStatus" />
+		<!-- 出库机构 -->
+		<association property="coffice" column="coffice_id" javaType="Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy" />
+		<!-- 回收机构 -->
+		<association property="hoffice" column="hoffice_id" javaType="Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy"/>
+		<!-- 入库机构 -->
+		<association property="roffice" column="roffice_id" javaType="Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy"/>
+	</resultMap>
+	
+	<sql id="stoOriginalBanknoteJoins">
+		 
+	</sql>
+	<sql id="stoOriginalBanknoteOutJoins">
+		 left join sys_office o
+  			on a.coffice_id = o.id
+	</sql>
+    
+	<select id="get" resultMap="StoOriginalBanknoteResult">
+		SELECT 
+			<include refid="stoOriginalBanknoteColumns"/>
+		FROM sto_original_banknote a
+		<include refid="stoOriginalBanknoteJoins"/>
+		WHERE a.box_no = #{id}
+	</select>
+	
+	<select id="getOriginalBanknoteById" resultMap="StoOriginalBanknoteResult">
+		SELECT 
+			<include refid="stoOriginalBanknoteColumns"/>
+		FROM sto_original_banknote a
+		<include refid="stoOriginalBanknoteJoins"/>
+		WHERE a.box_no = #{id}
+		<if test="officeId != null and officeId != ''">
+			AND a.roffice_id = #{officeId}
+		</if>
+	</select>
+	
+	<select id="findList" resultMap="StoOriginalBanknoteResult">
+		SELECT 
+			<include refid="stoOriginalBanknoteColumns"/>
+		FROM sto_original_banknote a
+		<include refid="stoOriginalBanknoteJoins"/>
+		<where>
+			1=1
+			<if test="roffice != null and roffice.id != null and roffice.id != ''">
+				AND a.roffice_id = #{roffice.id}
+			</if>
+			<if test="sets != null and sets != ''">
+				AND a.sets = #{sets}
+			</if>
+			<if test="boxNo != null and boxNo != ''">
+				AND a.box_no like
+				<if test="dbName == 'oracle'">'%'||#{boxNo}||'%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%',#{boxNo},'%')</if>
+			</if>
+			<if test="denomination != null and denomination != ''">
+				AND a.denomination = #{denomination}
+			</if>
+			<if test="createName != null and createName != ''">
+				AND a.create_name like
+				<if test="dbName == 'oracle'">'%'||#{createName}||'%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%',#{createName},'%')</if>
+			</if>
+			<if test="createDate != null">
+				<if test="dbName == 'oracle'">and TO_CHAR(a.create_date, 'yyyy-mm-dd') = to_char(#{createDate},'yyyy-MM-dd')</if>
+				<if test="dbName == 'mysql'">and DATE_FORMAT(a.create_date, '%Y-%m-%d') = DATE_FORMAT(#{createDate}, '%Y-%m-%d')</if>
+			</if>
+			<if test="outName != null and outName != ''">
+				AND a.out_name like
+				<if test="dbName == 'oracle'">'%'||#{outName}||'%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%',#{outName},'%')</if>
+			</if>
+			<if test="outDate != null">
+				<if test="dbName == 'oracle'">and TO_CHAR(a.out_date, 'yyyy-mm-dd') = to_char(#{outDate},'yyyy-MM-dd')</if>
+				<if test="dbName == 'mysql'">and DATE_FORMAT(a.out_date, '%Y-%m-%d') = DATE_FORMAT(#{outDate}, '%Y-%m-%d')</if>
+			</if>
+			<if test="recoverStatus != null and recoverStatus != ''">
+				AND a.recover_status = #{recoverStatus}
+			</if>
+			<if test="outId != null and outId != ''">
+				AND a.out_id = #{outId}
+			</if>
+			<if test="inId != null and inId != ''">
+				AND a.in_id = #{inId}
+			</if>
+			<if test="goodsId != null and goodsId != ''">
+				AND a.GOODS_ID = #{goodsId}
+			</if>
+			<if test="goodsName != null and goodsName != ''">
+				AND a.GOODS_NAME like 
+				<!-- '%'||#{goodsName}||'%' -->
+				<if test="dbName == 'oracle'">'%'||#{goodsName}||'%'</if>
+				<if test="dbName == 'mysql'"> CONCAT('%',#{goodsName}, '%')</if>
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.create_date
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultMap="StoOriginalBanknoteResult">
+		SELECT 
+			<include refid="stoOriginalBanknoteColumns"/>
+		FROM sto_original_banknote a
+		<include refid="stoOriginalBanknoteJoins"/>
+		<where>
+			
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findOutList" resultType="StoOriginalBanknote">
+		SELECT 
+			a.out_id AS "outId", 
+			sum(a.amount) AS "totalAmount",
+			o.name AS "cofficeName", 
+			a.out_name AS "outName", 
+			a.out_date AS "outDate"
+		FROM sto_original_banknote a
+		<include refid="stoOriginalBanknoteOutJoins"/>
+		<where>
+			a.coffice_id is not null
+			<if test="outId != null and outId != ''">
+				AND a.out_id = #{outId}
+			</if>
+			<if test="coffice != null and coffice.id != null and coffice.id != ''">
+				AND a.coffice_id = #{coffice.id}
+			</if>
+			<if test="outName != null and outName != ''">
+				AND a.out_name like 
+				<if test="dbName == 'oracle'">'%'||#{outName}||'%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%',#{outName},'%')</if>
+			</if>
+			<if test="outName != null and outName != ''">
+				AND a.out_name like 
+				<if test="dbName == 'oracle'">'%'||#{outName}||'%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%',#{outName},'%')</if>
+			</if>
+			<if test="outDate != null">
+				<if test="dbName == 'oracle'">and TO_CHAR(a.out_date, 'yyyy-mm-dd') = to_char(#{outDate},'yyyy-MM-dd')</if>
+				<if test="dbName == 'mysql'">and DATE_FORMAT(a.out_date, '%Y-%m-%d') = DATE_FORMAT(#{outDate}, '%Y-%m-%d')</if>
+			</if>
+			<!-- 数据范围过滤 -->
+			${sqlMap.dsf}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+		group by a.out_id,o.name, a.out_name, a.out_date
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO sto_original_banknote(
+			box_no,
+			out_id,
+			IN_ID,
+			GOODS_ID,
+			GOODS_NAME,
+			sets,
+			original_translate,
+			denomination,
+			amount,
+			coffice_id,
+			out_by,
+			out_name,
+			out_date,
+			hoffice_id,
+			recover_by,
+			recover_name,
+			recover_date,
+			roffice_id,
+			create_by,
+			create_name,
+			create_date,
+			recover_status
+		) VALUES (
+			#{boxNo},
+			#{outId},
+			#{inId},
+			#{goodsId},
+			#{goodsName},
+			#{sets},
+			#{originalTranslate},
+			#{denomination},
+			#{amount},
+			#{coffice.id},
+			#{outBy.id},
+			#{outName},
+			#{outDate},
+			#{hoffice.id},
+			#{recoverBy.id},
+			#{recoverName},
+			#{recoverDate},
+			#{roffice.id},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{recoverStatus}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE sto_original_banknote
+		<set>
+			<if test="boxNo != null">
+				box_no = #{boxNo},
+			</if>
+			<if test="outId != null">
+				out_id = #{outId},
+			</if>
+			<if test="inId != null">
+				in_id = #{inId},
+			</if> 
+			<if test="sets != null">
+				sets = #{sets},
+			</if> 	
+			<if test="originalTranslate != null">
+				original_translate = #{originalTranslate},
+			</if> 	
+			<if test="denomination != null">
+				denomination = #{denomination},
+			</if> 	
+			<if test="amount != null">
+				amount = #{amount},
+			</if> 	
+			<if test="coffice != null">
+				coffice_id = #{coffice.id},
+			</if> 	
+			<if test="outBy != null">
+				out_by = #{outBy.id},
+			</if> 	
+			<if test="outName != null">
+				out_name = #{outName},
+			</if> 	
+			<if test="outDate != null">
+				out_date = #{outDate},
+			</if> 	
+			<if test="hoffice != null">
+				hoffice_id = #{hoffice.id},
+			</if> 	
+			<if test="recoverBy != null">
+				recover_by = #{recoverBy.id},
+			</if> 	
+			<if test="recoverName != null">
+				recover_name = #{recoverName},
+			</if> 	
+			<if test="recoverDate != null">
+				recover_date = #{recoverDate},
+			</if> 	
+			<if test="roffice != null">
+				roffice_id = #{roffice.id},
+			</if> 	
+			<if test="createName != null">
+				create_name = #{createName},
+			</if> 	
+			<if test="recoverStatus != null">
+				recover_status = #{recoverStatus},
+			</if> 
+		</set>	
+		WHERE box_no = #{boxNo}
+			<if test="roffice != null and roffice.id != null and roffice.id != ''">
+				and roffice_id = #{roffice.id}
+			</if>
+	</update>
+	
+	<update id="delete">
+		DELETE FROM sto_original_banknote
+		WHERE box_no = #{boxNo}
+	</update>
+	
+</mapper>

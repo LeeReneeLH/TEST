@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoEmptyDocumentDao">
+    
+	<sql id="stoEmptyDocumentColumns">
+		a.document_id AS "documentId",
+		a.goods_id AS "goodsId",
+		a.document_kind AS "blankBillKind",
+		a.document_type AS "blankBillType",
+		a.start_number AS "startNumber",
+		a.end_number AS "endNumber",
+		a.create_number AS "createNumber",
+		a.balance_number AS "balanceNumber",
+		a.office_id AS "office.id",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createName",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_name AS "updateName",
+		a.update_date AS "updateDate"
+	</sql>
+	<resultMap id="StoEmptyDocumentResult" type="com.coffer.businesses.modules.store.v01.entity.StoEmptyDocument">
+	    <id column="documentId" 		property="documentId" />
+	    <result column="goodsId" 		property="goodsId"/>
+	    <result column="blankBillKind"  property="stoBlankBillSelect.blankBillKind"/>
+	    <result column="blankBillKind"  property="stoGoods.stoBlankBillSelect.blankBillKind"/>
+	    <result column="blankBillType"  property="stoBlankBillSelect.blankBillType"/>
+	    <result column="blankBillType"  property="stoGoods.stoBlankBillSelect.blankBillType"/>
+	    <result column="startNumber"    property="startNumber"/>
+	    <result column="endNumber"      property="endNumber"/>
+	    <result column="createNumber"   property="createNumber"/>
+	    <result column="balanceNumber"  property="balanceNumber"/>
+	    <result column="office.id"  	property="office.id"/>
+	    <result column="createBy.id"    property="createBy.id"/>
+	    <result column="createName"     property="createName"/>
+	    <result column="createDate"     property="createDate"/>
+ 	    <result column="updateBy.id"   	property="updateBy.id"/>
+	    <result column="updateName"     property="updateName"/>
+	    <result column="updateDate"   	property="updateDate"/>
+	 </resultMap>
+	<sql id="stoEmptyDocumentJoins">
+	</sql>
+    
+	<select id="get" resultMap="StoEmptyDocumentResult">
+		SELECT 
+			<include refid="stoEmptyDocumentColumns"/>
+		FROM sto_empty_document a
+		<include refid="stoEmptyDocumentJoins"/>
+		WHERE a.document_id = #{documentId}
+	</select>
+	
+	<select id="findList" resultMap="StoEmptyDocumentResult">
+		SELECT 
+			<include refid="stoEmptyDocumentColumns"/>
+		FROM sto_empty_document a
+		<include refid="stoEmptyDocumentJoins"/>
+		<where>
+		<if test="stoBlankBillSelect!=null">
+			<if test="stoBlankBillSelect.blankBillKind!=null and stoBlankBillSelect.blankBillKind!='' and stoBlankBillSelect.blankBillKind!='000000'">
+				a.document_kind = #{stoBlankBillSelect.blankBillKind}
+				<if test="stoBlankBillSelect.blankBillType!=null and stoBlankBillSelect.blankBillType!='' and stoBlankBillSelect.blankBillType!='000000'">
+					AND a.document_type = #{stoBlankBillSelect.blankBillType}
+				</if>
+			</if>
+			<if test="stoBlankBillSelect.blankBillKind==null or stoBlankBillSelect.blankBillKind=='' or stoBlankBillSelect.blankBillKind=='000000'">
+				<if test="stoBlankBillSelect.blankBillType!=null and stoBlankBillSelect.blankBillType!='' and stoBlankBillSelect.blankBillType!='000000'">
+					a.document_type = #{stoBlankBillSelect.blankBillType}
+				</if>
+			</if>
+			
+		</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.document_kind, a.start_number
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultMap="StoEmptyDocumentResult">
+		SELECT 
+			<include refid="stoEmptyDocumentColumns"/>
+		FROM sto_empty_document a
+		<include refid="stoEmptyDocumentJoins"/>
+		<where>
+			
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	<!-- 验证重空编号是否存在 -->
+	<select id="checkEmptyDocument" resultMap="StoEmptyDocumentResult">
+		SELECT 
+			<include refid="stoEmptyDocumentColumns"/>
+		FROM sto_empty_document a
+		<include refid="stoEmptyDocumentJoins"/>
+		<where>
+			a.document_type = #{stoBlankBillSelect.blankBillType}
+			AND a.document_kind = #{stoBlankBillSelect.blankBillKind}
+			AND (
+				<!-- &lt;小于号  &gt;大于号 -->
+				(a.start_number &lt;= #{startNumber} AND a.end_number &gt;= #{endNumber} )
+				OR (a.start_number &lt;= #{endNumber} AND a.end_number &gt;= #{startNumber})
+				OR (a.start_number &gt;= #{startNumber} AND a.end_number &lt;= #{endNumber})
+			)
+			<if test="documentId != null and documentId != ''">
+				AND a.document_id != #{documentId}
+			</if>
+		</where>		
+		
+	</select>
+	<!-- 查询剩余数量不为零的重空凭证 -->
+	<select id="findEmptyDocument" resultMap="StoEmptyDocumentResult">
+		SELECT 
+			<include refid="stoEmptyDocumentColumns"/>
+		FROM sto_empty_document a
+		<include refid="stoEmptyDocumentJoins"/>
+		<where>
+			a.balance_number != 0
+			AND a.office_id = #{office.id}
+		</where>		
+		ORDER BY a.start_number
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO sto_empty_document(
+			document_id,
+			goods_id,
+			document_type,
+			document_kind,
+			start_number,
+			end_number,
+			create_number,
+			balance_number,
+			office_id,
+			create_by,
+			create_name,
+			create_date,
+			update_by,
+			update_name,
+			update_date
+		) VALUES (
+			#{documentId},
+			#{goodsId},
+			#{stoBlankBillSelect.blankBillType},
+			#{stoBlankBillSelect.blankBillKind},
+			#{startNumber},
+			#{endNumber},
+			#{createNumber},
+			#{balanceNumber},
+			#{office.id},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE sto_empty_document SET 	
+			document_id = #{documentId},
+			goods_id = #{goodsId},
+			document_type = #{stoBlankBillSelect.blankBillType},
+			document_kind = #{stoBlankBillSelect.blankBillKind},
+			start_number = #{startNumber},
+			end_number = #{endNumber},
+			create_number = #{createNumber},
+			balance_number = #{balanceNumber},
+			office_id = #{office.id},
+			create_name = #{createName},
+			update_by = #{updateBy.id},
+			update_name = #{updateName},
+			update_date = #{updateDate}
+		WHERE document_id = #{documentId}
+	</update>
+	
+	<update id="delete">
+		DELETE FROM sto_empty_document
+		WHERE document_id = #{documentId}
+	</update>
+	
+</mapper>

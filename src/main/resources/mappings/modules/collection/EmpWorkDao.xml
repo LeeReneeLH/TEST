@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.collection.v03.dao.EmpWorkDao">
+
+ 	<select id="findList" resultType="EmpWork">
+ 		SELECT 
+ 			max(c.name) AS "empName",
+			count(*) AS "handCount",
+			0 AS "machineCount",
+			0 AS "machineAmount",
+			sum(t.check_amount) AS "handAmount",
+			sum(t.check_amount) AS "sumAmount",
+			sum(case when t.diff_amount &lt;> 0 then 1 else 0 end) AS "diffCount",
+			sum(t.diff_amount) AS "diffAmount"
+		FROM  check_cash_main a
+		INNER JOIN check_cash_amount t ON a.out_no = t.out_no AND t.del_flag = #{DEL_FLAG_NORMAL} AND t.enabled_flag = '1'
+		LEFT JOIN sys_user c ON c.id = a.create_by AND c.del_flag = #{DEL_FLAG_NORMAL}
+		<where>
+			1=1
+	   		<if test="searchDateStart != null and searchDateStart != ''">
+				<if test="dbName == 'oracle'">AND TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName == 'mysql'">AND DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%S') >= '${searchDateStart}'</if>
+	        </if>
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+				<if test="dbName == 'oracle'">AND '${searchDateEnd}' >= TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName == 'mysql'">AND '${searchDateEnd}' >= DATE_FORMAT(a.CREATE_DATE, '%Y-%m-%d %H:%i:%S')</if>
+	        </if>
+
+			<if test="searchClearManId != null and searchClearManId != ''">
+				AND a.create_by = #{searchClearManId}
+			</if>
+	        
+	   	</where>
+		 GROUP BY a.create_by
+	</select>
+	
+</mapper>

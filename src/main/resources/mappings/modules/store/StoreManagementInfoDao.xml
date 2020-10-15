@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoreManagementInfoDao">
+    
+	<resultMap type="com.coffer.businesses.modules.store.v01.entity.StoreManagementInfo" id="StoreManagementInfoResult">
+		<id column="ID" property="id" />
+		<result column="RFID" property="rfid" />
+		<result column="STORE_NAME" property="storeName" />
+		<result column="DEL_FLAG" property="delFlag" />
+		<result column="CREATE_BY" property="createBy.id" />
+		<result column="CREATE_NAME" property="createName" />
+		<result column="CREATE_DATE" property="createDate" />
+		<result column="UPDATE_BY" property="updateBy.id" />
+		<result column="UPDATE_NAME" property="updateName" />
+		<result column="UPDATE_DATE" property="updateDate" />
+		<!-- 登记机构 -->
+		<association property="office" column="OFFICE_ID" javaType="Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy"/>
+		<collection property="storeTypeAssocationList" column="ID" javaType="ArrayList" ofType="StoreTypeAssocation"
+		select="com.coffer.businesses.modules.store.v01.dao.StoreTypeAssocationDao.getByStoreId" fetchType="lazy" />
+		<collection property="storeManagerAssocationList" column="ID" javaType="ArrayList" ofType="StoreManagerAssocation"
+		select="com.coffer.businesses.modules.store.v01.dao.StoreManagerAssocationDao.getByStoreId" fetchType="lazy" />
+		<collection property="storeCoOfficeAssocationList" column="ID" javaType="ArrayList" ofType="StoreCoOfficeAssocation"
+		select="com.coffer.businesses.modules.store.v01.dao.StoreCoOfficeAssocationDao.getByStoreId" fetchType="lazy" />
+	</resultMap>
+	
+	<sql id="Base_Column_List">
+		ID,
+		STORE_NAME,
+		OFFICE_ID,
+		DEL_FLAG,
+		CREATE_BY,
+		CREATE_NAME,
+		CREATE_DATE,
+		UPDATE_BY,
+		UPDATE_NAME,
+		UPDATE_DATE
+	</sql>
+	
+	<select id="findList" resultMap="StoreManagementInfoResult">
+		SELECT 
+			<include refid="Base_Column_List"></include>
+		FROM STORE_MANAGEMENT_INFO 
+		<where>
+			<!-- 区域ID -->
+		    <if test="office != null and office.id != null and office.id !=''">
+				AND OFFICE_ID = #{office.id}
+			</if>
+			<!-- 物品名称 -->
+			<if test="storeName != null and storeName !=''">
+				AND STORE_NAME LIKE 
+				<!-- '%'||#{storeName}||'%' -->
+				<if test="dbName == 'oracle'">'%'||#{storeName}||'%'</if>
+				<if test="dbName == 'mysql'">CONCAT('%', #{storeName}, '%')</if>
+			</if>
+			<!-- 状态 -->
+			<if test="delFlag != null and delFlag != ''">
+				AND del_flag = #{delFlag}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY UPDATE_DATE DESC
+			</otherwise>
+		</choose>
+			
+	</select>
+	
+	<select id="get" resultMap="StoreManagementInfoResult">
+		SELECT 
+			<include refid="Base_Column_List"></include>
+		FROM STORE_MANAGEMENT_INFO
+		WHERE ID = #{id}
+		ORDER BY UPDATE_DATE ASC
+	</select>
+	
+	<select id="getStoreInfoByStoreName" resultMap="StoreManagementInfoResult">
+		SELECT 
+			<include refid="Base_Column_List"></include>
+		FROM STORE_MANAGEMENT_INFO
+		WHERE STORE_NAME = #{storeName}
+	</select>
+	
+	<insert id="insert" >
+		INSERT INTO STORE_MANAGEMENT_INFO(
+			ID,
+			STORE_NAME,
+			OFFICE_ID,
+			CREATE_BY,
+			CREATE_NAME,
+			CREATE_DATE,
+			UPDATE_BY,
+			UPDATE_NAME,
+			UPDATE_DATE,
+			DEL_FLAG
+		) VALUES (
+			#{id},
+			#{storeName},
+			#{office.id},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+        update STORE_MANAGEMENT_INFO
+        <set>
+        	<if test="office != null and office.id != null and office.id != ''" >
+				OFFICE_ID = #{office.id,jdbcType=VARCHAR},
+			</if>
+			<if test="storeName != null and storeName != ''" >
+				STORE_NAME = #{storeName,jdbcType=VARCHAR},
+			</if>
+			<if test="updateBy != null">
+				UPDATE_BY = #{updateBy.id,jdbcType=VARCHAR},
+			</if>
+			<if test="updateBy != null">
+				UPDATE_NAME = #{updateBy.name,jdbcType=VARCHAR},
+			</if>
+			<if test="updateDate != null">
+				UPDATE_DATE = #{updateDate,jdbcType=OTHER},
+			</if>
+			<if test="delFlag != null">
+				DEL_FLAG = #{delFlag,jdbcType=VARCHAR},
+			</if>
+          
+		</set>
+		<where>
+			<if test="id != null and id !=''">
+				AND ID = #{id,jdbcType=VARCHAR}
+			</if>
+		</where>
+	
+    </update>
+    
+    <update id="updateStatus">
+        update STORE_MANAGEMENT_INFO
+        <set>
+			<if test="updateBy != null">
+				UPDATE_BY = #{updateBy.id,jdbcType=VARCHAR},
+			</if>
+			<if test="updateBy != null">
+				UPDATE_NAME = #{updateBy.name,jdbcType=VARCHAR},
+			</if>
+			<if test="updateDate != null">
+				UPDATE_DATE = #{updateDate,jdbcType=OTHER},
+			</if>
+			<if test="delFlag != null">
+				DEL_FLAG = #{delFlag,jdbcType=VARCHAR},
+			</if>
+		</set>
+		<where>
+			<if test="id != null and id !=''">
+				AND ID = #{id,jdbcType=VARCHAR}
+			</if>
+		</where>
+	
+    </update>
+</mapper>

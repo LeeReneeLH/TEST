@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.coffer.businesses.modules.doorOrder.v01.dao.ClearEquipmentRecordDao">
+
+	<!-- 清机记录 gzd -->
+	<select id="getClearEquipmentRecordPage" resultType="ClearEquipmentRecord">
+		SELECT
+			doi.ID AS id,
+			doi.EQUIPMENT_ID AS equipmentId,
+			ei.SERIES_NUMBER AS seriesNumber,
+			so2.`NAME` AS area,
+			doi.door_id,
+			doi.DOOR_NAME,
+			doi.CREATE_DATE AS beforeDate,
+			cpi.UPDATE_DATE AS afterDate,
+			doi.rfid AS bagNo,
+			(SELECT
+				COUNT(1)
+			FROM
+				door_order_info AS d
+			WHERE
+				d.equipment_id = #{equipmentId}
+				AND d.DEL_FLAG = 0
+				AND doi.CREATE_DATE >= d.CREATE_DATE
+			) AS batchNo,
+			<if test="dbName == 'oracle'">
+			NVL(SUM(dod.COIN_COUNT)+SUM(dod.PAPER_COUNT),0) AS paperCount,
+			NVL(SUM(dod.COIN_AMOUNT)+SUM(dod.PAPER_AMOUNT),0) AS paperAmount,
+			NVL(SUM(dod.FORCE_AMOUNT),0) AS forceAmount,
+			NVL(SUM(dod.OTHER_AMOUNT),0) As otherAmount,	
+			</if>
+			<if test="dbName == 'mysql'">
+			IFNULL(SUM(dod.COIN_COUNT)+SUM(dod.PAPER_COUNT),0) AS paperCount,
+			IFNULL(SUM(dod.COIN_AMOUNT)+SUM(dod.PAPER_AMOUNT),0) AS paperAmount,
+			IFNULL(SUM(dod.FORCE_AMOUNT),0) AS forceAmount,
+			IFNULL(SUM(dod.OTHER_AMOUNT),0) As otherAmount,	
+			</if>
+			doi.amount AS totalAmount,
+			cpi.CLEAR_MAN_NAME AS payPeople,
+			doi.ORDER_ID,
+			su.`NAME` AS updateName,
+			doi.UPDATE_DATE AS updateDate,
+			doi.`STATUS` AS STATUS,
+			dei.ERROR_TYPE as errorType,
+			<!-- ccm.OUT_NO AS outNo -->
+			doi.ORDER_ID AS outNo
+		FROM
+			door_order_info AS doi
+		LEFT JOIN clear_plan_info cpi ON cpi.PLAN_ID = doi.ORDER_ID AND cpi.`STATUS` = 1
+		LEFT JOIN door_error_info dei on doi.ORDER_ID = dei.BUSINESS_ID
+		<!-- LEFT JOIN check_cash_main AS ccm ON doi.RFID = ccm.RFID -->
+		LEFT JOIN EQUIPMENT_INFO ei ON ei.ID = doi.EQUIPMENT_ID
+		LEFT JOIN door_order_detail AS dod ON dod.order_id = doi.order_id
+		LEFT JOIN sys_user AS su ON doi.UPDATE_BY = su.ID
+		LEFT JOIN sys_office so	ON so.ID = doi.DOOR_ID
+		LEFT JOIN sys_office so2 ON so2.ID = so.PARENT_ID
+		<if test="(null != depositMan and depositMan != '')||(tickerTape != null and tickerTape != '')||(remarks != null and remarks != '')">
+			LEFT JOIN (
+			SELECT  de.ORDER_ID,
+					de.TICKERTAPE,
+					<!-- 业务备注 2020-04-16 gzd-->
+					de.REMARKS,
+					u.NAME AS UPDATE_NAME 
+			FROM door_order_detail de 
+			LEFT JOIN sys_user u ON de.CREATE_BY = u.ID 
+				 AND u.del_flag = ${delFlag.valid} 
+			<where>
+				<!-- 凭条 -->
+				<if test="tickerTape != null and tickerTape != ''">
+					AND TICKERTAPE like 
+					<if test="dbName == 'oracle'">'%,' || #{tickerTape} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{tickerTape}, '%')</if>
+				</if>
+				<!-- 存款人 -->
+				<if test="null != depositMan and depositMan != ''">
+					AND u.NAME like 
+					<if test="dbName == 'oracle'">'%,' || #{depositMan} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{depositMan}, '%')</if>
+				</if>
+				<!-- 业务备注 20220-04-16 gzd-->
+				<if test="null != remarks and remarks != ''">
+					AND de.REMARKS like 
+					<if test="dbName == 'oracle'">'%,' || #{remarks} || ',%'</if>
+					<if test="dbName == 'mysql'">CONCAT('%', #{remarks}, '%')</if>
+				</if>
+			</where>
+			GROUP BY de.ORDER_ID
+			) dod2 ON dod2.ORDER_ID = doi.ORDER_ID
+		</if>
+		<where>
+			doi.equipment_id = #{equipmentId} 
+			<if test="payPeople != null and payPeople != ''">
+				AND cpi.CLEAR_MAN_NAME LIKE
+				<if test="dbName == 'oracle'">'%'||#{payPeople}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{payPeople}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{payPeople},'%')</if>
+			</if>
+			<if test="bagNo != null and bagNo != ''">
+				AND doi.rfid LIKE
+				<if test="dbName == 'oracle'">'%'||#{bagNo}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{bagNo}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{bagNo},'%')</if>
+			</if>
+			<!--   开始时间 -->
+			<if test="searchDateStart != null and searchDateStart != ''">
+				AND 
+				<if test="dbName == 'oracle'">TO_CHAR(doi.CREATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >='${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(doi.CREATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+			</if>
+			<!-- 截止时间 -->
+			<if test="searchDateEnd != null and searchDateEnd != ''">
+				AND 
+				<if test="dbName == 'oracle'">'${searchDateEnd}' >= TO_CHAR(cpi.UPDATE_DATE,'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'">'${searchDateEnd}' >= DATE_FORMAT(cpi.UPDATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+			</if>
+			<!-- 总金额 范围查询使用  start-->
+			<if test="beforeAmount != null and beforeAmount != ''">
+				AND doi.amount >= #{beforeAmount}
+			</if>
+			<if test="afterAmount != null and afterAmount != ''">
+				AND #{afterAmount} >= doi.amount
+			</if>
+			<!-- 存款人或凭条模糊查询使用 -->
+			<if test="(null != depositMan and depositMan != '')||(tickerTape != null and tickerTape != '')||(remarks != null and remarks != '')">
+				AND dod2.ORDER_ID is not null
+			</if>
+			<!-- 总金额范围  end-->	
+			<!-- ${sqlMap.dsf} -->
+			GROUP BY  
+				doi.ORDER_ID 
+			<choose>
+				<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+					ORDER BY ${page.orderBy}
+				</when>
+				<otherwise>
+					ORDER BY batchNo DESC
+				</otherwise>
+			</choose> 
+		</where>
+	</select>
+</mapper>

@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.core.modules.sys.dao.AutoVaultCommunicationDao">
+    
+	<sql id="AutoVaultCommunicationColumns">
+		ID,
+		MESSAGE,
+		STATUS,
+		EXCEPTION,
+		IN_JSON,
+		OUT_JSON,
+		CREATE_BY,
+		CREATE_NAME,
+		CREATE_DATE,
+		UPDATE_BY,
+		UPDATE_NAME,
+		UPDATE_DATE,
+		DEL_FLAG
+	</sql>
+	
+	<resultMap id="AutoVaultCommunicationResult" type="com.coffer.core.modules.sys.entity.AutoVaultCommunication">
+		<id column="ID" property="id" />
+		<result column="MESSAGE" property="message" />
+		<result column="STATUS" property="status" />
+		<result column="EXCEPTION" property="exception" />
+		<result column="IN_JSON" property="inJson" />
+		<result column="OUT_JSON" property="outJson" />
+		<result column="CREATE_BY" property="createBy.id" />
+		<result column="CREATE_NAME" property="createBy.name" />
+		<result column="CREATE_DATE" property="createDate" />
+		<result column="UPDATE_BY" property="updateBy.id" />
+		<result column="UPDATE_NAME" property="updateBy.name" />
+		<result column="UPDATE_DATE" property="updateDate" />
+		<result column="DEL_FLAG" property="delFlag" />
+	</resultMap>
+	
+	<select id="get" resultMap="AutoVaultCommunicationResult">
+		SELECT 
+			<include refid="AutoVaultCommunicationColumns"/>
+		FROM AUTO_VAULT_COMMUNICATION a
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultMap="AutoVaultCommunicationResult">
+		SELECT 
+			<include refid="AutoVaultCommunicationColumns"/>
+		FROM AUTO_VAULT_COMMUNICATION a
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="status != null and status != ''">
+				and a.status = '${status}'
+			</if>
+			<!-- 数据范围过滤 -->
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.UPDATE_DATE DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO AUTO_VAULT_COMMUNICATION(
+			ID,
+			MESSAGE,
+			STATUS,
+			EXCEPTION,
+			IN_JSON,
+			OUT_JSON,
+			CREATE_BY,
+			CREATE_NAME,
+			CREATE_DATE,
+			UPDATE_BY,
+			UPDATE_NAME,
+			UPDATE_DATE,
+			DEL_FLAG
+		) VALUES (
+			#{id}, 
+			#{message},
+			#{status}, 
+			#{exception},
+			#{inJson},
+			#{outJson},
+			#{createBy.id},
+			#{createBy.name},
+			#{createDate},
+			#{updateBy.id},
+			#{updateBy.name},
+			#{updateDate},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE AUTO_VAULT_COMMUNICATION SET 
+			STATUS = #{status},
+			EXCEPTION = #{exception},
+			OUT_JSON = #{outJson},
+			UPDATE_BY = #{updateBy.id},
+			UPDATE_NAME = #{updateName},
+			UPDATE_DATE = #{updateDate}
+		WHERE ID = #{id}
+	</update>
+	
+	<update id="updateStatus">
+		UPDATE AUTO_VAULT_COMMUNICATION SET 
+			STATUS = #{status},
+			UPDATE_BY = #{updateBy.id},
+			UPDATE_NAME = #{updateBy.name},
+			UPDATE_DATE = #{updateDate}
+		WHERE ID = #{id}
+	</update>
+	
+</mapper>

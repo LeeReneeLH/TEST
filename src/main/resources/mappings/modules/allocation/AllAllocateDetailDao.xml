@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.allocation.v01.dao.AllAllocateDetailDao">
+    
+	<sql id="allAllocateDetailColumns">
+		a.all_detail_id AS "allDetailId",
+		a.all_id AS "allId",
+		a.box_no AS "boxNo",
+		a.scan_flag AS "scanFlag",
+		a.amount AS "amount",
+		a.rfid AS "rfid",
+		a.scan_date AS "scanDate",
+		a.pda_scan_date AS "pdaScanDate",
+		a.box_type AS "boxType",
+		a.out_date AS "outDate",
+		a.outlets_scan_flag AS "outletsScanFlag"
+	</sql>
+	
+	<sql id="allAllocateDetailJoins">
+		LEFT JOIN all_allocate_info b ON b.all_id = a.all_id
+	</sql>
+    
+	<select id="get" resultType="AllAllocateDetail">
+		SELECT 
+			<include refid="allAllocateDetailColumns"/>
+		FROM all_allocate_detail a
+		<include refid="allAllocateDetailJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="getByAllId" resultType="AllAllocateDetail">
+		SELECT 
+			<include refid="allAllocateDetailColumns"/>
+		FROM all_allocate_detail a
+		<include refid="allAllocateDetailJoins"/>
+		WHERE a.all_id = #{allId}
+	</select>
+	
+	<select id="findList" resultType="AllAllocateDetail">
+		SELECT 
+			<include refid="allAllocateDetailColumns"/>
+		FROM all_allocate_detail a
+		<include refid="allAllocateDetailJoins"/>
+		<where>
+			
+			<if test="allId != null and allId != ''">
+				AND a.all_id = #{allId}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="AllAllocateDetail">
+		SELECT 
+			<include refid="allAllocateDetailColumns"/>
+		FROM all_allocate_detail a
+		<include refid="allAllocateDetailJoins"/>
+		<where>
+			
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+
+	<insert id="insert">
+		INSERT INTO all_allocate_detail(
+			all_detail_id,
+			all_id,
+			box_no,
+			amount,
+			scan_flag,
+			scan_date,
+			pda_scan_date,
+			rfid,
+			box_type,
+			out_date,
+			<!-- 新增网点接收扫描状态字段 修改人：xp 修改时间：2017-10-25 begin-->
+			OUTLETS_SCAN_FLAG
+			<!-- end -->
+		) VALUES (
+			#{allDetailId},
+			#{allocationInfo.allId},
+			#{boxNo},
+			#{amount},
+			#{scanFlag},
+			#{scanDate},
+			#{pdaScanDate},
+			#{rfid},
+			#{boxType},
+			#{outDate},
+			#{outletsScanFlag}
+		)
+	</insert>
+	
+	<delete id="delete">
+		Delete from  all_allocate_detail 
+   		WHERE all_id = #{allocationInfo.allId}
+   		AND all_detail_id = #{allDetailId}
+	</delete>
+	
+	<delete id="deleteDetail">
+		Delete from  all_allocate_detail 
+   		WHERE  all_detail_id = #{allDetailId}
+	</delete>
+	
+	<delete id="deleteDetailByAllId">
+		Delete from  all_allocate_detail 
+   		WHERE all_id = #{allocationInfo.allId}
+	</delete>	
+	
+	<update id="updateAllocateDetailStatus">
+ 		UPDATE all_allocate_detail 
+		SET
+			<if test="scanFlag != null and scanFlag != ''">
+				scan_flag = #{scanFlag},
+			</if>
+		WHERE all_id = #{allId}
+			AND del_flag = '0'
+	</update>
+	
+	<update id="updateDetailStatusByBoxNo">
+ 		UPDATE all_allocate_detail 
+		SET
+			<if test="scanFlag != null and scanFlag != ''">
+				scan_flag = #{scanFlag},
+			</if>
+				scan_date = #{scanDate}
+		WHERE all_id = #{allId}
+			<if test="allDetailId != null and allDetailId != ''">
+				AND all_detail_id = #{allDetailId}
+			</if>
+			AND box_no = #{boxNo}
+	</update>
+	
+	<update id="updateDetailPlaceByBoxNo">
+ 		UPDATE all_allocate_detail 
+		SET
+			place = #{place}
+		WHERE all_id = #{allId}
+			AND del_flag = '0'
+			AND box_no = #{boxNo}
+	</update>
+	
+	<select id="getBoxNoByAllId" resultType="AllAllocateDetail">
+		SELECT 
+			<include refid="allAllocateDetailColumns"/>
+		FROM all_allocate_detail a
+			<include refid="allAllocateDetailJoins"/>
+		WHERE 
+		1=1
+		<!-- 主表：流水号列表 -->
+		<if test="allIds != null and allIds.size != 0">
+			and a.all_id in 
+			<foreach collection="allIds" item="allIdtag" separator="," open="(" close=")" index="">
+			 	#{allIdtag}
+			</foreach>
+		</if>
+	</select>
+	
+	<insert id="insertAdditional">
+		INSERT INTO all_allocate_detail(
+			all_detail_id,
+			all_id,
+			box_no,
+			amount,
+			scan_flag,
+			scan_date,
+			rfid,
+			box_type,
+			out_date,
+			<!-- 新增网点接收扫描状态字段 修改人：xp 修改时间：2017-10-25 begin-->
+			OUTLETS_SCAN_FLAG
+			<!-- end -->
+		) VALUES (
+			#{allDetailId},
+			#{allId},
+			#{boxNo},
+			#{amount},
+			#{scanFlag},
+			#{scanDate},
+			#{rfid},
+			#{boxType},
+			#{outDate},
+			#{outletsScanFlag}
+		)
+	</insert>
+	
+	<!-- 通过rfid更新对应调拨详细表信息（网点交接使用）修改人：xp 修改时间：2017-10-25 begin -->
+	<update id="updateDetailByRfid">
+ 		UPDATE all_allocate_detail 
+		SET
+			OUTLETS_SCAN_FLAG = #{outletsScanFlag},
+			OUTLETS_PDA_SCAN_DATE = #{outletsPdaScanDate}
+		WHERE all_id = #{allId}
+			AND rfid = #{rfid}
+	</update>
+	<!-- end -->
+	<!-- 通过rfid或boxNo更新对应详细表信息（ATM库外清分入库确认接口用）修改人：sg 修改时间：2017-11-13 begin -->
+	<update id="updateDetailByBoxNoorRfid">
+ 		UPDATE all_allocate_detail 
+		SET
+			<if test="scanFlag != null and scanFlag != ''">
+				scan_flag = #{scanFlag},
+			</if>
+				scan_date = #{scanDate}
+		WHERE 
+		 all_id = #{allId}
+			<if test="boxNo != null and boxNo != ''">
+				AND box_no = #{boxNo}
+			</if>
+			<if test="rfid != null and rfid != ''">
+				AND rfid = #{rfid}
+			</if>
+	</update>
+	<!-- end -->
+	<!-- 根据all_id查询所有非未扫描的信息  修改人:sg 修改日期:2017-11-23 begin -->
+	<select id="getByAllIdscanFlag" resultType="AllAllocateDetail">
+		SELECT 
+			<include refid="allAllocateDetailColumns"/>
+		FROM all_allocate_detail a
+		<include refid="allAllocateDetailJoins"/>
+		WHERE a.all_id = #{allId}
+		AND scan_flag != '0'
+	</select>
+	<!-- end -->
+	
+	<!-- 根据箱袋编号查询所有调拨详细信息  修改人:WQJ 修改日期:2019-1-9 begin -->
+	<select id="findAllocateDetailByNo" resultType="AllAllocateDetail">
+		SELECT 
+			<include refid="allAllocateDetailColumns"/>
+		FROM all_allocate_detail a
+		<include refid="allAllocateDetailJoins"/>
+		WHERE a.box_no = #{boxNo}
+	</select>
+	<!-- end -->
+</mapper>

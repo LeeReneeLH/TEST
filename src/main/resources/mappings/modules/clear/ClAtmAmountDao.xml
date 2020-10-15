@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.clear.v03.dao.ClAtmAmountDao">
+
+	<sql id="clAtmAmountColumns">
+		a.id AS "id",
+		a.out_no AS "outNo",
+		a.out_row_no AS "outRowNo",
+		a.check_amount AS "checkAmount",
+		a.pack_num AS "packNum",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.del_flag AS "delFlag"
+	</sql>
+	
+	
+	<sql id="clAtmAmountJoins">
+		<!-- LEFT JOIN sys_user b ON b.id = a.accept_by -->
+		LEFT JOIN sys_user c ON c.id = a.update_by AND c.del_flag = #{DEL_FLAG_NORMAL}
+		LEFT JOIN sys_user d ON d.id = a.create_by AND d.del_flag = #{DEL_FLAG_NORMAL}
+		LEFT JOIN STO_ESCORT_INFO f ON f.ESCORT_ID = a.clear_man_no AND f.del_flag = #{DEL_FLAG_NORMAL}
+	</sql>
+    
+	<select id="get" resultType="ClAtmAmount">
+		SELECT 
+			<include refid="clAtmAmountColumns"/>
+		FROM cl_atm_amount a
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="ClAtmAmount">
+		SELECT 
+			<include refid="clAtmAmountColumns"/>
+		FROM cl_atm_amount a
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="outNo != null and outNo != ''">
+				AND a.out_no = #{outNo }
+			</if>
+		</where>
+		ORDER BY a.out_no,a.out_row_no
+	</select>
+
+	
+	
+	<insert id="insert">
+		INSERT INTO cl_atm_amount(
+		   id,
+		   out_no,
+		   out_row_no,
+		   check_amount,
+		   pack_num,
+		   create_by,
+		   create_name,
+		   create_date,
+		   update_by,
+		   update_name,
+		   update_date,
+		   del_flag
+		) VALUES (
+			#{id},
+			#{outNo},
+			#{outRowNo},
+			#{checkAmount},
+			#{packNum},
+			#{createBy.id},
+			#{createBy.name},
+			#{createDate},
+			#{updateBy.id},
+			#{updateBy.name},
+			#{updateDate},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE cl_atm_amount SET 
+			check_amount = #{checkAmount}, 
+			update_by = #{updateBy.id}, 
+			update_date = #{updateDate}, 
+			update_name = #{updateBy.name}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 删除每笔金额表数据(逻辑删除) -->
+	<update id="logicDelete">
+		UPDATE cl_atm_amount SET
+		del_flag = #{DEL_FLAG_DELETE},
+		update_by = #{updateBy.id}, 
+		update_date = #{updateDate}, 
+		update_name = #{updateBy.name}
+		WHERE out_no = #{outNo}
+		  and del_flag = #{DEL_FLAG_NORMAL}
+	</update>
+
+
+
+
+
+
+</mapper>

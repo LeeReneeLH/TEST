@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.clear.v03.dao.ClearingGroupDao">
+    
+	<sql id="clearingGroupColumns">
+		a.id AS "id",
+		a.group_no AS "groupNo",
+		a.group_name AS "groupName",
+		a.group_type AS "groupType",
+		a.working_position_type AS "workingPositionType",
+		a.remarks AS "remarks",
+		a.create_by AS "createBy.id",
+		a.create_name AS "createName",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_name AS "updateName",
+		a.update_date AS "updateDate",
+		a.del_flag AS "delFlag",
+		a.group_status AS "groupStatus",
+		a.office_id AS "Office.id",
+		a.office_name AS "Office.name"
+	</sql>
+	
+	<sql id="clearingGroupJoins">
+	</sql>
+    
+    <resultMap  id="ClearingGroupResult" type="com.coffer.businesses.modules.clear.v03.entity.ClearingGroup">
+     	<id column="id"                property="id" />
+	    <result column="a.group_no"     property="groupNo"/>
+	    <result column="a.group_name"     property="groupName"/>
+	    <result column="a.group_type"     property="groupType"/>
+	    <result column="a.remarks"     property="remarks"/>
+	    <result column="a.create_by"     property="createBy.id"/>
+	    <result column="a.create_name"     property="createName"/>
+	    <result column="a.create_date"     property="createDate"/>
+	    <result column="a.update_by"     property="updateBy.id"/>
+	    <result column="a.update_name"     property="updateName"/>
+	    <result column="a.update_date"     property="updateDate"/>
+	    <result column="a.del_flag"     property="delFlag"/>
+	    <result column="a.group_status"     property="groupStatus"/>
+	    <!-- <collection column="id" property="clearingGroupDetailList" javaType="ArrayList" select="com.coffer.businesses.modules.clear.v03.dao.ClearingGroupDetailDao.getByGroupId"/> -->
+	     <!-- 登记机构 -->
+		<association property="Office" column="office_id" javaType="Office" select="com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy"/>
+    </resultMap>
+    
+   <select id="get" resultType="ClearingGroup">
+		SELECT 
+			<include refid="clearingGroupColumns"/>
+		FROM CLEARING_GROUP a
+		<include refid="clearingGroupJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="ClearingGroup">
+		SELECT 
+			<include refid="clearingGroupColumns"/>
+		FROM CLEARING_GROUP a
+		left join sys_office o 
+			on a.office_id=o.id
+		<include refid="clearingGroupJoins"/>
+		<where>
+				AND a.del_flag = #{DEL_FLAG_NORMAL}	
+			<if test="groupNo != null and groupNo != ''">
+				AND a.group_no LIKE 
+					<if test="dbName == 'oracle'">'%'||#{groupNo}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{groupNo}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{groupNo},'%')</if>
+			</if>
+			<if test="groupName != null and groupName != ''">
+				AND a.group_name LIKE 
+					<if test="dbName == 'oracle'">'%'||#{groupName}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{groupName}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{groupName},'%')</if>
+			</if>
+			<if test="groupType != null and groupType != ''">
+				AND a.group_type =#{groupType}
+			</if>
+			<if test="searchDateStart != null and searchDateStart != ''">
+	             AND 
+	            <if test="dbName == 'oracle'">TO_CHAR(a.UPDATE_DATE, 'yyyy-mm-dd hh24:mi:ss') >= '${searchDateStart}'</if>
+				<if test="dbName=='mysql'">DATE_FORMAT(a.UPDATE_DATE, '%Y-%m-%d %H:%i:%s') >='${searchDateStart}'</if>
+	        </if>
+	        <if test="searchDateEnd != null and searchDateEnd != ''">
+	            AND
+	            <if test="dbName == 'oracle'">'${searchDateEnd}'>=TO_CHAR(a.UPDATE_DATE, 'yyyy-mm-dd hh24:mi:ss')</if>
+				<if test="dbName=='mysql'"> '${searchDateEnd}'>=DATE_FORMAT(a.UPDATE_DATE, '%Y-%m-%d %H:%i:%s')</if>
+	        </if>
+			<if test="groupStatus != null and groupStatus != ''">
+				AND a.group_status = #{groupStatus}	
+			</if>
+			<!-- add-start by wzj 2017-11-24 -->
+			<if test="office != null and office.id != null and office.id != ''">
+				AND A.OFFICE_ID = '${office.id}'
+			</if>
+				${sqlMap.dsf}
+			<!-- end -->
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="ClearingGroup">
+		SELECT 
+			<include refid="clearingGroupColumns"/>
+		FROM CLEARING_GROUP a
+		<include refid="clearingGroupJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+ 		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO clearing_group(
+			id,
+			group_no,
+			group_name,
+			group_type,
+			working_position_type,
+			remarks,
+			create_by,
+			create_name,
+			create_date,
+			update_by,
+			update_name,
+			update_date,
+			del_flag,
+			group_status,
+			office_id,
+			office_name
+		) VALUES (
+			#{id},
+			#{groupNo},
+			#{groupName},
+			#{groupType},
+			#{workingPositionType},
+			#{remarks},
+			#{createBy.id},
+			#{createName},
+			#{createDate},
+			#{updateBy.id},
+			#{updateName},
+			#{updateDate},
+			#{delFlag},
+			#{groupStatus},
+			#{office.id},
+			#{office.name}
+		)
+	</insert>
+	
+	<!-- 更新，设置启用停用状态 -->
+	<update id="update">
+		UPDATE clearing_group SET 	
+			group_no = #{groupNo},
+			group_name = #{groupName},
+			group_type = #{groupType},
+			working_position_type=#{workingPositionType},
+			remarks = #{remarks},
+			create_name = #{createName},
+			update_by = #{updateBy.id},
+			update_name = #{updateName},
+			update_date = #{updateDate},
+			group_status=#{groupStatus}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE clearing_group SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 分组编号，名称一致性 -->
+	<select id="findByNoAndName" resultType="ClearingGroup">
+		SELECT 
+			<include refid="clearingGroupColumns"/>
+		FROM CLEARING_GROUP a
+		<include refid="clearingGroupJoins"/>
+		<where>
+		AND a.del_flag = #{DEL_FLAG_NORMAL}
+		<if test="groupNo != null and groupNo != ''">
+		AND a.group_no = #{groupNo}
+		</if>
+		<if test="groupName != null and groupName != ''">
+		AND a.group_name = #{groupName}
+		</if>
+		
+		<if test="office != null and office.id != null and office.id != ''">
+		AND A.OFFICE_ID = '${office.id}'
+		</if>
+		
+		</where>		
+	</select>
+	
+</mapper>

@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.core.modules.sys.dao.DbConfigPropertyDao">
+    <!-- 添加数据库配置参数 作者：xp 时间：2017-12-6 begin -->
+    	<insert id="insert">
+    		INSERT INTO PROPERTY_DICT
+    		VALUES(
+    			#{id},
+    			#{parent.id},
+    			#{parentIds},
+    			#{propertyKey},
+    			#{propertyValue},
+    			#{type},
+    			#{remark},
+    			#{delFlag},
+    			#{createDate},
+    			#{createBy.id},
+    			#{createName},
+    			#{updateDate},
+    			#{updateName},
+    			#{updateBy.id}
+    		)
+    	</insert>
+    <!-- end -->
+    
+    <!-- 删除数据库配置参数 作者：xp 时间：2017-12-6 begin -->
+    	<update id="delete">
+    		UPDATE PROPERTY_DICT
+    		SET 
+    			DEL_FLAG = #{delFlag},
+    			UPDATE_BY = #{updateBy.id},
+    			UPDATE_DATE = #{updateDate},
+    			UPDATE_NAME = #{updateName}
+    		<where>
+    			<if test="propertyKey != null and propertyKey !=''">
+    				PROPERTY_KEY = #{propertyKey}
+    			</if>
+    			<if test="strUpdateDate != null and strUpdateDate != ''">
+	    			<if test="dbName == 'oracle'">
+	    				AND TO_CHAR(UPDATE_DATE,'yyyyMMddHH24missff') = '${strUpdateDate}'
+	    			</if>
+	    			<if test="dbName == 'mysql'">
+	    				AND DATE_FORMAT(UPDATE_DATE,'%Y%m%d%H%i%s%f') = '${strUpdateDate}'
+	    			</if>
+	    		</if>
+    			<if test = "id != null and id != ''">
+	    			AND ID = '${id}'
+	    		</if>
+    		</where>
+    	</update>
+    <!-- end -->
+    
+    <!-- 删除数据库配置参数分组 作者：xp 时间：2017-12-6 begin -->
+    	<update id="deleteGroup">
+    		UPDATE PROPERTY_DICT
+    		SET 
+    			DEL_FLAG = #{delFlag},
+    			UPDATE_BY = #{updateBy.id},
+    			UPDATE_DATE = #{updateDate},
+    			UPDATE_NAME = #{updateName}
+    		<where>
+    				<if test="strUpdateDate != null and strUpdateDate != ''">
+	    				<if test="dbName == 'oracle'">
+	    					AND TO_CHAR(UPDATE_DATE,'yyyyMMddHH24missff') = '${strUpdateDate}'
+	    				</if>
+	    				<if test="dbName == 'mysql'">
+	    					AND DATE_FORMAT(UPDATE_DATE,'%Y%m%d%H%i%s%f') = '${strUpdateDate}'
+	    				</if>
+		    		</if>
+    				 AND PARENT_IDS LIKE 
+	   					<if test="dbName == 'oracle'">
+	   						'%' || #{id} || '%'
+	   					</if>
+	   					<if test=" dbName == 'mysql'">
+	   						CONCAT('%',#{id},'%')
+	   					</if>
+	    			AND DEL_FLAG = '0'
+    		</where>
+    	</update>
+    <!-- end -->
+    
+    <!-- 修改数据库配置参数 作者：xp 时间：2017-12-6 begin -->
+    	<update id="update">
+    		UPDATE PROPERTY_DICT
+    		SET 
+    		<if test="propertyValue != null and propertyValue != ''">
+    			PROPERTY_VALUE = #{propertyValue},
+    		</if>
+    		<if test="remark != null and remark != ''">
+    			REMARK = #{remark},
+    		</if>
+    		<if test="updateBy != null">
+    			UPDATE_BY = #{updateBy.id},
+    			UPDATE_NAME = #{updateName},
+    		</if>
+    		<if test="updateDate != null and updateDate != ''">
+    			UPDATE_DATE = #{updateDate}
+    		</if>
+    		<where>
+	    		<if test="propertyKey != null and propertyKey !=''">
+	    			PROPERTY_KEY = #{propertyKey}
+	    		</if>	
+	    		<if test="strUpdateDate != null and strUpdateDate != ''">
+	    			<if test="dbName == 'oracle'">
+	    				AND TO_CHAR(UPDATE_DATE,'yyyyMMddHH24missff') = '${strUpdateDate}'
+	    			</if>
+	    			<if test="dbName == 'mysql'">
+	    				AND DATE_FORMAT(UPDATE_DATE,'%Y%m%d%H%i%s%f') = '${strUpdateDate}'
+	    			</if>
+    			</if>
+    			<if test = "id != null and id != ''">
+	    			AND ID = '${id}'
+	    		</if>
+	    		AND DEL_FLAG = #{delFlag}
+    		</where>
+    	</update>
+    <!-- end -->
+    
+    <!-- 查询所有数据库配置参数 作者：xp 时间：2017-12-6 begin -->
+    	<select id="findList" resultType = "com.coffer.core.modules.sys.entity.DbConfigProperty">
+    		SELECT 
+    			DICT.ID,
+    			DICT.PROPERTY_KEY,
+    			DICT.PROPERTY_VALUE,
+    			DICT.REMARK,
+    			<if test="dbName == 'oracle'">
+					 TO_CHAR(DICT.UPDATE_DATE,'yyyyMMddHH24missff') AS strUpdateDate,
+	    		</if>
+	    		<if test="dbName == 'mysql'">
+	    			 DATE_FORMAT(DICT.UPDATE_DATE,'%Y%m%d%H%i%s%f') AS strUpdateDate,
+	    		</if>
+    			DICT.UPDATE_DATE,
+    			DICT.PARENT_ID AS "parent.id"
+    		FROM PROPERTY_DICT DICT
+    		<where>
+    			DEL_FLAG = #{delFlag}
+    		</where>
+    	</select>
+    <!-- end -->
+    
+    <!-- 根据更新时间查询所有数据库配置参数 作者：lihe 时间：2018-1-23 begin -->
+    	<select id="findByUpdateDate" resultType = "com.coffer.core.modules.sys.entity.DbConfigProperty">
+    		SELECT 
+    			DICT.ID,
+    			DICT.PROPERTY_KEY,
+    			DICT.PROPERTY_VALUE,
+    			DICT.REMARK,
+    			DICT.DEL_FLAG,
+    			<if test="dbName == 'oracle'">
+					 TO_CHAR(DICT.UPDATE_DATE,'yyyyMMddHH24miss') AS strUpdateDate,
+	    		</if>
+	    		<if test="dbName == 'mysql'">
+	    			 DATE_FORMAT(DICT.UPDATE_DATE,'%Y%m%d%H%i%s') AS strUpdateDate,
+	    		</if>
+    			DICT.UPDATE_DATE
+    		FROM PROPERTY_DICT DICT
+    		<where>
+    		<if test="strUpdateDate != null and strUpdateDate != ''">
+				<if test="dbName == 'oracle'">TO_CHAR(DICT.UPDATE_DATE, 'yyyy-mm-dd hh24:mi:ss') > '${strUpdateDate}' </if>
+				<if test="dbName == 'mysql'">DATE_FORMAT(DICT.UPDATE_DATE, '%Y-%m-%d %H:%i:%S') > '${strUpdateDate}' </if>
+		    </if>
+		    <if  test="type != null and type != ''">
+		    AND TYPE = #{type}
+		    </if>
+    		</where>
+    	</select>
+    <!-- end -->
+    
+    <!-- 根据父级id查询当前参数的子元素 作者：xp 时间：2017-12-27 begin -->
+    	<select id="findByParentId" resultType = "com.coffer.core.modules.sys.entity.DbConfigProperty">
+    		SELECT 
+    			DICT.ID,
+    			DICT.PROPERTY_KEY,
+    			DICT.PROPERTY_VALUE,
+    			DICT.REMARK,
+    			<if test="dbName == 'oracle'">
+					 TO_CHAR(DICT.UPDATE_DATE,'yyyyMMddHH24missff') AS strUpdateDate,
+	    		</if>
+	    		<if test="dbName == 'mysql'">
+	    			 DATE_FORMAT(DICT.UPDATE_DATE,'%Y%m%d%H%i%s%f') AS strUpdateDate,
+	    		</if>
+    			DICT.UPDATE_DATE,
+    			DICT.PARENT_ID AS "parent.id"
+    		FROM PROPERTY_DICT DICT
+    		<where>
+    			DEL_FLAG = '0'
+    			<if test="parentIds != null and parentIds != ''">
+	   				 AND PARENT_IDS LIKE 
+	   					<if test="dbName == 'oracle'">
+	   						'%' || #{id} || '%'
+	   					</if>
+	   					<if test=" dbName == 'mysql'">
+	   						CONCAT('%',#{id},'%')
+	   					</if>
+    			</if>
+    		</where>
+    	</select>
+    <!-- end -->
+    
+    <!-- 查询数据库配置参数 作者：xp 时间：2017-12-6 begin -->
+    	<select id="get" parameterType="com.coffer.core.modules.sys.entity.DbConfigProperty" resultType = "com.coffer.core.modules.sys.entity.DbConfigProperty">
+    		SELECT 
+    				DICT.id,
+    				DICT.PROPERTY_KEY ,
+    				DICT.PROPERTY_VALUE,
+    				DICT.REMARK,
+	    			DICT.PARENT_IDS AS "parent.parentIds",
+	    			DICTS.PROPERTY_KEY AS "parent.propertyKey",
+    				DICT.TYPE,
+    				<if test="dbName == 'oracle'">
+					 	TO_CHAR(DICT.UPDATE_DATE,'yyyyMMddHH24missff') AS strUpdateDate
+		    		</if>
+		    		<if test="dbName == 'mysql'">
+		    			 DATE_FORMAT(DICT.UPDATE_DATE,'%Y%m%d%H%i%s%f') AS strUpdateDate
+		    		</if>
+    		FROM PROPERTY_DICT DICT
+    		LEFT JOIN PROPERTY_DICT DICTS ON DICT.PARENT_ID = DICTS.ID
+    		<where>
+    			<if test="propertyKey != null and propertyKey !=''">
+    				DICT.PROPERTY_KEY = '${propertyKey}'
+	    		</if>
+	    		<if test = "id != null and id != ''">
+	    			AND DICT.ID = '${id}'
+	    		</if>
+	    		AND DICT.DEL_FLAG = #{delFlag}
+    		</where>
+    	</select>
+    <!-- end -->
+    
+    <!-- 查询数据库配置参数 作者：xp 时间：2017-12-6 begin -->
+    	<select id="getProperty" resultType = "com.coffer.core.modules.sys.entity.DbConfigProperty">
+    		SELECT 
+    				PROPERTY_KEY ,
+    				PROPERTY_VALUE,
+    				REMARK,
+    				PARENT_IDS,
+    				TYPE,
+    				ID,
+    				<if test="dbName == 'oracle'">
+					 	TO_CHAR(UPDATE_DATE,'yyyyMMddHH24missff') AS strUpdateDate
+		    		</if>
+		    		<if test="dbName == 'mysql'">
+		    			DATE_FORMAT(UPDATE_DATE,'%Y%m%d%H%i%s%f') AS strUpdateDate
+		    		</if>
+    		FROM PROPERTY_DICT
+    		<where>
+    			<if test="propertyKey != null and propertyKey !=''">
+    				PROPERTY_KEY = '${propertyKey}'
+	    		</if>
+	    		<if test="configType == null or configType ==''">
+		    		<if test = "id != null and id != ''">
+		    			AND ID = '${id}'
+		    		</if>
+	    		</if>
+	    		AND DEL_FLAG = #{delFlag}
+    		</where>
+    	</select>
+    <!-- end -->
+    
+</mapper>

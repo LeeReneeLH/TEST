@@ -1,0 +1,18 @@
+@charset "utf-8";
+/* CSS Document */
+body{margin:0;padding:0;}
+ul, li{list-style:none;margin:0;padding:0;}
+.gold-list{width:90%;margin:0 auto;}
+.gold-list li{width:200px;float:left;}
+.gold-list li span{
+	background-image: url(../../../../../images/gold.png);
+	background-repeat: no-repeat;
+	background-position: center center;
+	background-size:contain;
+	height: 150px;
+	width: 100%;
+	display:block;
+}
+.gold-list li a{width:100%;text-align:center;color:#000;line-height:40px;display:block;
+text-decoration:none}
+.gold-list li a:hover{color:#999}

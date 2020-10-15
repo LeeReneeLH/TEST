@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoRouteDetailDao">
+	<sql id="stoRouteDetailColumns">
+		DETAIL_ID,
+		ROUTE_ID,
+		OFFICE_ID,
+		TAIL_BALANCE
+	</sql>
+	<resultMap id="StoRouteDetailResult" type="com.coffer.businesses.modules.store.v01.entity.StoRouteDetail">
+		<id column="DETAIL_ID" property="detailId"/>
+		<result column="ROUTE_ID" property="route.routeId"/>
+		<result column="TAIL_BALANCE" property="tailBalance"/>
+		<association column = "OFFICE_ID" property = "office" javaType = "com.coffer.core.modules.sys.entity.Office" select = "com.coffer.core.modules.sys.dao.OfficeDao.get" fetchType="lazy"></association>
+	</resultMap>
+	<sql id="stoRouteDetailJoins">
+		LEFT JOIN sys_office o5 ON o5.id = a.office_id
+	</sql>
+
+	<sql id="officeColumns">
+		o5.id,
+		o5.parent_id AS "parent.id",
+		o5.parent_ids,
+		o5.code,
+		o5.name,
+		o5.master,
+		o5.sort,
+		o5.type,
+		o5.address, 
+		o5.zip_code, 
+		o5.phone, 
+		o5.fax, 
+		o5.email, 
+		o5.remarks,
+		o5.create_by AS "createBy.id",
+		o5.create_date,
+		o5.update_by AS "updateBy.id",
+		o5.update_date,
+		o5.del_flag
+	</sql>
+
+	<select id="findListByRouteId" resultMap="StoRouteDetailResult">
+		SELECT 
+			<include refid="stoRouteDetailColumns" />
+		FROM sto_route_detail
+		WHERE route_id = #{routeId}
+	</select>
+	
+	<delete id="deleteRouteDetail">
+		DELETE FROM sto_route_detail
+		WHERE route_id = #{routeId}
+	</delete>
+
+	<delete id="deleteByRouteIdAndOfficeId">
+		DELETE FROM sto_route_detail
+		WHERE route_id = #{routeId}
+		AND office_id = #{officeId}
+	</delete>
+
+	<insert id="insert">
+		INSERT INTO sto_route_detail(
+		detail_id,
+		route_id,
+		office_id
+		) VALUES (
+		#{detailId},
+		#{route.routeId},
+		#{office.id}
+		)
+	</insert>
+
+	<select id="getConventionalRouteOfficeByrouteId" resultType="Office">
+		SELECT
+		<include refid="officeColumns" />
+		FROM sto_route_detail a
+		LEFT JOIN sys_office o5 ON o5.id = a.office_id
+		LEFT JOIN sto_route_info sri ON (sri.ROUTE_ID = a.ROUTE_ID AND sri.DEL_FLAG = '0')
+		WHERE o5.del_flag = '0'
+		<if test="routeId != null and routeId != '' ">
+			and a.route_id &lt;&gt; #{routeId}
+		</if>
+		
+		
+	</select>
+
+</mapper>

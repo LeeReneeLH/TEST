@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.clear.v03.dao.ClTaskDetailDao">
+    
+	<sql id="clTaskDetailColumns">
+		a.detail_id AS "detailId",
+		a.office_no AS "officeNo",
+		a.emp_no AS "empNo",
+		a.emp_name AS "empName",
+		a.total_count AS "totalCount",
+		a.total_amt AS "totalAmt",
+		a.m_id AS "mId",
+		a.working_position_type AS "workingPositionType"
+	</sql>
+	
+	<sql id="clTaskDetailJoins">
+	</sql>
+    
+	<select id="get" resultType="ClTaskDetail">
+		SELECT 
+			<include refid="clTaskDetailColumns"/>
+		FROM cl_task_detail a
+		<include refid="clTaskDetailJoins"/>
+		WHERE a.detail_id = #{detailId}
+	</select>
+	
+	
+	<select id="getByMid" resultType="ClTaskDetail">
+		SELECT 
+			<include refid="clTaskDetailColumns"/>
+		FROM cl_task_detail a
+		<include refid="clTaskDetailJoins"/>
+		WHERE a.m_id = #{mId}
+	</select>
+	
+	<select id="findList" resultType="ClTaskDetail">
+		SELECT 
+			<include refid="clTaskDetailColumns"/>
+		FROM cl_task_detail a
+		<include refid="clTaskDetailJoins"/>
+		<where>
+			
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="ClTaskDetail">
+		SELECT 
+			<include refid="clTaskDetailColumns"/>
+		FROM cl_task_detail a
+		<include refid="clTaskDetailJoins"/>
+		<where>
+			
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO cl_task_detail(
+			detail_id,
+			office_no,
+			emp_no,
+			emp_name,
+			total_count,
+			total_amt,
+			m_id,
+			working_position_type
+		) VALUES (
+			#{detailId},
+			#{officeNo},
+			#{empNo},
+			#{empName},
+			#{totalCount},
+			#{totalAmt},
+			#{mId},
+			#{workingPositionType}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE cl_task_detail SET 	
+			detail_id = #{detailId},
+			office_no = #{officeNo},
+			emp_no = #{empNo},
+			emp_name = #{empName},
+			total_count = #{totalCount},
+			total_amt = #{totalAmt},
+			m_id = #{mId},
+			working_position_type = #{workingPositionType}
+		WHERE detail_id = #{detailId}
+	</update>
+	
+	<update id="delete">
+		DELETE FROM cl_task_detail
+		WHERE detail_id = #{detailId}
+	</update>
+	
+</mapper>

@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffer.businesses.modules.store.v01.dao.StoGoodsDao">
+    
+	<sql id="stoGoodsColumns">
+		a.goods_id AS "id",
+		a.goods_name AS "goodsName",
+		a.description AS "description",
+		a.goods_type AS "goodsType",
+		a.goods_val AS "goodsVal",
+		a.create_by AS "createBy.id",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy.id",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag"
+	</sql>
+	
+	<sql id="stoGoodsJoins">
+	</sql>
+    
+	<select id="get" resultType="StoGoods">
+		SELECT 
+			<include refid="stoGoodsColumns"/>
+		FROM sto_goods a
+		<include refid="stoGoodsJoins"/>
+		WHERE a.goods_id = #{id}
+		  AND a.del_flag = '0'
+	</select>
+	
+	<select id="findList" resultType="StoGoods">
+		SELECT 
+			<include refid="stoGoodsColumns"/>
+		FROM sto_goods a
+		<include refid="stoGoodsJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="id != null and id != ''">
+				and a.goods_id like 
+				<!-- '%'||#{id}||'%' -->
+				<if test="dbName == 'oracle'">'%'||#{id}||'%'</if>
+				<if test="dbName == 'mysql'"> CONCAT('%', #{id}, '%')</if>
+			</if>
+			<if test="goodsName != null and goodsName != ''">
+				and a.goods_name like 
+				<!-- '%'||#{goodsName}||'%' -->
+				<if test="dbName == 'oracle'">'%'||#{goodsName}||'%'</if>
+				<if test="dbName == 'mysql'"> CONCAT('%', #{goodsName}, '%')</if>
+			</if>
+			<if test="goodsType != null and goodsType != ''">
+				and a.goods_type = #{goodsType}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				<!-- ORDER BY a.update_date DESC -->
+				ORDER BY a.GOODS_ID
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="StoGoods">
+		SELECT 
+			<include refid="stoGoodsColumns"/>
+		FROM sto_goods a
+		<include refid="stoGoodsJoins"/>
+		<where>
+			<!-- 改为获取所有记录 ==== start -->
+			<!-- a.del_flag = #{DEL_FLAG_NORMAL} -->
+			1 = 1
+			<!-- 改为获取所有记录 ==== end -->
+		<if test="id != null and id != ''">
+			and a.goods_id like 
+			<!-- '%'||#{id}||'%' -->
+			<if test="dbName == 'oracle'">'%'||#{id}||'%'</if>
+			<if test="dbName == 'mysql'"> CONCAT('%', #{id}, '%')</if>
+		</if>
+		<if test="goodsName != null and goodsName != ''">
+			and a.goods_name like 
+			<!-- '%'||#{goodsName}||'%' -->
+			<if test="dbName == 'oracle'">'%'||#{goodsName}||'%'</if>
+			<if test="dbName == 'mysql'"> CONCAT('%', #{goodsName}, '%')</if>
+		</if>
+		<if test="goodsType != null and goodsType != ''">
+			and a.goods_type = #{goodsType}
+		</if>
+		<!-- add-start 增量日期查询数据 2017/07/10 by wangbaozhong -->
+		<if test="updateDateStr != null and updateDateStr != ''">
+            <!-- and TO_CHAR(a.update_date, 'yyyy-mm-dd hh24:mi:ss.ff3') <![CDATA[>]]> '${updateDateStr}' -->
+            <if test="dbName == 'oracle'">AND TO_CHAR(a.update_date, 'yyyy-mm-dd hh24:mi:ss.ff3') <![CDATA[>]]> '${updateDateStr}'</if>
+			<if test="dbName == 'mysql'">AND date_format(a.update_date,'%Y-%m-%d %H:%i:%S.%f') <![CDATA[>]]> '${updateDateStr}'</if>
+        </if>
+        <!-- add-end 增量日期查询数据 2017/07/10 by wangbaozhong -->
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO sto_goods(
+			goods_id,
+			goods_name,
+			description,
+			goods_type,
+			goods_val,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{goodsName},
+			#{description},
+			#{goodsType},
+			#{goodsVal},
+			#{createBy.id},
+			#{createDate},
+			#{updateBy.id},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<!-- 修改既存物品 -->
+	<update id="update">
+		UPDATE sto_goods SET 	
+			goods_name = #{goodsName},
+			description = #{description},
+			goods_type = #{goodsType},
+			goods_val = #{goodsVal},
+			update_by = #{updateBy.id},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE goods_id = #{id}
+	</update>
+	
+	<!-- 逻辑删除物品 -->
+	<update id="delete">
+    update STO_GOODS
+       set DEL_FLAG = #{DEL_FLAG_DELETE},
+           update_by = #{updateBy.id},
+           update_date = #{updateDate}
+     where GOODS_ID = #{id}
+	</update>
+
+	<!-- 恢复逻辑删除的物品 -->
+	<update id="recover">
+		UPDATE sto_goods SET 	
+				goods_name = #{goodsName},
+				description = #{description},
+				goods_type = #{goodsType},
+				goods_val = #{goodsVal},
+				update_by = #{updateBy.id},
+				update_date = #{updateDate},
+				remarks = #{remarks},
+				del_flag = #{DEL_FLAG_NORMAL}
+		WHERE goods_id = #{id}
+		  and del_flag = #{DEL_FLAG_DELETE}
+	</update>
+	
+	<!-- 计算物品价值 ======start-->
+	<select id="calcGoodsVal" resultType="java.math.BigDecimal">
+		select 
+		<!-- NVL(T1.UNIT_VAL, 0) * NVL(T2.UNIT_VAL, 0) -->
+		<if test="dbName == 'oracle'">NVL(T1.UNIT_VAL, 0) * NVL(T2.UNIT_VAL, 0)</if>
+		<if test="dbName == 'mysql'"> ifnull(T1.UNIT_VAL,0) * ifnull(T2.UNIT_VAL, 0)</if>
+		  from (select UNIT_VAL
+		          from STO_DICT
+		         where value = #{denomination}
+		           and type = 
+		           <!-- #{currencyRefCode} || #{cashRefCode} || 'den' -->
+		           <if test="dbName == 'oracle'">#{currencyRefCode} || #{cashRefCode} || 'den'</if>
+				   <if test="dbName == 'mysql'"> CONCAT(#{currencyRefCode}, #{cashRefCode}, 'den')</if>
+		           and DEL_FLAG = '0') T1,
+		       (select UNIT_VAL
+		          from STO_DICT
+		         where value = #{unit}
+		           and type = 'c_unit'
+		           and DEL_FLAG = '0') T2
+	</select>
+	<!-- 计算物品价值 ======end-->
+</mapper>
